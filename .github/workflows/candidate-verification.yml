@@ -1,0 +1,97 @@
+name: Before Arrival candidate verification
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: before-arrival-candidate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    if: github.event.pull_request.number == 3 && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Record exact source and Android inputs
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          mkdir -p ci-evidence
+          printf '%s\n' "$CANDIDATE_SHA" > ci-evidence/source-sha.txt
+          git ls-files -z -- android shared | xargs -0 sha256sum > ci-evidence/android-input-sha256.txt
+          printf 'Candidate commit: `%s`\n\nAPK: unsigned sampleDebug, for build verification.\n' "$CANDIDATE_SHA" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build unsigned sample APK, run Android tests and lint
+        shell: bash
+        working-directory: android
+        run: |
+          test -r "$ANDROID_HOME/platforms/android-35/android.jar"
+          test -x "$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          cat > "$RUNNER_TEMP/unsigned-sample.gradle" <<'GRADLE'
+          gradle.beforeProject { project ->
+              project.pluginManager.withPlugin('com.android.application') {
+                  project.extensions.getByName('androidComponents').finalizeDsl { android ->
+                      android.buildTypes.getByName('debug').signingConfig = null
+                  }
+              }
+          }
+          GRADLE
+          bash ./gradlew --no-daemon -Pandroid.builder.sdkDownload=false \
+            --init-script "$RUNNER_TEMP/unsigned-sample.gradle" \
+            :app:testSampleDebugUnitTest :app:lintSampleDebug :app:assembleSampleDebug \
+            2>&1 | tee ../ci-evidence/android.log
+          apk=app/build/outputs/apk/sample/debug/app-sample-debug-unsigned.apk
+          test -s "$apk"
+          cp "$apk" ../ci-evidence/
+          cd ../ci-evidence
+          sha256sum app-sample-debug-unsigned.apk > apk-sha256.txt
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Check briefing logic and local Steam bridge
+        if: ${{ !cancelled() }}
+        shell: bash
+        working-directory: showcase
+        run: |
+          {
+            npm ci
+            npm run verify
+            npm run verify:server
+            npx --no-install playwright-core install --with-deps chromium
+            export CHROMIUM_PATH="$(node --input-type=module -e "import { chromium } from 'playwright-core'; console.log(chromium.executablePath())")"
+            export EVIDENCE_DIR="$GITHUB_WORKSPACE/ci-evidence/browser"
+            npm run verify:local-app
+          } 2>&1 | tee ../ci-evidence/showcase.log
+
+      - name: Upload evidence for the candidate commit
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: before-arrival-${{ github.event.pull_request.head.sha }}
+          path: |
+            ci-evidence/
+            android/app/build/test-results/testSampleDebugUnitTest/
+            android/app/build/reports/lint-results-sampleDebug.*
+          retention-days: 7
+          if-no-files-found: error
