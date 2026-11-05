@@ -1,0 +1,5 @@
+
+> verify:arrival
+> node arrival-browser-verify.mjs
+
+PASS: official deferred save→arrival heading/title on first screen at390x1080 and320x960, both themes; URL/provenance/reload/removal/empty/desktop/restrictions preserved.

@@ -1,0 +1,73 @@
+{
+  "checkedAt": "2026-11-05T15:11:14.928Z",
+  "htmlSha256": "e06328cecf84d16c1f39cac7a0fe176ee006b411d053544798ef783e409d782c",
+  "sourceSha256": {
+    "examples/before-arrival/index.tsx": "6f6fa1049276d52069d3334e28be850f86dceb34af8dfcbe7ca339ff8e48fbd6",
+    "examples/before-arrival/refresh-feedback.ts": "e5c8102e5cafe2627b17152772ca83a1926daec4ab53e1d1989095b6ef98b84b",
+    "examples/before-arrival/showcase.css": "aae37585c2e33b35c6e43226f84f2cda2d9f6dec8967f32f65382d455585f3a0",
+    "refresh-feedback-browser-verify.mjs": "e9fddb3fc90b4f22746a36e1e64ed9e8c69c21807a2e22464a4221819af36bdc"
+  },
+  "transport": "same-origin test HTTP endpoint with varied captured/synthetic fixtures; no upstream network and no browser response interception",
+  "checks": [
+    "First5 accepted unique URLs→5 added; duplicate repeated batch→no additions/5 checked; one older-published canonical URL→1 added; repeat6→no additions/6 checked. Counts describe cache changes, not publication/read state.",
+    "Feedback is per source; refreshing another game does not replace the first result.",
+    "Failure replaces the prior success message and preserves6 cached items plus lastSuccessAt.",
+    "Busy clears old result; disabled/re-enabled and restricted/unknown late responses never announce fresh success.",
+    "Storage failure cannot announce accepted additions or mutate the previous persisted registry.",
+    "Successful empty response clears source cache, keeps saved original, and persists no feedback/schema fields.",
+    "Reload restores source cache and saved item without a new fetch or resurrected session feedback."
+  ],
+  "readability": [
+    {
+      "theme": "night",
+      "viewport": {
+        "width": 390,
+        "height": 1080
+      },
+      "text": "추가된 소식 없음 · 6개 확인",
+      "horizontalOverflow": false,
+      "documentOverflow": false,
+      "contrast": 8.811635560319132,
+      "font": "15px"
+    },
+    {
+      "theme": "night",
+      "viewport": {
+        "width": 320,
+        "height": 960
+      },
+      "text": "추가된 소식 없음 · 6개 확인",
+      "horizontalOverflow": false,
+      "documentOverflow": false,
+      "contrast": 8.811635560319132,
+      "font": "15px"
+    },
+    {
+      "theme": "day",
+      "viewport": {
+        "width": 390,
+        "height": 1080
+      },
+      "text": "추가된 소식 없음 · 6개 확인",
+      "horizontalOverflow": false,
+      "documentOverflow": false,
+      "contrast": 7.170059603163818,
+      "font": "15px"
+    },
+    {
+      "theme": "day",
+      "viewport": {
+        "width": 320,
+        "height": 960
+      },
+      "text": "추가된 소식 없음 · 6개 확인",
+      "horizontalOverflow": false,
+      "documentOverflow": false,
+      "contrast": 7.170059603163818,
+      "font": "15px"
+    }
+  ],
+  "pageErrors": [],
+  "externalRequests": [],
+  "requestCount": 11
+}

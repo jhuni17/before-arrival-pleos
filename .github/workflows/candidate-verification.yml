@@ -92,6 +92,7 @@ jobs:
             export EVIDENCE_DIR="$GITHUB_WORKSPACE/ci-evidence/browser"
             npm run verify:local-app
             npm run verify:arrival
+            npm run verify:refresh-feedback
           } 2>&1 | tee ../ci-evidence/showcase.log
 
       - name: Upload evidence for the candidate commit

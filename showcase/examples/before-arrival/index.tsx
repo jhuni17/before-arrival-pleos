@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+import {completedRefreshFeedback,failedRefreshFeedback} from "./refresh-feedback";
 import { Stage } from "../../kit/stage";
 import type { Act } from "../../kit/act";
 import { providers,defaults,registryKey,readRegistry,addSource,moveSource,toggleSource,planRegistry,saveItem,statusText,sourceName,refreshSteam,applyFeed,officialUrl,localSteamConnectionAvailable,type Registry,type ContentItem,type RegisteredSource } from "./catalog";
@@ -12,6 +13,7 @@ export async function sequence(act:Act<Scene>) {
  act.mark("4-minutes-meeting");await act.wait(5000);await act.set({frame:"arrived"});
  act.mark("arrival-review");await act.wait(4500);
 }
+const RefreshFeedbackContext=createContext<Record<string,string>>({});
 const sampleTime=(short:boolean)=>short?"2026-11-04T23:54:00Z":"2026-11-04T23:40:00Z";
 function Glyph({kind}:{kind:"play"|"save"|"check"|"pause"}) {return <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">{kind==="play"?<path d="m9 5 11 7-11 7V5Z" fill="currentColor"/>:kind==="check"?<path d="m4 12 5 5L20 6" stroke="currentColor" strokeWidth="2.5"/>:kind==="pause"?<path d="M8 5v14M16 5v14" stroke="currentColor" strokeWidth="4"/>:<path d="M6 3h12v18l-6-4-6 4V3Z" stroke="currentColor" strokeWidth="2"/>}</svg>}
 function Published({item}:{item:ContentItem}) {
@@ -52,11 +54,13 @@ function Vehicle({frame,state,save,long}:{frame:Frame;state:Registry;save:(item:
  </section>;
 }
 function SourceSettings({state,update,refresh,busy}:{state:Registry;update:(next:Registry)=>void;refresh:(source:RegisteredSource)=>void;busy:string[]}) {
+ const feedback=useContext(RefreshFeedbackContext);
  const [provider,setProvider]=useState("lol"),[name,setName]=useState("리그 오브 레전드"),[url,setUrl]=useState(providers.find(p=>p.id==="lol")!.suggestedUrl),[error,setError]=useState("");
  return <><p>켜 둔 출처를 위에서부터 편성해요. 마감이 가까운 일정은 먼저예요.</p><ol className="source-list">{state.sources.map((source,index)=><li className="registered-source" key={source.id} data-source-id={source.id}>
   <label className="source"><span>{source.name}</span><input type="checkbox" aria-label={`${source.name} 사용`} checked={source.enabled} onChange={e=>update(toggleSource(state,source.id,e.target.checked))}/></label>
   <p className="source-status">{statusText(source)}{source.lastSuccessAt&&<><br/>마지막 확인 {source.lastSuccessAt}</>}</p>
   {source.items[0]?.fetchedAt&&source.status==="connected_snapshot"&&<p className="source-status">확인 {source.items[0].fetchedAt}</p>}
+  {source.provider==="steam"&&<>{feedback[source.id]&&<span className="refresh-feedback-label">이 출처의 소식 목록</span>}<p className="refresh-feedback" role="status" aria-live="polite" aria-atomic="true" aria-label={`${source.name} 소식 목록 확인 결과`}>{feedback[source.id]||""}</p></>}
   <div className="source-actions"><button disabled={index===0} aria-label={`${source.name} 위로`} onClick={()=>update(moveSource(state,source.id,-1))}>위로</button><button disabled={index===state.sources.length-1} aria-label={`${source.name} 아래로`} onClick={()=>update(moveSource(state,source.id,1))}>아래로</button>{source.provider==="steam"&&<button disabled={!source.enabled||busy.includes(source.id)||!localSteamConnectionAvailable()} aria-label={`${source.name} 새 소식 확인`} onClick={()=>refresh(source)}>{busy.includes(source.id)?"확인 중…":"새 소식 확인"}</button>}</div>
   {source.registrationUrl&&<a href={source.registrationUrl} target="_blank" rel="noreferrer">등록한 공식 페이지 ↗</a>}
  </li>)}</ol>
@@ -78,28 +82,41 @@ function SceneView({scene,state,update,refresh,busy,long}:{scene:Scene;state:Reg
 }
 export function Showcase({state:initialState}:{state:string|null}) {
  const params=typeof location==="undefined"?new URLSearchParams():new URLSearchParams(location.search);
- const [theme,setTheme]=useState(params.get("theme")==="day"?"day":"night"),[manual,setManual]=useState<Frame|null>(frames.includes(initialState as Frame)?initialState as Frame:null),[state,setState]=useState<Registry>(defaults),[replay,setReplay]=useState(0),[error,setError]=useState(""),[busy,setBusy]=useState<string[]>([]);
+ const [theme,setTheme]=useState(params.get("theme")==="day"?"day":"night"),[manual,setManual]=useState<Frame|null>(frames.includes(initialState as Frame)?initialState as Frame:null),[state,setState]=useState<Registry>(defaults),[replay,setReplay]=useState(0),[error,setError]=useState(""),[busy,setBusy]=useState<string[]>([]),[feedback,setFeedback]=useState<Record<string,string>>({});
  const current=useRef(state);current.current=state;
  const jobs=useRef(new Map<string,AbortController>());
  const allowed=manual!=="restricted"&&manual!=="unknown";
+ const allowedRef=useRef(allowed);allowedRef.current=allowed;
  useEffect(()=>{try{const restored=readRegistry(localStorage);current.current=restored;setState(restored);}catch{/* Storage access can be denied; defaults remain visible. */}},[]);
- useEffect(()=>{for(const [id,job] of jobs.current) if(!allowed||!state.sources.some(s=>s.id===id&&s.enabled)){job.abort();jobs.current.delete(id);setBusy(old=>old.filter(v=>v!==id));}},[allowed,state.sources]);
+ useEffect(()=>{
+  for(const [id,job] of jobs.current) if(!allowed||!state.sources.some(s=>s.id===id&&s.enabled)){job.abort();jobs.current.delete(id);setBusy(old=>old.filter(v=>v!==id));}
+  setFeedback(old=>{const kept=Object.fromEntries(Object.entries(old).filter(([id])=>allowed&&state.sources.some(s=>s.id===id&&s.enabled)));return Object.keys(kept).length===Object.keys(old).length?old:kept;});
+ },[allowed,state.sources]);
  useEffect(()=>()=>{for(const job of jobs.current.values())job.abort();},[]);
  function update(next:Registry) {
-  if(!allowed)return;
-  try{localStorage.setItem(registryKey,JSON.stringify(next));current.current=next;setState(next);setError("");}catch{setError("저장하지 못했어요. 브라우저 저장 공간을 확인해 주세요.");}
+  if(!allowedRef.current)return false;
+  try{localStorage.setItem(registryKey,JSON.stringify(next));current.current=next;setState(next);setError("");return true;}catch{setError("저장하지 못했어요. 브라우저 저장 공간을 확인해 주세요.");return false;}
  }
  async function refresh(source:RegisteredSource) {
   if(!allowed||!source.enabled||jobs.current.has(source.id))return;
   const job=new AbortController();jobs.current.set(source.id,job);setBusy(old=>[...old,source.id]);
+  setFeedback(old=>{const next={...old};delete next[source.id];return next;});
   const timer=setTimeout(()=>job.abort(),6000),attemptedAt=new Date().toISOString();
   try{
    const result=await refreshSteam(source,job.signal);
-   if(jobs.current.get(source.id)===job&&!job.signal.aborted&&current.current.sources.some(s=>s.id===source.id&&s.enabled)) update(applyFeed(current.current,source.id,{items:result.items},result.fetchedAt));
+   if(allowedRef.current&&jobs.current.get(source.id)===job&&!job.signal.aborted&&current.current.sources.some(s=>s.id===source.id&&s.enabled)) {
+    const previous=current.current.sources.find(s=>s.id===source.id)!;
+    const next=applyFeed(current.current,source.id,{items:result.items},result.fetchedAt);
+    const accepted=next.sources.find(s=>s.id===source.id)!;
+    if(update(next))setFeedback(old=>({...old,[source.id]:accepted.refreshError?failedRefreshFeedback(previous.items):completedRefreshFeedback(previous.items,accepted.items)}));
+   }
   } catch {
-   if(jobs.current.get(source.id)===job&&current.current.sources.some(s=>s.id===source.id&&s.enabled)) update(applyFeed(current.current,source.id,{error:"failed"},attemptedAt));
+   if(allowedRef.current&&jobs.current.get(source.id)===job&&current.current.sources.some(s=>s.id===source.id&&s.enabled)) {
+    const previous=current.current.sources.find(s=>s.id===source.id)!;
+    if(update(applyFeed(current.current,source.id,{error:"failed"},attemptedAt)))setFeedback(old=>({...old,[source.id]:failedRefreshFeedback(previous.items)}));
+   }
   } finally {clearTimeout(timer);if(jobs.current.get(source.id)===job){jobs.current.delete(source.id);setBusy(old=>old.filter(id=>id!==source.id));}}
  }
  const render=(scene:Scene)=><SceneView scene={scene} state={state} update={update} refresh={refresh} busy={busy} long={params.get("long")==="1"}/>;
- return <main className="ba-page" data-theme={theme}><div className="page-inner"><header className="masthead"><span>도착 전에 <small>PLEOS CONNECT · 샘플 경로 시연</small></span><button onClick={()=>setTheme(theme==="night"?"day":"night")}>{theme==="night"?"주간으로 보기":"야간으로 보기"}</button></header><div className="intro"><span className="eyebrow">내가 고른 출처, 남은 시간에 맞게</span><h2>남은 시간만큼,<br/>필요한 소식부터.</h2></div><nav className="scene-controls" aria-label="시연 장면">{([['opening','01 18분'],['saved','02 저장'],['priority','03 4분'],['arrived','04 도착'],['settings','출처 설정'],['restricted','주행 제한'],['unknown','상태 미확인']] as const).map(([frame,label])=><button key={frame} aria-pressed={manual===frame} onClick={()=>setManual(frame)}>{label}</button>)}<button onClick={()=>{setManual(null);setReplay(replay+1);}}>자동 시연 다시 보기</button></nav>{error&&<p className="storage-error" role="alert">{error}</p>}<Stage key={`${manual}-${replay}`} width={1440} height={680} className="ba-scene" theme={theme==="night"?"dark":"light"} play="once" initial={{frame:manual||"opening"} as Scene} poster={{frame:manual||"arrived"} as Scene} script={manual?undefined:sequence}>{render}</Stage><footer className="evidence-note">경로·차량 상태·재생은 샘플 · 소식마다 실제/예시와 확인 시각을 표시<br/>출처·저장은 이 브라우저에만 보존 · Android 앱/다른 기기와 동기화 안 됨</footer></div></main>;
+ return <RefreshFeedbackContext.Provider value={feedback}><main className="ba-page" data-theme={theme}><div className="page-inner"><header className="masthead"><span>도착 전에 <small>PLEOS CONNECT · 샘플 경로 시연</small></span><button onClick={()=>setTheme(theme==="night"?"day":"night")}>{theme==="night"?"주간으로 보기":"야간으로 보기"}</button></header><div className="intro"><span className="eyebrow">내가 고른 출처, 남은 시간에 맞게</span><h2>남은 시간만큼,<br/>필요한 소식부터.</h2></div><nav className="scene-controls" aria-label="시연 장면">{([['opening','01 18분'],['saved','02 저장'],['priority','03 4분'],['arrived','04 도착'],['settings','출처 설정'],['restricted','주행 제한'],['unknown','상태 미확인']] as const).map(([frame,label])=><button key={frame} aria-pressed={manual===frame} onClick={()=>setManual(frame)}>{label}</button>)}<button onClick={()=>{setManual(null);setReplay(replay+1);}}>자동 시연 다시 보기</button></nav>{error&&<p className="storage-error" role="alert">{error}</p>}<Stage key={`${manual}-${replay}`} width={1440} height={680} className="ba-scene" theme={theme==="night"?"dark":"light"} play="once" initial={{frame:manual||"opening"} as Scene} poster={{frame:manual||"arrived"} as Scene} script={manual?undefined:sequence}>{render}</Stage><footer className="evidence-note">경로·차량 상태·재생은 샘플 · 소식마다 실제/예시와 확인 시각을 표시<br/>출처·저장은 이 브라우저에만 보존 · Android 앱/다른 기기와 동기화 안 됨</footer></div></main></RefreshFeedbackContext.Provider>;
 }

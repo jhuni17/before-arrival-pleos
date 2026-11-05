@@ -35,7 +35,7 @@ const report = {
     workingTreeDirtyAtRun: Boolean(execFileSync("git", ["status", "--porcelain"], {encoding:"utf8"}).trim()),
     htmlSha256: createHash("sha256").update(html).digest("hex"),
     sourceSha256: Object.fromEntries(await Promise.all([
-      "examples/before-arrival/index.tsx", "examples/before-arrival/catalog.ts", "../shared/catalog.json", "../shared/evidence/steam-real-response.json",
+      "examples/before-arrival/index.tsx", "examples/before-arrival/refresh-feedback.ts", "examples/before-arrival/catalog.ts", "../shared/catalog.json", "../shared/evidence/steam-real-response.json",
       "examples/before-arrival/showcase.css", "browser-verify.mjs", "build.mjs", "app_server.py",
     ].map(async (path) => [path, createHash("sha256").update(await readFile(path)).digest("hex")]))),
     originalInputs: ["479db2bc4e55bd58e9cda1f9408ea294e1c8ebf3", "3ff697d261e417fa6a2ff18ddcb91ebd83c32a6a"],

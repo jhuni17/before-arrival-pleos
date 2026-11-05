@@ -613,3 +613,7 @@ select:focus-visible {
  .scene-composition[data-arrived="true"]>.vehicle{grid-column:1;grid-row:1}
  .scene-composition[data-arrived="true"]>.phone{grid-column:2;grid-row:1}
 }
+
+.refresh-feedback-label{display:block;color:var(--muted);font-size:13px;line-height:1.5;margin-top:8px}
+.refresh-feedback{color:var(--text);font-size:15px;line-height:1.6;margin:4px 0 10px;overflow-wrap:anywhere}
+.refresh-feedback:empty{margin:0}
