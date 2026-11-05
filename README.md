@@ -38,3 +38,13 @@ python3 checks/verify-colors.py
 소스의 버튼 클릭·Activity 전환 처리와 테스트의 비동기 메시지 처리 시점을 후속으로 확인해야 합니다. 이 결과만으로 실기에서 원문 열기가 고장 났다고 단정하지 않습니다. [실패 스택](evidence/test-failures.json), [전체 23건 결과](evidence/test-summary.json), [Gradle 실패 로그](evidence/android-tests-failed.txt), [분리한 조립·lint 성공](evidence/assemble-and-lint.txt), [입력 해시](evidence/input-hash-verification.txt)를 동봉합니다.
 
 이 파일은 **sample debug APK**이며 제출용 release APK가 아닙니다. Robolectric 결과는 실제 기기 실행·Pleos 콜백·ETA·한국어 소리 검증을 뜻하지 않습니다. main과 통합 소스 브랜치는 수정하지 않았습니다.
+
+## 원격 재다운로드 확인
+
+인증된 Git으로 이 비공개 브랜치를 별도 폴더에 clone한 뒤 APK 해시와 apksigner 검사를 다시 통과했습니다. [재다운로드 기록](evidence/download-verification.json)과 [재다운로드 APK 서명](evidence/redownload-signature.txt)에 근거를 보관했습니다. 이 전달 검증은 Android 테스트 1건 실패를 해소하거나 전체 검증 성공으로 바꾸지 않습니다. 로그인된 브라우저에서 다운로드 버튼을 실행한 것으로 주장하지 않습니다.
+
+```sh
+git clone --depth 1 --single-branch --branch artifacts/sample-content-df7b545fb6ef https://github.com/jhuni17/before-arrival-pleos.git
+cd before-arrival-pleos
+sha256sum -c SHA256SUMS
+```

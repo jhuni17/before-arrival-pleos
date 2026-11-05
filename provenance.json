@@ -31,5 +31,11 @@
   "new_signing_key_generated": false,
   "device_or_emulator_execution": false,
   "test_verdict": "failed; not an all-checks-passed delivery",
-  "download_verification": "pending remote upload and redownload"
+  "download_verification": {
+    "completed": true,
+    "method": "fresh authenticated Git clone of remote artifact branch",
+    "verified_artifact_commit": "01bb008b993175649c59a2e72a638b3814520c9b",
+    "apk_sha256": "9b83b5c9253db48c4f3c20d7eec80b05fb853974d94511e57aee5d8a26a180df",
+    "signature_verified": true
+  }
 }
