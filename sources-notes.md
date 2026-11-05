@@ -1,45 +1,54 @@
-# 사용자 출처 기능 · 검토 후보
+# 사용자 출처 기능과 검증 기록
 
-사용자 출처 기능은 통합 `de8cc10e029b09863b551dbfbedf97f8d582b194`에서 시작했다. 이후 `df7b545fb6ef8b3531b4e55718626086e73a93c0`를 기준으로 실제 Steam 응답 호환성과 Android 테스트 대기를 추가 수정했다. 브라우저·Android가 [공통 카탈로그](shared/catalog.json)와 [계약](shared/README.md)을 읽고 사용자 등록·사용 여부·출처 순서·저장을 실제 ETA 편성과 연결한다. 원래 일정·게임·커뮤니티 예시와 기존 설정·저장을 보존한다. 이 문서의 검토 후보를 담는 Git 커밋으로 정확한 소스를 식별한다.
+2026-11-05 확인. 구현·APK의 고정 소스는 `27d297b2981826be52ee360c21c999379c82f776`, 전달 artifact 커밋은 `9bef7b49a0b88154d1f57fea8d8de47eb0df8554`다. 이후 문서만 갱신한 검토 커밋은 아래41개 APK 입력과 동일하며, APK를 새 문서 커밋에서 다시 빌드했다고 소개하지 않는다.
 
-## 사용자 동작
+## 현재 동작
 
-공식 게임/채널/게시판 주소에 표시 이름을 붙여 등록한다. 등록한 출처를 켜고 끄거나 위아래로 옮기면18분/4분의 실제 선택 목록과 Android 낭독 대본이 바뀐다. 가까운 일정 마감은 출처 순서보다 먼저다. 출처만 등록하고 확인된 소식이 없으면 목록과 연결 상태를 보여주고 예시 소식을 만들어 넣지 않는다.
+브라우저·Android가 공통 출처 모델을 읽고10종의 공식 게임·채널·게시판 주소를 등록·활성화·정렬한다. 켜 둔 출처에서 확인된 항목만 ETA 예산과 일정 마감에 따라 실제 편성한다. 원래 일정·게임·커뮤니티 예시와 구형 설정·우선순위·저장을 유지한다. 18분은45초, 4분은12초 듣기 예산이며, 가까운 일정 마감이 출처 순서보다 먼저다. 표시 길이는 실제 음성 실측이 아닌 추정치다.
 
-브라우저 저장은 localStorage, Android 저장은 해당 앱 SharedPreferences에만 남는다. 모든 설정·보관함에 다른 기기와 동기화하지 않는다고 표시한다. 자동18초 시연은 실제 저장을 만들지 않는다. 구형3출처 선택·우선순위·저장 제목/enum을 v2로 이전한다. 브라우저의 구형 임의 저장 제목도 원문 링크를 만들지 않고 예시 저장 항목으로 보존한다.
+설정·저장은 Android의 해당 앱 SharedPreferences와 같은 브라우저의 localStorage에 각각 남는다. 휴대폰 모형도 브라우저 안에서 동작하며 계정·기기 간 동기화는 없다. 자동18초 시연은 실제 저장을 만들지 않는다. 구형 임의 저장 제목은 원문 링크를 만들어 붙이지 않고 예시 항목으로 보존한다.
 
-주행 제한·상태 미확인·백그라운드에서는 Android의 화면 조작·음성을 막고 대화상자를 닫는다. 새로고침 응답도 화면 상태·출처 활성·세대 토큰을 확인해 폐기한다. 실제 경로의 ETA 부재/취소를 샘플 ETA로 바꾸지 않는다. 브라우저 음성은 계속 재생 상태 연출이며 실제 TTS가 아니다.
+4분에서 듣지 못하는 항목에는 명시적 저장 동작이 있다. 저장해도 회의 우선순위는 바뀌지 않으며 도착 보관함과 재실행 뒤에 자기 출처·원문·실제/예시 표시를 유지한다. Android의 저장 공식 항목에는 원문 열기가 있고, 버튼 callback 실행 시점에도 주차 사용 허용과 공식 URL을 검사한다. 제한·미확인·백그라운드에서는 화면·음성·대화상자를 막고 복귀 후 자동 재생하지 않는다. 비활성→재활성 사이 늦은 갱신 응답도 폐기한다.
 
-## 독립 검토 후 선택한 두 개선
+## 전달한 샘플 APK
 
-4분에서 듣지 못하는 게임·소식마다 브라우저의 명시적 ‘나중에 보기로 저장’ 버튼을 제공한다. 회의 우선순위를 바꾸거나 자동 저장하지 않는다. 저장한 항목의 원문·출처·실제/예시 표시가 도착 보관함과 새로고침 뒤에도 유지된다. 제한·미확인 상태에서는 이 버튼들을 숨긴다. Android는 이미 보류 항목별 저장을 제공한다.
+[비공개 GitHub APK 파일](https://github.com/jhuni17/before-arrival-pleos/blob/9bef7b49a0b88154d1f57fea8d8de47eb0df8554/before-arrival-sample-27d297b29818.apk) · [고정 artifact와 근거](https://github.com/jhuni17/before-arrival-pleos/tree/9bef7b49a0b88154d1f57fea8d8de47eb0df8554)
 
-Android 보관함의 공식 항목 상세에 ‘공식 원문 열기’를 추가했다. 버튼을 누르는 시점에도 주차 사용 허용과 공식 URL을 다시 검사한다. 제한 전환으로 대화상자가 닫힌 뒤 오래된 버튼을 눌러도 외부 앱을 열지 않도록 검사하는 UI 테스트를 추가했다. 이 UI 테스트의 실행은 승인된 SDK 작업 환경의 결과를 기다린다.
+| 항목 | 확인 결과 |
+| --- | --- |
+| 빌드 소스 | `27d297b2981826be52ee360c21c999379c82f776` |
+| 파일 | `before-arrival-sample-27d297b29818.apk`, 2056299 bytes |
+| APK SHA-256 | `ae3118ea2a235d50d36e74b6f563071eca4ff37f178bc023b3d773f6d9fa7f4e` |
+| 서명 | v2 검증 통과, Android Debug RSA2048, 기존 debug 인증서 유지 |
+| 인증서 SHA-256 | `6469377ec22e482c38f2f5eb0cb2538d3c413a34803a4cf2be7be2d9294216e4` |
+| 패키지 | `com.beforearrival.briefing.sample`, debuggable, minSdk29/targetSdk35 |
+| 빌드·테스트 | sampleDebug assembly/core 통과, Android JVM24건 전부 통과(실패·오류·skip0), lint0오류/3경고 |
+| 소스 대응 | 전체41개 입력 해시, 내장 catalog·실제 Steam 응답 assets가 고정 소스와 일치 |
 
-등록한 공식 소식의390px 주야간 화면도 실제 캡처·대비 검사에 추가했다. 샘플에는 없던 공식 원문 링크의 야간 기본 파란색을 본문 색으로 수정해 읽을 수 있도록 했다. 그때의 `df7b545` 대비 이번 실제 응답 수정은 Android 파서와 공통 assets도 바꾸므로 새로운 APK가 필요하다.
+승인된 원래 JDK17/SDK35/Gradle8.11.1 작업 환경이 기존 키로 빌드했다. 독립 검수자는 원격 artifact 커밋을 별도의 새 Git 저장소로 가져와 APK를 다시 얻고 hash·apksig v2·manifest·내장 assets·41개 입력을 확인했다. 이는 실제 인증 Git 다운로드 검증이며, GitHub 웹 Download 버튼 클릭이나 독립 작업 환경의 APK 바이트 재빌드를 수행한 결과로 확대하지 않는다. 구형 worker 로컬 링크에 의존하지 않는다.
 
-재검토에서 확인한 Android 출처 비활성→재활성 사이 늦은 갱신 응답을 세대 토큰으로 폐기한다. 비활성 출처의 갱신 버튼도 막는다. 브라우저의 공식 응답이 손상된 경우 정상 빈 목록으로 오인해 마지막 내용을 지우지 않도록 수정했고, 해당 공개 게임과 다른 원문 URL도 거절한다. 명시적 정상 빈 목록만 캐시를 비운다. 피드는 최대50건 검사·20건 보관한다.
+저장 원문 callback·제한 전환·비활성 출처의 늦은 응답·실제 CDN 응답 회귀를 포함한24개 Android JVM 테스트가 통과했다. 이전 `df7b545`의23건 중1건 실패와02/df7 APK는 과거 중간 기록이며 이 전달본을 대신하지 않는다. 수정된 테스트는 허용/제한 callback을 실제 실행한 뒤 정확한 Intent 또는 부재를 단언한다. 제품의 guard를 제거하지 않았다.
 
-## 콘텐츠의 실제 범위
+## 콘텐츠와 실제 네트워크 근거
 
-공식 원문에서 직접 확인한 연구 스냅샷3개(LoL26.22, Valorant13.09, 메이플1.2.420)를 사용자가 선택해 브리핑에 넣을 수 있다. [조회 근거](shared/evidence/official-observations.json)의 게시일·원문·확인 시각을 유지한다. 메이플은 날짜만 제공돼 시각을 만들지 않았다. 이3개는 앱의 자동 갱신 성공이 아니다.
+LoL26.22·Valorant13.09·메이플1.2.420 세 건은 공식 원문에서 연구 도구로 가져온 **스냅샷**이다. [조회 기록](shared/evidence/official-observations.json)의 원문·게시일·확인 시각을 유지하며, 메이플은 날짜만 제공돼 시각을 만들지 않았다. 이 세 건을 앱의 자동 갱신 성공으로 세지 않는다.
 
-Steam 공개 공식 피드의 실제 갱신 경로를 양쪽 앱에 구현했다. 고정 HTTPS·공개 게임 번호·타임아웃·크기 제한·공식 원문 검증·중복 제거를 적용했다. 실패는 마지막 정상 내용을 유지하며 오래된 상태를 표시하고, 정상 빈 응답은 새 소식 없음으로 처리한다. 새 실행 환경은2026-11-05 12:47:21UTC의 직접 조회에서 공식 API HTTP200을 받았고 같은 검증 턴에서 앱의 정확한 query로5개 공식 공지 응답을 확보했다. [원본 응답](shared/evidence/steam-real-response.json)과 [출처·시간·요청 기록](shared/evidence/steam-real-response-meta.json)을 보존했다. 기존 통합 실행 환경은 여전히 이전 정책의403이며, 새 실행 환경의 성공을 모든 환경의 성공으로 확대하지 않는다.
+Steam은 공개 공식 query의 실제 전송과 앱 함수·모델·저장을 별도로 검증했다. Steam 허용 실행 환경에서 기존 프록시·CA·TLS를 유지한 실제 HTTPS 요청2건이 CONNECT200/HTTP200/TLS검증0을 반환했다. **curl 기반 fetcher가 전송만 담당하고 소스27의 변경 없는 `refreshSteam`→파서→`applyFeed`→중복 제거 저장→디스크 `readRegistry`가5개 항목을 처리했다.** Steam만 켜면18분에30초 항목1개를 선택하고4개를 보류하며, 4분12초 예산에서는5개 모두 보류했다. 이는 한 제공자의 실제 네트워크→모델→저장 연동 근거다.
 
-이전 파서는 실제 URL `https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/<gid>`를 거절했다. 정확한 호스트·원시 경로만 추가하고 양수 uint64 기사 ID, 경로 ID와 `gid` 일치, 전체 및 항목의 appid 일치를 검사한다. 다른 호스트/서브도메인·다른 feed 경로·인코딩/경로 이동·userinfo/포트/query/fragment·ID 변경을 거절한다. 원문 URL을 그대로 보존하며 다른 store URL로 추측 변환하지 않는다.
+같은 외부 환경의 Chromium API 최상위 탐색도 HTTP200/JSON5건을 받았다. 그러나 애플리케이션 문서 로딩이 프록시 경로에서 먼저 막혀 **기본 브라우저 fetch를 통한 사용자 갱신→실제 네트워크→UI·저장·재로드는 미검증**이다. Android 앱의 실제 네트워크 fetch도 실행하지 않았다. API 최상위 탐색 응답만으로 CORS 성공이나 실패를 단정하지 않는다. 기존 통합 실행 환경은 이전 정책의403이므로 환경별 결과를 섞지 않는다.
 
-수정본 양쪽 파서가 **캡처한 실제5개 응답을 로컬 재생**해 편성·저장까지 처리했다. 브라우저도 해당 캡처를 가로채 넣은 응답으로 새로고침 버튼→5개 항목→사용자 순서→18분 브리핑→4분 일정 우선→보관함/새로고침을 검사했다. [재생 결과](validation/sources-v2/steam-real-replay.json)는 직접 API 성공과 로컬 재생 성공을 분리한다. **수정본 앱의 실제 네트워크 새로고침 성공은 아직 확인하지 않았다.** 외부 환경에서 새 정확 커밋으로 다시 실행해야 한다.
+[캡처한 실제 응답](shared/evidence/steam-real-response.json)과 [그 조회 출처](shared/evidence/steam-real-response-meta.json)는 12:47~12:50UTC의 앞선 기록이다. 양쪽 파서 및 실제 브라우저 UI에서 이를 재생한 검사도 있으며, 재생과 이후 실제 전송 검사를 구분한다. 브라우저의 응답 주입은 실제 네트워크 성공이 아니다.
 
-YouTube 채널·치지직 스트리머·카페는 연결 설정 필요, SOOP·디시·에펨코리아는 링크 저장/자동 연결 미확인 상태로 관리한다. URL 등록 자체가 피드 수집 기능의 완성을 뜻하지 않는다. [공식 문서 기능표](shared/evidence/provider-research.json)에 확인한 범위와 미확인 범위가 있다. 앱에 비밀키·로그인 세션·쿠키·브라우저 기록을 넣거나 읽지 않는다.
+Steam 원문은 관측된 정확한 CDN 호스트·원시 경로만 허용하고, 전체/항목 appid·양수 uint64 기사 ID·경로 ID와 gid 일치를 검사한다. 임의 호스트·다른 게임의 명시적 URL·userinfo/포트/query/fragment·인코딩/경로 이동을 거절한다. 손상된 응답과 실패는 마지막 정상 내용·성공 시각을 유지하며, 정상 빈 응답만 캐시를 비운다. 최대50건 검사·20건 보관, 응답256KiB·시간 상한을 둔다. Steam 본문은 원문 발췌이며 한국어 생성 요약이나 발화 실측이 아니다.
 
-## 현재 검증과 남은 작업
+YouTube·치지직·카페는 연결 설정 필요, SOOP·디시·에펨코리아는 링크 저장/자동 연결 미확인으로 관리한다. [공식 문서 기능표](shared/evidence/provider-research.json)의 확인 범위를 따른다. URL 등록만으로 수집 완료를 주장하거나 확인되지 않은 소식을 만들지 않는다. 비밀키·세션·쿠키·브라우저 기록을 읽거나 동봉하지 않는다.
 
-- 브라우저 build 및 모델/정적 검사 [통과](validation/sources-v2/verify.txt): 등록→순서→ETA, 출처 제외, 마이그레이션,3스냅샷 원문/날짜, 중복·실패·빈 목록·용량 제한 fixture. 실제 Chromium155 브라우저도 [37캡처·14동작 검사](validation/sources-v2/browser.txt)를 통과했다. 실제 출처 추가·위아래 이동·사용 여부·공식 원문/게시일·ETA 재편성·다중 저장·새로고침·구형 마이그레이션·중복/위장 URL 거절·늦은 refresh 응답 폐기를 검사했다. 캡처의 최소 대비는5.95:1이고 가로 넘침·글자 잘림·page error가 없었다. [상세 보고서](showcase/evidence/browser-report.json)의 HTML·소스 해시가 검사 바이트를 고정한다. Steam 성공/실패/빈 목록 응답은 브라우저에서 차단해 넣은 fixture이며 실제 갱신 성공이 아니다.
-- 실제 API35 공개 클래스와 JDK17로 main/sample Java13파일 [컴파일 통과](validation/sources-v2/android-java-compile.txt). 현재 XML에서 생성한 compile-only R을 사용했으며 리소스 패키징·DEX·APK 빌드가 아니다.
-- API35 클래스에서 실행한 공통 모델 JVM [60개 assertion 통과](validation/sources-v2/catalog-jvm.txt), [실행 harness](validation/sources-v2/CatalogHarness.java). 등록한 공식 LoL→순서→낭독 Plan→저장, 날짜 정밀도, 미지원 빈 내용, Steam URI/중복/실패/빈 응답, 구형 설정·저장 이전, 손상 URL 검사를 포함한다.
-- 승인된 원래 SDK 작업 환경에서 이전 `df7b545`의 Android JVM23건 중22건 통과·1건 실패를 확인했다. 실패는 저장 공식 원문 버튼을 누른 직후 Handler의 비동기 callback을 기다리지 않고 Intent를 읽던 테스트다. API35 AlertController bytecode와 독립 검토로 대기 누락을 확인했고, 허용 클릭과 제한 전환 뒤 오래된 클릭 모두 main Looper를 처리한 다음 실제 Intent 유무를 검사하도록 고쳤다. 제품의 주차/URL guard와 테스트의 정확 URI 단언은 유지했다. 실제 CDN 응답 회귀도 Android 테스트에 추가했다. **이번 정확 소스의 전체 Gradle 테스트 재실행은 아직 대기 중이다.** 실제 제한 콜백·한국어 음성·Pleos ETA·에뮬레이터/실차도 미검증이다.
-- 현재 통합 환경에는 승인된 SDK와 기존 debug 키가 없다. 원래 승인된 환경은 `df7b545`의 debug APK를 빌드해 비공개 GitHub artifact 커밋 `31115a913e1f1caff3af6478ac6449564d20e954`에 전달했다(보고된 APK SHA-256 `9b83b5c9253db48c4f3c20d7eec80b05fb853974d94511e57aee5d8a26a180df`). 이 APK는 테스트1건 실패가 있는 이전 중간 결과이며 이번 파서 수정본이 아니다. 새 라이선스 동의·새 서명키 생성 없이 정확한 새 통합 커밋의 APK 재빌드·전체 테스트·서명·다운로드를 다시 확인해야 한다. **최신 수정본 APK 전달과 검증은 아직 완료하지 않았다.**
+## 독립 검수와 남은 범위
 
-공개 API35 모델 검사는 저장소 루트에서 `JAVA_HOME=/path/to/jdk17 sh validation/sources-v2/verify-model.sh /path/to/android-all-api35.jar`로 재현한다. `org.robolectric:android-all:15-robolectric-13954326`의 공개 API 클래스를 사용하며, 동봉한 compile-only R은 리소스 패키징을 대신하지 않는다. 실제 UI·기기 실행 검사로 소개하지 않는다.
+Astra는 정확 소스27와 artifact9bef에 대해 **소스 통합 및 전달된 sampleDebug 프로토타입 범위에서 수용 가능**, 확인된 필수 수정사항 없음으로 판정했다. 여기에는 독립 APK 다운로드·서명·입력 대응과 빌더의24건 통과 기록 검토가 포함된다. 공개 API35 Java 컴파일·60개 모델 assertion, 실제 응답5건 및 양쪽 파서18개 부정 사례도 독립 확인했다. [브라우저37캡처·14동작 검사](validation/sources-v2/browser.txt)는 주야간·작은 화면·확대·등록/정렬/저장/재로드/마이그레이션/제한을 다루며 최소 대비5.95:1, 수평 넘침·잘림·page error가 없었다. [보고서](showcase/evidence/browser-report.json)의 소스·HTML 해시가 당시 검사 바이트를 고정한다.
 
-코드/리소스/Gradle/공통 입력의 [SHA-256 목록](validation/sources-v2/android-input-sha256.txt)은 이번 컴파일/모델 검사의 소스 범위를 고정한다. APK·Android UI 검증 결과를 받으면 그 결과의 정확한 커밋·입력 해시·다운로드 주소를 따로 기록한다. main 병합·출품 접수·공유 권한 변경은 수행하지 않았다.
+이 판정은 최종 출품·release·실차 승인이 아니다. sampleDebug는 release 제출물이 아니다. 실제 기기/에뮬레이터 설치, 한국어 소리, 차량 포커스/제한 callback, 실제 Pleos SDK·ETA, 기본 브라우저/Android 실기 네트워크, 기기 간 동기화와 제출 영상은 남아 있다. 실제 ETA decoder는 단위·범위 확인 전 값을 거절하며 오류를 샘플 ETA로 대체하지 않는다. 일반 Android도 차량 상태 미확인이면 잠기며 상태 우회 기능은 없다.
+
+공식1차 접수양식은 필수이고 영상/GitHub/APK는 전체 제출에서 선택 자료다. GitHub 제출을 선택할 경우 실행 가능한 release APK와 심사 접근 권한이 요구된다. 현재 sampleDebug 전달과 이를 구분하며 공식 안내에 없는 새 인증서 종류를 의무로 가정하지 않는다. main 병합·접수·공유 권한 변경은 수행하지 않았다.
+
+[41개 입력 목록](validation/sources-v2/android-input-sha256.txt)과 [현재 문서 검토본의 입력 동일성](validation/sources-v2/docs-only-input-check.json)을 함께 확인한다. 공개 API35 모델 검사는 저장소 루트에서 `JAVA_HOME=/path/to/jdk17 sh validation/sources-v2/verify-model.sh /path/to/android-all-api35.jar`로 재현한다. compile-only R 검사는 APK·기기 실행을 대신하지 않는다. 초기 기록은 [과거 통합](integration-notes.md)과 [초기 Astra 기록](review-notes.md)에 보존한다.

@@ -1,6 +1,6 @@
 # 도착 전에 · 차량 앱
 
-차량 UX 제한이 해제된 상태에서 예시 콘텐츠를 편성하는 프로토타입입니다. `sample`은 샘플 경로로 실행할 수 있고, `pleos`는 NaviHelper 3.0.5 연결 후보입니다. **실제 ETA 연동은 아직 완료되지 않았습니다.** Pleos Maven 접근이 차단됐고 `DestinationInfo.remainTime`의 단위·유효 범위를 확인하지 못해 실제 값 변환을 차단했습니다. 실제 SDK 콜백·Connect 실행 성공으로 소개하면 안 됩니다.
+차량 UX 제한이 해제된 상태에서 사용자가 등록한 출처의 소식과 명시된 예시 콘텐츠를 편성하는 프로토타입입니다. 공통 모델로 출처 추가·사용 여부·순서·저장을 실제 편성·낭독 대본에 반영합니다. `sample`은 샘플 경로로 실행할 수 있고, `pleos`는 NaviHelper 3.0.5 연결 후보입니다. **실제 ETA 연동은 아직 완료되지 않았습니다.** Pleos Maven 접근이 차단됐고 `DestinationInfo.remainTime`의 단위·유효 범위를 확인하지 못해 실제 값 변환을 차단했습니다. 실제 SDK 콜백·Connect 실행 성공으로 소개하면 안 됩니다.
 
 ## 빌드
 
@@ -18,7 +18,7 @@ APK: `app/build/outputs/apk/sample/debug/app-sample-debug.apk`
 테스트: `app/build/reports/tests/testSampleDebugUnitTest/index.html`
 lint: `app/build/reports/lint-results-sampleDebug.html`
 
-`assembleDebug`는 두 flavor를 모두 빌드하므로 Pleos 저장소 접근도 필요합니다. SDK가 없는 환경에서는 반드시 `assembleSampleDebug`를 사용합니다. 샘플 APK에는 Pleos SDK나 내비 조회 권한이 들어가지 않습니다. 실제 연결 후보는 `sh ./gradlew :app:assemblePleosDebug`로 별도 빌드하며 패키지는 `com.beforearrival.briefing`입니다. 이 후보는 실제 AAR 컴파일과 API 시그니처 검증이 남아 있습니다.
+`assembleDebug`는 두 flavor를 모두 빌드하므로 Pleos 저장소 접근도 필요합니다. Pleos SDK가 없는 환경에서는 `assembleSampleDebug`만 선택합니다. 이 샘플 빌드에도 Android SDK는 필요합니다. 샘플 APK에는 Pleos SDK나 내비 조회 권한이 들어가지 않습니다. 실제 연결 후보는 `sh ./gradlew :app:assemblePleosDebug`로 별도 빌드하며 패키지는 `com.beforearrival.briefing`입니다. 이 후보는 실제 AAR 컴파일과 API 시그니처 검증이 남아 있습니다.
 
 ## 동작과 제한
 
@@ -29,7 +29,11 @@ lint: `app/build/reports/lint-results-sampleDebug.html`
 - 실제 연결은 초기화 뒤 조회하고, 정상 수신 후 5초 간격으로 다시 조회하는 후보입니다. 각 조회의 응답 대기 상한은 10초입니다. SDK 초기화 콜백은 지속적인 서비스 연결 감시가 아니므로 조용한 서비스 단절은 즉시 확인할 수 없고 다음 조회의 오류/시간 초과에서 무효화합니다. 취소·목적지 변경 뒤에는 세션을 닫고 명시적으로 다시 연결합니다.
 - 화면과 음성은 전경 상태이고 `CarUxRestrictions`가 사용을 허용할 때만 열립니다. 제한 또는 미확인 상태는 화면·대본·대화상자·TTS를 차단합니다. **일반 Android 기기도 차량 상태가 미확인이므로 잠깁니다.** 테스트의 상태 주입은 배포 APK에 조작 우회 기능을 추가하지 않습니다.
 - TTS는 설치된 오프라인 한국어 음성만 선택하고 MEDIA/SPEECH 포커스를 얻은 뒤 시작합니다. 포커스 거부 시 발화하지 않으며 손실, 중단, 오류, 완료, 일시정지, 해제 시 포커스를 반납합니다. 포커스 복귀로 자동 재생하지 않습니다.
-- 출처·우선순위·저장은 이 기기의 앱 저장소에 보관합니다. 휴대폰 동기화와 외부 콘텐츠 연결은 구현하지 않았습니다.
+- 출처·순서·저장은 이 Android 앱에만 보관하며 브라우저/다른 기기와 동기화하지 않습니다. 공식 원문 스냅샷3개와 Steam 공식 갱신 클라이언트를 구현했습니다. Steam의 실제 HTTPS→동일 브라우저 함수/모델→저장 경로는 curl 기반 fetcher로 검증했으며, 이 Android 앱의 실제 네트워크 실행은 미검증입니다.
+
+## 전달 APK와 현재 검증
+
+고정 소스 `27d297b`의 sampleDebug APK는 artifact `9bef7b49a0b88154d1f57fea8d8de47eb0df8554`에 전달됐고 독립 원격 다운로드·해시·기존 debug 인증서 v2 서명을 확인했습니다. Android JVM24건 전부 통과, sample assembly/core 통과, lint0오류/3경고입니다. [APK 링크와 전체 검증 범위](../sources-notes.md)를 확인합니다. 문서만 갱신한 검토본도 동일한41개 입력을 유지하며 새 문서 커밋에서 APK를 빌드했다고 소개하지 않습니다. 실제 설치·음성·차량 callback·release 검증은 별도입니다.
 
 ## Pleos 연결을 완료하려면
 
