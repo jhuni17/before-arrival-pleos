@@ -33,7 +33,7 @@ lint: `app/build/reports/lint-results-sampleDebug.html`
 
 ## 전달 APK와 현재 검증
 
-고정 소스 `27d297b`의 sampleDebug APK는 artifact `9bef7b49a0b88154d1f57fea8d8de47eb0df8554`에 전달됐고 독립 원격 다운로드·해시·기존 debug 인증서 v2 서명을 확인했습니다. Android JVM24건 전부 통과, sample assembly/core 통과, lint0오류/3경고입니다. [APK 링크와 전체 검증 범위](../sources-notes.md)를 확인합니다. 문서만 갱신한 검토본도 동일한41개 입력을 유지하며 새 문서 커밋에서 APK를 빌드했다고 소개하지 않습니다. 실제 설치·음성·차량 callback·release 검증은 별도입니다.
+고정 소스 `27d297b`의 sampleDebug APK는 artifact `9bef7b49a0b88154d1f57fea8d8de47eb0df8554`에 전달됐고 독립 원격 다운로드·해시·기존 debug 인증서 v2 서명을 확인했습니다. Android JVM24건 전부 통과, sample assembly/core 통과, lint0오류/3경고입니다. [APK 링크와 전체 검증 범위](../sources-notes.md)를 확인합니다. Android 입력을 바꾸지 않은 브라우저·문서 검토본도 동일한41개 입력을 유지하며 새 검토 커밋에서 APK를 빌드했다고 소개하지 않습니다. 실제 설치·음성·차량 callback·release 검증은 별도입니다.
 
 ## Pleos 연결을 완료하려면
 

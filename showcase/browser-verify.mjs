@@ -9,11 +9,12 @@ const executablePath = process.env.CHROMIUM_PATH || "/usr/bin/chromium";
 const evidenceDir = process.env.EVIDENCE_DIR || "evidence";
 await mkdir(evidenceDir, { recursive: true });
 const html = await readFile("before-arrival-showcase.html");
+const servedHtml = html.toString().replace("<head>", '<head><meta name="before-arrival-local-app" content="steam-news-v1">');
 const capturedSteam = JSON.parse(await readFile("../shared/evidence/steam-real-response.json", "utf8"));
 const server = createServer((req, res) => {
   if (req.url?.startsWith("/before-arrival-showcase.html")) {
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-    res.end(html);
+    res.end(servedHtml);
   } else {
     res.writeHead(404);
     res.end();
@@ -35,7 +36,7 @@ const report = {
     htmlSha256: createHash("sha256").update(html).digest("hex"),
     sourceSha256: Object.fromEntries(await Promise.all([
       "examples/before-arrival/index.tsx", "examples/before-arrival/catalog.ts", "../shared/catalog.json", "../shared/evidence/steam-real-response.json",
-      "examples/before-arrival/showcase.css", "browser-verify.mjs", "build.mjs",
+      "examples/before-arrival/showcase.css", "browser-verify.mjs", "build.mjs", "app_server.py",
     ].map(async (path) => [path, createHash("sha256").update(await readFile(path)).digest("hex")]))),
     originalInputs: ["479db2bc4e55bd58e9cda1f9408ea294e1c8ebf3", "3ff697d261e417fa6a2ff18ddcb91ebd83c32a6a"],
   },
@@ -50,7 +51,7 @@ const context = await browser.newContext({
 const page = await context.newPage();
 page.on("pageerror", (error) => errors.push(error.message));
 page.on("request", (request) => {
-  if (!request.url().startsWith(base) && !request.url().startsWith("data:"))
+  if (!request.url().startsWith(new URL(base).origin + "/") && !request.url().startsWith("data:"))
     externalRequests.push(request.url());
 });
 async function open(query = "state=opening") {
@@ -258,7 +259,8 @@ try {
   await page.getByRole("button",{name:"출처 추가",exact:true}).click();
   let phase="valid",releasePending;
   const fixture={gid:"123",title:"Fixture official update",url:"https://steamcommunity.com/games/dota2/announcements/detail/123",contents:"<p>Fixture test only, not retrieved public news.</p>",date:1793870400,feedname:"steam_community_announcements"};
-  await page.route("https://api.steampowered.com/**",async route=>{
+  const steamRoute = url => url.origin === new URL(base).origin && url.pathname === "/api/steam-news";
+  await page.route(steamRoute,async route=>{
     if(phase==="fail")return route.fulfill({status:403,body:"Denied fixture"});
     if(phase==="captured")return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify(capturedSteam)});
     if(phase==="malformed")return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({appnews:{appid:570,newsitems:[{...fixture,title:""}]}})});
@@ -300,7 +302,7 @@ try {
   await page.getByRole("button",{name:"04 도착",exact:true}).click();
   assert.equal(await page.locator(".saved-article").filter({hasText:"Inside the Trove of Terror"}).locator("a").getAttribute("href"),"https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1846018067924633");
   report.checks.push("Captured real HTTP200 Steam response REPLAY via intercepted network:5 exact CDN records accepted, user ordering selects real title, 4-minute deadline retained, save/reload preserves CDN original,390px both themes audited. This is NOT a live browser network success.");
-  await page.unroute("https://api.steampowered.com/**");
+  await page.unroute(steamRoute);
   report.checks.push("Intercepted Steam fixtures only: official-schema items deduped, failed refresh preserves lastSuccess/items, empty success clears content, disabled-source late response discarded. This is NOT a real public fetch.");
   await page.evaluate(()=>localStorage.clear());await open("state=priority");
   assert.match(await page.locator("h1").innerText(),/9시 팀 회의/);
@@ -378,9 +380,9 @@ try {
     "Actual Stage timeline: 18-minute game → simulated save without localStorage mutation → 4-minute meeting → arrival phone.",
   );
   assert.deepEqual(errors, []);
-  assert(externalRequests.every(url=>url.startsWith("https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/")), "Only the explicit official Steam fetch is permitted");
+  assert.deepEqual(externalRequests, [], "The browser must use only its same-origin app endpoint");
   report.checks.push(
-    "No browser page errors. Offline font/code embedded. External requests are only explicit Steam runtime-path fixtures; no cookies/credentials or unrelated requests.",
+    "No browser page errors. Offline font/code embedded. Browser requests remain same-origin; Steam endpoint fixtures are intercepted locally, with no credentials or unrelated requests.",
   );
   await writeFile(
     `${evidenceDir}/browser-report.json`,

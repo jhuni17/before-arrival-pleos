@@ -1,0 +1,10 @@
+{
+  "apkBuiltFromSource": "27d297b2981826be52ee360c21c999379c82f776",
+  "artifactCommit": "9bef7b49a0b88154d1f57fea8d8de47eb0df8554",
+  "apkInputCount": 41,
+  "allInputsByteIdentical": true,
+  "androidOrSharedAssetChanges": false,
+  "browserServerChanges": true,
+  "apkRebuiltForThisChange": false,
+  "verification": "All41 current input bytes compared with manifest and gitshow27 bytes. Browser/server changes do not alter APK inputs."
+}

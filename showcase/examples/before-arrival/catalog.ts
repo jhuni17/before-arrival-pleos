@@ -76,7 +76,13 @@ export function planRegistry(remainingSeconds:number|null,observedAt:string,sour
 export function saveItem(state:Registry,item:ContentItem):Registry {
   return {...state,savedItems:deduplicate([...state.savedItems,item])};
 }
+export function localSteamConnectionAvailable():boolean {
+  return typeof document!=="undefined"&&typeof location!=="undefined"&&location.protocol==="http:"
+    &&["127.0.0.1","localhost"].includes(location.hostname)
+    &&document.querySelector('meta[name="before-arrival-local-app"]')?.getAttribute("content")==="steam-news-v1";
+}
 export function statusText(source:RegisteredSource) {
+  if(source.provider==="steam"&&typeof document!=="undefined"&&!localSteamConnectionAvailable()) return source.items.length?"보관한 소식만 표시 · 앱 실행 안내 확인":"새 소식 연결은 앱 실행 안내를 확인해 주세요";
   if(source.refreshError) return source.items.length?"갱신 실패 · 이전 소식 보관 중":"소식을 가져오지 못했어요";
   if(source.status==="connected") return source.items.length?"공식 소식 연결":"새 소식 없음";
   if(source.status==="connected_snapshot") return "가져온 공식 소식 · 자동 갱신 아님";
@@ -139,7 +145,11 @@ export async function refreshSteam(source:RegisteredSource,signal:AbortSignal,fe
   if(source.provider!=="steam") throw new Error("이 출처는 자동 갱신을 지원하지 않아요.");
   const id=source.registrationUrl?.match(/\/(?:app|news\/app)\/([0-9]+)/)?.[1];
   if(!id||!Number.isSafeInteger(Number(id))||Number(id)<1||Number(id)>4294967295) throw new Error("게임 주소를 확인해 주세요.");
-  const url=`https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${id}&count=5&maxlength=600&format=json&feeds=steam_community_announcements`;
+  const inBrowser=typeof document!=="undefined";
+  if(inBrowser&&!localSteamConnectionAvailable()) throw new Error("앱 실행 안내대로 열어 주세요. 보관한 내용은 그대로예요.");
+  const url=inBrowser
+    ? new URL(`/api/steam-news?appid=${id}`,location.origin).href
+    : `https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${id}&count=5&maxlength=600&format=json&feeds=steam_community_announcements`;
   const response=await fetcher(url,{signal,redirect:"error",credentials:"omit",referrerPolicy:"no-referrer",cache:"no-store"});
   if(!response.ok) throw new Error("새 소식을 가져오지 못했어요.");
   const reader=response.body?.getReader();if(!reader) throw new Error("소식이 비어 있어요.");

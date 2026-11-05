@@ -1,0 +1,6 @@
+
+> verify
+> node verify.mjs
+
+PASS: shared catalog, legacy migration, add/order/enable→ETA plan,3 official snapshots provenance,date precision,local saved dedup,official URL allowlist,runtime Steam fixture dedup/failure/empty/size bounds. Fixtures do not establish live connection.
+PASS: captured real Steam HTTP200 response replay:5 official CDN articles → ordered 18-minute briefing → 4-minute schedule priority → saved/reload original URL; strict host/path/gid/uint64/response+item-appid negatives. Replay is not live browser refresh.

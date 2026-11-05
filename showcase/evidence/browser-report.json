@@ -1,18 +1,19 @@
 {
-  "createdAt": "2026-11-05T13:00:08.669Z",
+  "createdAt": "2026-11-05T14:25:44.463Z",
   "browser": "155.0.8059.79",
   "provenance": {
-    "gitHeadAtRun": "df7b545fb6ef8b3531b4e55718626086e73a93c0",
+    "gitHeadAtRun": "2022e1f25019adcc0954a74b0eb3c74207fb665a",
     "workingTreeDirtyAtRun": true,
-    "htmlSha256": "43eb0a170aecd2229440ca22fb1d7da07372d96271555afada2728f7783766e0",
+    "htmlSha256": "fa376e97dfcc068261f7ab22defed48ea7dde77500c9fbedab9534b8f55cc6e4",
     "sourceSha256": {
-      "examples/before-arrival/index.tsx": "98841d9316d8ad88d371c0e29e9bdbacd4dc7a5c16d18b803d623a20980ac230",
-      "examples/before-arrival/catalog.ts": "24e5f183708ce51a83cc81faf71f420334a9f0ddaff157752494fabd4e3d3003",
+      "examples/before-arrival/index.tsx": "ce0ec3a00d1229beaf12a650309f76e840fac4b909b711b520ff4bbdb5d3844a",
+      "examples/before-arrival/catalog.ts": "9a7562590bfd11822af8446b954e740b95b405c4ea58de3ae8c3b172860ef398",
       "../shared/catalog.json": "47ad03885c746770d381f2bcdcbbbde9f9e9bf1394df220133e082b029982595",
       "../shared/evidence/steam-real-response.json": "bb56f7c09dbbf4f0cba6862ad5f8d9719ff46a7d3f661d26a524fad869c92d5b",
       "examples/before-arrival/showcase.css": "e816ba9f5e319370ec7b64aa6208d9e4b742a23b5fb0ebeabe7c40a9b834ecd1",
-      "browser-verify.mjs": "621c45cd1b7847898fca27a0ca372da0d0383f942171138d5fd98951582bf0b9",
-      "build.mjs": "57e366d10188d952c46179169d129e84d34de8491cc17f4e29c2450e58a0160a"
+      "browser-verify.mjs": "b32526a7558e6e5df6bcf52b2a5562f204a91962210393e0204503f31a84f1e2",
+      "build.mjs": "57e366d10188d952c46179169d129e84d34de8491cc17f4e29c2450e58a0160a",
+      "app_server.py": "7bdd9b97b59664a5505e1c63c8d0dfc047a0ed611c9846fe44d4ef953210513c"
     },
     "originalInputs": [
       "479db2bc4e55bd58e9cda1f9408ea294e1c8ebf3",
@@ -167,7 +168,7 @@
           "ratio": 8.81
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -348,7 +349,7 @@
           "ratio": 8.81
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -565,7 +566,7 @@
           "ratio": 15.25
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -738,7 +739,7 @@
           "ratio": 8.81
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -774,7 +775,7 @@
           "ratio": 15.25
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -947,7 +948,7 @@
           "ratio": 8.81
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -983,7 +984,7 @@
           "ratio": 15.25
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -1224,7 +1225,7 @@
           "ratio": 8.81
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -1401,7 +1402,7 @@
           "ratio": 8.81
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -1614,7 +1615,7 @@
           "ratio": 15.25
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -1783,7 +1784,7 @@
           "ratio": 8.81
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -1819,7 +1820,7 @@
           "ratio": 15.25
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -1988,7 +1989,7 @@
           "ratio": 8.81
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -2024,7 +2025,7 @@
           "ratio": 15.25
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -2301,7 +2302,7 @@
           "ratio": 15.25
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -2470,7 +2471,7 @@
           "ratio": 8.81
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -2506,7 +2507,7 @@
           "ratio": 15.25
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -2675,7 +2676,7 @@
           "ratio": 8.81
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -2711,7 +2712,7 @@
           "ratio": 15.25
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -2992,7 +2993,7 @@
           "ratio": 15.25
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -3173,7 +3174,7 @@
           "ratio": 7.17
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -3354,7 +3355,7 @@
           "ratio": 7.17
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -3571,7 +3572,7 @@
           "ratio": 17.44
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -3744,7 +3745,7 @@
           "ratio": 7.17
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -3780,7 +3781,7 @@
           "ratio": 17.44
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -3953,7 +3954,7 @@
           "ratio": 7.17
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -3989,7 +3990,7 @@
           "ratio": 17.44
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -4230,7 +4231,7 @@
           "ratio": 7.17
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -4407,7 +4408,7 @@
           "ratio": 7.17
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -4620,7 +4621,7 @@
           "ratio": 17.44
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -4789,7 +4790,7 @@
           "ratio": 7.17
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -4825,7 +4826,7 @@
           "ratio": 17.44
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -4994,7 +4995,7 @@
           "ratio": 7.17
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -5030,7 +5031,7 @@
           "ratio": 17.44
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -5307,7 +5308,7 @@
           "ratio": 17.44
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -5476,7 +5477,7 @@
           "ratio": 7.17
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -5512,7 +5513,7 @@
           "ratio": 17.44
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -5681,7 +5682,7 @@
           "ratio": 7.17
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -5717,7 +5718,7 @@
           "ratio": 17.44
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -5998,7 +5999,7 @@
           "ratio": 17.44
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -6215,7 +6216,7 @@
           "ratio": 15.25
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -6428,7 +6429,7 @@
           "ratio": 15.25
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -6645,7 +6646,7 @@
           "ratio": 17.44
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -6858,7 +6859,7 @@
           "ratio": 17.44
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -7039,7 +7040,7 @@
           "ratio": 8.81
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -7075,7 +7076,7 @@
           "ratio": 15.25
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -7344,7 +7345,7 @@
           "ratio": 7.17
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -7380,7 +7381,7 @@
           "ratio": 17.44
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -7765,7 +7766,7 @@
           "ratio": 15.25
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -8062,7 +8063,7 @@
           "ratio": 17.44
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
         {
@@ -8235,7 +8236,7 @@
           "ratio": 8.81
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -8271,7 +8272,7 @@
           "ratio": 15.25
         },
         {
-          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "text": "현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
         {
@@ -8312,6 +8313,6 @@
     "Storage denial never reports a successful settings/save write.",
     "Reduced motion starts and remains at final poster; manual frames remain selectable.",
     "Actual Stage timeline: 18-minute game → simulated save without localStorage mutation → 4-minute meeting → arrival phone.",
-    "No browser page errors. Offline font/code embedded. External requests are only explicit Steam runtime-path fixtures; no cookies/credentials or unrelated requests."
+    "No browser page errors. Offline font/code embedded. Browser requests remain same-origin; Steam endpoint fixtures are intercepted locally, with no credentials or unrelated requests."
   ]
 }

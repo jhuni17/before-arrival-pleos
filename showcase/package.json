@@ -5,7 +5,10 @@
   "scripts": {
     "build": "node build.mjs",
     "verify": "node verify.mjs",
-    "verify:browser": "node browser-verify.mjs"
+    "verify:browser": "node browser-verify.mjs",
+    "serve": "python3 app_server.py",
+    "verify:server": "python3 -m unittest -v test_app_server.py",
+    "verify:local-app": "node local-app-browser-verify.mjs"
   },
   "dependencies": {
     "react": "18.3.1",

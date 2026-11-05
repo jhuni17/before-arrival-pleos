@@ -1,6 +1,6 @@
 # 사용자 출처 기능과 검증 기록
 
-2026-11-05 확인. 구현·APK의 고정 소스는 `27d297b2981826be52ee360c21c999379c82f776`, 전달 artifact 커밋은 `9bef7b49a0b88154d1f57fea8d8de47eb0df8554`다. 이후 문서만 갱신한 검토 커밋은 아래41개 APK 입력과 동일하며, APK를 새 문서 커밋에서 다시 빌드했다고 소개하지 않는다.
+2026-11-05 확인. 구현·APK의 고정 소스는 `27d297b2981826be52ee360c21c999379c82f776`, 전달 artifact 커밋은 `9bef7b49a0b88154d1f57fea8d8de47eb0df8554`다. 이후 문서와 브라우저 로컬 앱 서버를 갱신한 검토본도 아래41개 APK 입력과 동일하다. APK를 새 검토 커밋에서 다시 빌드했다고 소개하지 않는다. 브라우저 서버 수정은 별도 검증 대상이다.
 
 ## 현재 동작
 
@@ -35,7 +35,11 @@ LoL26.22·Valorant13.09·메이플1.2.420 세 건은 공식 원문에서 연구 
 
 Steam은 공개 공식 query의 실제 전송과 앱 함수·모델·저장을 별도로 검증했다. Steam 허용 실행 환경에서 기존 프록시·CA·TLS를 유지한 실제 HTTPS 요청2건이 CONNECT200/HTTP200/TLS검증0을 반환했다. **curl 기반 fetcher가 전송만 담당하고 소스27의 변경 없는 `refreshSteam`→파서→`applyFeed`→중복 제거 저장→디스크 `readRegistry`가5개 항목을 처리했다.** Steam만 켜면18분에30초 항목1개를 선택하고4개를 보류하며, 4분12초 예산에서는5개 모두 보류했다. 이는 한 제공자의 실제 네트워크→모델→저장 연동 근거다.
 
-같은 외부 환경의 Chromium API 최상위 탐색도 HTTP200/JSON5건을 받았다. 그러나 애플리케이션 문서 로딩이 프록시 경로에서 먼저 막혀 **기본 브라우저 fetch를 통한 사용자 갱신→실제 네트워크→UI·저장·재로드는 미검증**이다. Android 앱의 실제 네트워크 fetch도 실행하지 않았다. API 최상위 탐색 응답만으로 CORS 성공이나 실패를 단정하지 않는다. 기존 통합 실행 환경은 이전 정책의403이므로 환경별 결과를 섞지 않는다.
+같은 외부 환경의 Chromium API 최상위 탐색은 HTTP200/JSON5건을 받았다. 이후 실제 UI 문서도 HTTP200으로 열렸으나 기본 브라우저 fetch의 Steam 응답은 HTTP200·Access-Control-Allow-Origin 부재로 CDP `MissingAllowOriginHeader`/`net::ERR_FAILED`가 발생했고, UI 오류와 항목0이 저장되는 **실제 CORS 결함**을 확인했다. 이는 앞선 문서 로딩 차단/당시 CORS 미검증 기록을 갱신한다.
+
+이를 해결하기 위해 `python3 showcase/app_server.py`로 시작하는127.0.0.1 전용 앱 서버를 추가했다. 기존 HTML과 같은 출처의 고정 Steam 조회만 제공하고, appid 이외의 URL·헤더·자격증명을 받거나 전달하지 않는다. 공식 HTTPS·기존 프록시/CA/TLS·리다이렉트 금지·시간/크기 제한을 유지한다. Host·Origin 검증으로 외부 페이지 접근을 막으며 CORS를 끄거나 공개 프록시를 쓰지 않는다. 서버가 제공한 HTML만 같은 출처의 조회를 사용하고, 단독 HTML은 갱신 실행 안내를 표시한다.
+
+서버30건 검사와 실제 로컬 서버를 통한 브라우저 갱신→5개 캡처 항목→저장/재로드/ETA 검사에 통과했다. 이는 서버의 상류 응답을 테스트에서 주입한 **재생 검사**다. **새 서버를 통한 실제 Steam UI 네트워크 성공은 아직 외부 재검증이 필요하다.** Android 앱의 실제 네트워크 fetch도 실행하지 않았다. 기존 통합 실행 환경의 이전 정책403과 Steam이 허용된 외부 환경을 구분한다.
 
 [캡처한 실제 응답](shared/evidence/steam-real-response.json)과 [그 조회 출처](shared/evidence/steam-real-response-meta.json)는 12:47~12:50UTC의 앞선 기록이다. 양쪽 파서 및 실제 브라우저 UI에서 이를 재생한 검사도 있으며, 재생과 이후 실제 전송 검사를 구분한다. 브라우저의 응답 주입은 실제 네트워크 성공이 아니다.
 
@@ -45,10 +49,17 @@ YouTube·치지직·카페는 연결 설정 필요, SOOP·디시·에펨코리�
 
 ## 독립 검수와 남은 범위
 
-Astra는 정확 소스27와 artifact9bef에 대해 **소스 통합 및 전달된 sampleDebug 프로토타입 범위에서 수용 가능**, 확인된 필수 수정사항 없음으로 판정했다. 여기에는 독립 APK 다운로드·서명·입력 대응과 빌더의24건 통과 기록 검토가 포함된다. 공개 API35 Java 컴파일·60개 모델 assertion, 실제 응답5건 및 양쪽 파서18개 부정 사례도 독립 확인했다. [브라우저37캡처·14동작 검사](validation/sources-v2/browser.txt)는 주야간·작은 화면·확대·등록/정렬/저장/재로드/마이그레이션/제한을 다루며 최소 대비5.95:1, 수평 넘침·잘림·page error가 없었다. [보고서](showcase/evidence/browser-report.json)의 소스·HTML 해시가 당시 검사 바이트를 고정한다.
+Astra는 CORS 결함을 확인하기 전의 정확 소스27와 artifact9bef에 대해 **소스 통합 및 전달된 sampleDebug 프로토타입 범위에서 수용 가능**, 당시 확인된 필수 수정사항 없음으로 판정했다. 이후 확인한 브라우저 CORS 결함과 새 로컬 앱 서버는 이 이전 판정에 포함되지 않으며 새 검토가 필요하다. 여기에는 독립 APK 다운로드·서명·입력 대응과 빌더의24건 통과 기록 검토가 포함된다. 공개 API35 Java 컴파일·60개 모델 assertion, 실제 응답5건 및 양쪽 파서18개 부정 사례도 독립 확인했다. [브라우저37캡처·14동작 검사](validation/sources-v2/browser.txt)는 주야간·작은 화면·확대·등록/정렬/저장/재로드/마이그레이션/제한을 다루며 최소 대비5.95:1, 수평 넘침·잘림·page error가 없었다. [보고서](showcase/evidence/browser-report.json)의 소스·HTML 해시가 당시 검사 바이트를 고정한다.
 
-이 판정은 최종 출품·release·실차 승인이 아니다. sampleDebug는 release 제출물이 아니다. 실제 기기/에뮬레이터 설치, 한국어 소리, 차량 포커스/제한 callback, 실제 Pleos SDK·ETA, 기본 브라우저/Android 실기 네트워크, 기기 간 동기화와 제출 영상은 남아 있다. 실제 ETA decoder는 단위·범위 확인 전 값을 거절하며 오류를 샘플 ETA로 대체하지 않는다. 일반 Android도 차량 상태 미확인이면 잠기며 상태 우회 기능은 없다.
+이 판정은 최종 출품·release·실차 승인이 아니다. sampleDebug는 release 제출물이 아니다. 실제 기기/에뮬레이터 설치, 한국어 소리, 차량 포커스/제한 callback, 실제 Pleos SDK·ETA, 수정한 서버의 실제 브라우저 UI 네트워크/Android 실기 네트워크, 기기 간 동기화와 제출 영상은 남아 있다. 실제 ETA decoder는 단위·범위 확인 전 값을 거절하며 오류를 샘플 ETA로 대체하지 않는다. 일반 Android도 차량 상태 미확인이면 잠기며 상태 우회 기능은 없다.
 
 공식1차 접수양식은 필수이고 영상/GitHub/APK는 전체 제출에서 선택 자료다. GitHub 제출을 선택할 경우 실행 가능한 release APK와 심사 접근 권한이 요구된다. 현재 sampleDebug 전달과 이를 구분하며 공식 안내에 없는 새 인증서 종류를 의무로 가정하지 않는다. main 병합·접수·공유 권한 변경은 수행하지 않았다.
 
-[41개 입력 목록](validation/sources-v2/android-input-sha256.txt)과 [현재 문서 검토본의 입력 동일성](validation/sources-v2/docs-only-input-check.json)을 함께 확인한다. 공개 API35 모델 검사는 저장소 루트에서 `JAVA_HOME=/path/to/jdk17 sh validation/sources-v2/verify-model.sh /path/to/android-all-api35.jar`로 재현한다. compile-only R 검사는 APK·기기 실행을 대신하지 않는다. 초기 기록은 [과거 통합](integration-notes.md)과 [초기 Astra 기록](review-notes.md)에 보존한다.
+[41개 입력 목록](validation/sources-v2/android-input-sha256.txt)과 [현재 브라우저 서버 검토본의 APK 입력 동일성](validation/local-app-server/apk-input-identity.json)을 함께 확인한다. 공개 API35 모델 검사는 저장소 루트에서 `JAVA_HOME=/path/to/jdk17 sh validation/sources-v2/verify-model.sh /path/to/android-all-api35.jar`로 재현한다. compile-only R 검사는 APK·기기 실행을 대신하지 않는다. 초기 기록은 [과거 통합](integration-notes.md)과 [초기 Astra 기록](review-notes.md)에 보존한다.
+
+
+## 로컬 앱 실행과 검사
+
+[실행 안내](README.md)를 따라 기본 `http://127.0.0.1:8765`를 사용한다. 출처·저장은 이 주소의 브라우저에서만 유지되며 파일 주소·다른 호스트명/포트와 자동 이관하지 않는다. 이전 저장소는 읽거나 삭제하지 않는다. 서버는 `--port`로 로컬 포트만 바꿀 수 있고 외부 주소 바인딩 옵션은 없다.
+
+소스를 수정했다면 `cd showcase && npm ci && npm run build` 후 실행한다. `npm run verify:server`는 상류를 모형으로 대체한 endpoint/전송 오류 검사를, `npm run verify:local-app`은 실제 로컬 서버와 브라우저에서 캡처한 응답을 재생하는 검사를 수행한다. 실제 API 결과와 이 검사들을 혼동하지 않는다. 근거는 [서버 검사](validation/local-app-server/server-tests.txt)와 [로컬 앱 브라우저 검사](validation/local-app-server/local-app-browser-report.json)에 있다.

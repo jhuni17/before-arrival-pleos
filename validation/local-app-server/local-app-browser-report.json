@@ -1,0 +1,17 @@
+{
+  "checkedAt": "2026-11-05T14:24:34.337Z",
+  "htmlSha256": "fa376e97dfcc068261f7ab22defed48ea7dde77500c9fbedab9534b8f55cc6e4",
+  "server": "actual app_server.py bound127.0.0.1",
+  "upstream": "captured real5-item response injected at server fetcher for this offline test; NO live upstream network",
+  "browserRequestInterception": false,
+  "sameOriginUserRefreshes": 4,
+  "acceptedItems": 5,
+  "saveReloadOriginalPreserved": true,
+  "urgentSchedulePreserved": true,
+  "duplicateRefreshDedup": true,
+  "failedRefreshPreservesCache": true,
+  "emptySuccessClearsItemsButKeepsSaved": true,
+  "standaloneRefreshDisabledWithGuidance": true,
+  "externalBrowserRequests": 0,
+  "pageErrors": []
+}

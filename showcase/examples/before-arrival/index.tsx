@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Stage } from "../../kit/stage";
 import type { Act } from "../../kit/act";
-import { providers,defaults,registryKey,readRegistry,addSource,moveSource,toggleSource,planRegistry,saveItem,statusText,sourceName,refreshSteam,applyFeed,officialUrl,type Registry,type ContentItem,type RegisteredSource } from "./catalog";
+import { providers,defaults,registryKey,readRegistry,addSource,moveSource,toggleSource,planRegistry,saveItem,statusText,sourceName,refreshSteam,applyFeed,officialUrl,localSteamConnectionAvailable,type Registry,type ContentItem,type RegisteredSource } from "./catalog";
 import "./showcase.css";
 export type Frame = "opening"|"saved"|"priority"|"arrived"|"settings"|"restricted"|"unknown";
 export type Scene = {frame:Frame};
@@ -47,7 +47,7 @@ function Vehicle({frame,state,save,long}:{frame:Frame;state:Registry;save:(item:
       return <article className="deferred-card" key={item.originalUrl||item.sourceId+item.id}><span className="category">{sourceName(state,item)}</span><h3>{item.title}</h3><Published item={item}/><button className="deferred-save" aria-label={`${item.title} 나중에 보기 저장`} disabled={saved} onClick={()=>save(item)}>{saved?"이 브라우저에 저장됨":"나중에 보기로 저장"}</button></article>;
      })}</section>}
     </section>
-   </div><div className="app-boundary">이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨</div>
+   </div><div className="app-boundary">현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨</div>
   </div><div className="system-nav" aria-label="시스템 내비게이션 예시"><span>앱 라이브러리</span><span>내비게이션</span><span>공조 22°</span><small>시스템 GNB 예시</small></div>
  </section>;
 }
@@ -57,7 +57,7 @@ function SourceSettings({state,update,refresh,busy}:{state:Registry;update:(next
   <label className="source"><span>{source.name}</span><input type="checkbox" aria-label={`${source.name} 사용`} checked={source.enabled} onChange={e=>update(toggleSource(state,source.id,e.target.checked))}/></label>
   <p className="source-status">{statusText(source)}{source.lastSuccessAt&&<><br/>마지막 확인 {source.lastSuccessAt}</>}</p>
   {source.items[0]?.fetchedAt&&source.status==="connected_snapshot"&&<p className="source-status">확인 {source.items[0].fetchedAt}</p>}
-  <div className="source-actions"><button disabled={index===0} aria-label={`${source.name} 위로`} onClick={()=>update(moveSource(state,source.id,-1))}>위로</button><button disabled={index===state.sources.length-1} aria-label={`${source.name} 아래로`} onClick={()=>update(moveSource(state,source.id,1))}>아래로</button>{source.provider==="steam"&&<button disabled={!source.enabled||busy.includes(source.id)} aria-label={`${source.name} 새 소식 확인`} onClick={()=>refresh(source)}>{busy.includes(source.id)?"확인 중…":"새 소식 확인"}</button>}</div>
+  <div className="source-actions"><button disabled={index===0} aria-label={`${source.name} 위로`} onClick={()=>update(moveSource(state,source.id,-1))}>위로</button><button disabled={index===state.sources.length-1} aria-label={`${source.name} 아래로`} onClick={()=>update(moveSource(state,source.id,1))}>아래로</button>{source.provider==="steam"&&<button disabled={!source.enabled||busy.includes(source.id)||!localSteamConnectionAvailable()} aria-label={`${source.name} 새 소식 확인`} onClick={()=>refresh(source)}>{busy.includes(source.id)?"확인 중…":"새 소식 확인"}</button>}</div>
   {source.registrationUrl&&<a href={source.registrationUrl} target="_blank" rel="noreferrer">등록한 공식 페이지 ↗</a>}
  </li>)}</ol>
  <form className="source-form" onSubmit={e=>{e.preventDefault();try{update(addSource(state,provider,name,url));setError("");}catch(error){setError((error as Error).message);}}}>
@@ -69,7 +69,7 @@ function SourceSettings({state,update,refresh,busy}:{state:Registry;update:(next
  </form></>;
 }
 function Pocket({frame,state,update,refresh,busy}:{frame:Frame;state:Registry;update:(next:Registry)=>void;refresh:(source:RegisteredSource)=>void;busy:string[]}) {
- return <aside className="phone" aria-label={frame==="settings"?"이 브라우저 출처 설정":"이 브라우저 도착 후 확인"}><div className="phone-system">{frame==="settings"?"8:30":"9:00"}<span>휴대폰 모형 · 브라우저에서 동작</span></div><div className="phone-app"><span className="eyebrow">도착 전에</span><h2>{frame==="settings"?"내 출근길 출처":"도착해서 보기"}</h2><p className="local-only">이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨</p>
+ return <aside className="phone" aria-label={frame==="settings"?"이 브라우저 출처 설정":"이 브라우저 도착 후 확인"}><div className="phone-system">{frame==="settings"?"8:30":"9:00"}<span>휴대폰 모형 · 브라우저에서 동작</span></div><div className="phone-app"><span className="eyebrow">도착 전에</span><h2>{frame==="settings"?"내 출근길 출처":"도착해서 보기"}</h2><p className="local-only">현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨</p>
  {frame==="settings"?<SourceSettings state={state} update={update} refresh={refresh} busy={busy}/>:state.savedItems.length?state.savedItems.map(item=><article className="saved-article" key={item.originalUrl||item.sourceId+item.id}><span className="category">{sourceName(state,item)}</span><h3>{item.title}</h3><p>{item.summary}</p><Published item={item}/>{item.originalUrl&&<a href={item.originalUrl} target="_blank" rel="noreferrer">공식 원문 확인 ↗</a>}<button aria-label={`${item.title} 저장 취소`} onClick={()=>update({...state,savedItems:state.savedItems.filter(i=>i!==item)})}>저장 취소</button></article>):<p className="empty-saved">저장한 소식이 없어요. 차량 모형에서 저장 버튼을 누르면 이 브라우저 보관함에 남아요. 자동 시연은 실제 저장을 만들지 않아요.</p>}
  <div className="phone-scope">브라우저 보관함 · 기기 간 동기화 미구현</div></div><div className="phone-home" aria-hidden="true"/></aside>;
 }

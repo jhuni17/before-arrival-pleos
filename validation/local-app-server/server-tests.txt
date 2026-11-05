@@ -1,0 +1,39 @@
+
+> verify:server
+> python3 -m unittest -v test_app_server.py
+
+test_client_disconnect_kills_blocked_upstream (test_app_server.CurlTransportTests.test_client_disconnect_kills_blocked_upstream) ... ok
+test_curl_is_fixed_https_without_shell_redirects_or_tls_bypass (test_app_server.CurlTransportTests.test_curl_is_fixed_https_without_shell_redirects_or_tls_bypass) ... ok
+test_curl_timeout_and_size_errors_are_reported (test_app_server.CurlTransportTests.test_curl_timeout_and_size_errors_are_reported) ... ok
+test_deadline_kills_blocked_upstream (test_app_server.CurlTransportTests.test_deadline_kills_blocked_upstream) ... ok
+test_streaming_byte_cap_kills_upstream (test_app_server.CurlTransportTests.test_streaming_byte_cap_kills_upstream) ... ok
+test_transport_rejects_redirect_and_failed_tls_metadata (test_app_server.CurlTransportTests.test_transport_rejects_redirect_and_failed_tls_metadata) ... ok
+test_unavailable_curl_has_a_safe_bridge_error (test_app_server.CurlTransportTests.test_unavailable_curl_has_a_safe_bridge_error) ... ok
+test_api_uses_only_appid_and_returns_valid_empty_news (test_app_server.LocalServerTests.test_api_uses_only_appid_and_returns_valid_empty_news) ... ok
+test_arbitrary_paths_and_files_are_unavailable (test_app_server.LocalServerTests.test_arbitrary_paths_and_files_are_unavailable) ... ok
+test_binds_only_ipv4_loopback (test_app_server.LocalServerTests.test_binds_only_ipv4_loopback) ... ok
+test_both_document_routes_have_local_app_marker (test_app_server.LocalServerTests.test_both_document_routes_have_local_app_marker) ... ok
+test_cross_site_fetch_is_rejected_even_without_origin (test_app_server.LocalServerTests.test_cross_site_fetch_is_rejected_even_without_origin) ... ok
+test_foreign_null_and_malformed_origins_never_reach_upstream (test_app_server.LocalServerTests.test_foreign_null_and_malformed_origins_never_reach_upstream) ... ok
+test_host_must_be_loopback_and_actual_bound_port (test_app_server.LocalServerTests.test_host_must_be_loopback_and_actual_bound_port) ... ok
+test_invalid_queries_never_reach_upstream (test_app_server.LocalServerTests.test_invalid_queries_never_reach_upstream) ... ok
+test_localhost_host_is_accepted (test_app_server.LocalServerTests.test_localhost_host_is_accepted) ... ok
+test_only_exact_loopback_origins_on_this_port_are_accepted (test_app_server.LocalServerTests.test_only_exact_loopback_origins_on_this_port_are_accepted) ... ok
+test_post_is_not_an_upstream_proxy (test_app_server.LocalServerTests.test_post_is_not_an_upstream_proxy) ... ok
+test_same_origin_and_navigation_fetches_are_accepted (test_app_server.LocalServerTests.test_same_origin_and_navigation_fetches_are_accepted) ... ok
+test_socket_disconnect_is_visible_to_fetcher (test_app_server.LocalServerTests.test_socket_disconnect_is_visible_to_fetcher) ... ok
+test_upstream_errors_have_json_and_no_cache_or_cors_grant (test_app_server.LocalServerTests.test_upstream_errors_have_json_and_no_cache_or_cors_grant) ... ok
+test_canonical_appids_target_only_fixed_steam_endpoint (test_app_server.SteamInputTests.test_canonical_appids_target_only_fixed_steam_endpoint) ... ok
+test_rejects_noncanonical_out_of_range_and_url_inputs (test_app_server.SteamInputTests.test_rejects_noncanonical_out_of_range_and_url_inputs) ... ok
+test_document_requires_matching_appid_and_bounded_news_array (test_app_server.UpstreamValidationTests.test_document_requires_matching_appid_and_bounded_news_array) ... ok
+test_empty_news_is_a_valid_upstream_result (test_app_server.UpstreamValidationTests.test_empty_news_is_a_valid_upstream_result) ... ok
+test_json_charset_and_fifty_items_are_accepted (test_app_server.UpstreamValidationTests.test_json_charset_and_fifty_items_are_accepted) ... ok
+test_malformed_json_and_invalid_utf8_are_rejected (test_app_server.UpstreamValidationTests.test_malformed_json_and_invalid_utf8_are_rejected) ... ok
+test_non_json_content_types_are_rejected_even_for_json_looking_body (test_app_server.UpstreamValidationTests.test_non_json_content_types_are_rejected_even_for_json_looking_body) ... ok
+test_redirects_and_non_success_statuses_are_rejected (test_app_server.UpstreamValidationTests.test_redirects_and_non_success_statuses_are_rejected) ... ok
+test_response_size_boundary (test_app_server.UpstreamValidationTests.test_response_size_boundary) ... ok
+
+----------------------------------------------------------------------
+Ran 30 tests in 1.209s
+
+OK
