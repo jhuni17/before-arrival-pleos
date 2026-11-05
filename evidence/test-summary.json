@@ -1,0 +1,56 @@
+[
+  {
+    "name": "com.beforearrival.briefing.CatalogTest",
+    "tests": "8",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "4.121",
+    "cases": [
+      "catalogDeduplicatesAcrossSourcesAndUnknownRouteNeverSelectsSample",
+      "migrationRunsOnceAndRetainsEnabledPriorityAndEverySavedEnum",
+      "officialSnapshotRegistrationPlansAndPersistsWithoutFabrication",
+      "officialRuntimeDedupFailureAndEmptyLifecycleKeepsLastSuccess",
+      "dateOnlyOfficialPublicationDoesNotInventTime",
+      "capturedRealCdnFeedReplaysAndRejectsIdentityOrPathChanges",
+      "unsupportedRegistrationRemainsEmptyAndUrlAliasesCannotDuplicate",
+      "parserRejectsOtherAppsUnofficialUrlsAndIgnoresExternalFeeds"
+    ]
+  },
+  {
+    "name": "com.beforearrival.briefing.MainActivityTest",
+    "tests": "9",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "59.011",
+    "cases": [
+      "sampleSelectionRefreshesBudgetAndDeadlineOrderAndPersistsPriority",
+      "restrictedHiddenActionsCannotChangeSourceOrSave",
+      "unknownAndRestrictedHideControlsAndCloseDialog",
+      "savedOfficialArticleOpensExactUrlOnlyWhileAllowed",
+      "injectedRefreshUpdatesCatalogAndRestrictionCancelsLateCallback",
+      "savedItemSurvivesActivityRecreation",
+      "switchingToUnavailableLiveModeNeverFallsBackToSample",
+      "disablingThenReenablingSourceDiscardsItsOldRefresh",
+      "addOfficialSourceThroughFormReordersIntoActualBriefingAndPersists"
+    ]
+  },
+  {
+    "name": "com.beforearrival.briefing.SpeechPlaybackTest",
+    "tests": "7",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.138",
+    "cases": [
+      "focusLossStopsAndNeverRestartsOnGain",
+      "speakFailureAndPrerollErrorReleaseFocus",
+      "focusGrantedThenDoneReleasesTheSameRequest",
+      "oldTtsAndFocusCallbacksCannotStopNewPlayback",
+      "unknownOrRestrictedUseDoesNotRequestFocus",
+      "realTimeBudgetStopsLongSpeech",
+      "deniedFocusDoesNotSpeak"
+    ]
+  }
+]

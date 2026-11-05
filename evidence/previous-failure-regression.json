@@ -1,0 +1,10 @@
+{
+  "previous_source_sha": "df7b545fb6ef8b3531b4e55718626086e73a93c0",
+  "current_source_sha": "27d297b2981826be52ee360c21c999379c82f776",
+  "suite": "com.beforearrival.briefing.MainActivityTest",
+  "test": "savedOfficialArticleOpensExactUrlOnlyWhileAllowed",
+  "result": "passed",
+  "previous_failure": "Null opened Intent at former line 223",
+  "current_contract": "Drain queued AlertDialog callbacks; assert exact ACTION_VIEW URL while allowed; block queued and stale actions after restriction",
+  "actual_device_execution": false
+}
