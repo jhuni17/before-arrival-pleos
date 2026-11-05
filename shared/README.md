@@ -9,6 +9,6 @@
 
 로컬 v2 저장 형식은 `schemaVersion:2/sources/savedItems`이며 Android SharedPreferences `catalog_v2`, 브라우저 localStorage `before-arrival-sources-v2`에 각각 남는다. 구형3출처 선택·우선순위·저장을 한 번 마이그레이션한다. 출처 항목 ID/원문 URL로 중복을 제거하고 실패 때 기존 항목과 마지막 성공 시각을 유지한다. 정상 빈 응답은 빈 목록으로 바꾼다. 예시 항목으로 실패를 채우지 않는다.
 
-출처 상태는 예시, 가져온 공식 스냅샷, 실제 갱신 성공, 설정 필요, 링크 저장으로 구분한다. Steam public GetNewsForApp v2만 실제 실행 경로가 구현됐다. 고정 HTTPS 목적지·공개 appID·응답256KiB·최대50검사/20보관·5~6초 제한·리다이렉트/쿠키/자격증명 금지를 적용한다. 공식 feed 후보 이름의 실제 지원과 성공 응답은 이 환경의403 차단 때문에 검증하지 못했다. 추출한 본문은 원문 발췌이며 한국어 생성 요약이나 실제 발화 실측으로 소개하지 않는다.
+출처 상태는 예시, 가져온 공식 스냅샷, 실제 갱신 성공, 설정 필요, 링크 저장으로 구분한다. Steam public GetNewsForApp v2만 실제 실행 경로가 구현됐다. 고정 HTTPS 목적지·공개 appID·응답256KiB·최대50검사/20보관·5~6초 제한·리다이렉트/쿠키/자격증명 금지를 적용한다. 기존 통합 환경의403과 별개로 새 실행 환경에서 공식 feed의 HTTP200·5개 공지를 확인했다. 실제 관측한 CDN 호스트 `steamstore-a.akamaihd.net`의 `/news/externalpost/steam_community_announcements/<gid>`만 추가 허용하고 응답/항목 appid 및 경로 ID와 gid 일치를 검사한다. 정확한 응답·출처 기록은 evidence/steam-real-response*.json에 있다. 이 통합 환경의 처리는 캡처한 응답의 재생이며 실제 앱 네트워크 성공이 아니다. 추출한 본문은 원문 발췌이며 한국어 생성 요약이나 실제 발화 실측으로 소개하지 않는다.
 
 `evidence/`는 공식 페이지 확인3건과 문서별 기능/제약의 근거다. 연구 도구가 읽은 공식 페이지와 앱 런타임 성공을 구분한다. YouTube·치지직·카페의 필요한 연결 설정, SOOP·게시판의 확인되지 않은 자동 연결 범위는 UI 상태로 안내한다. 세션·쿠키·브라우저 기록·비밀키를 읽거나 동봉하지 않는다.

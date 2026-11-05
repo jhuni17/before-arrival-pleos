@@ -1,1 +1,1 @@
-PASS 39 catalog/Steam fixture assertions (public API35 JVM classes; no SDK/device/runtime feed claim)
+PASS 60 catalog/Steam fixture assertions (public API35 JVM classes; no SDK/device/runtime feed claim)

@@ -53,14 +53,17 @@ final class ContentFeedClient {
         if (response.length() > MAX_BYTES) throw new IllegalArgumentException("응답이 너무 커요.");
         String id = appId(registration);
         JSONObject news = new JSONObject(response).getJSONObject("appnews");
-        if (!id.equals(String.valueOf(news.getLong("appid")))) throw new IllegalArgumentException("게임이 일치하지 않아요.");
+        if (!id.equals(String.valueOf(news.opt("appid")))) throw new IllegalArgumentException("게임이 일치하지 않아요.");
         JSONArray entries = news.getJSONArray("newsitems"), items = new JSONArray();
         if (entries.length() > 50) throw new IllegalArgumentException("소식 개수를 확인해 주세요.");
         for (int i = 0; i < entries.length(); i++) {
             JSONObject entry = entries.getJSONObject(i);
             if (!"steam_community_announcements".equals(entry.optString("feedname"))) continue;
+            String gid = entry.getString("gid");
+            if (!validArticleId(gid) || (entry.has("appid") && !id.equals(String.valueOf(entry.opt("appid")))))
+                throw new IllegalArgumentException("게임·소식 식별자가 일치하지 않아요.");
             String url = entry.getString("url");
-            if (!isOfficialArticle(registration, url)) throw new IllegalArgumentException("공식 원문 주소를 확인할 수 없어요.");
+            if (!isOfficialArticle(registration, url, gid)) throw new IllegalArgumentException("공식 원문 주소를 확인할 수 없어요.");
             String summary = clean(entry.optString("contents"));
             String title = clean(entry.optString("title"));
             if (summary.isEmpty() || title.isEmpty() || entry.optString("gid").isEmpty() || entry.getLong("date") <= 0)
@@ -75,17 +78,33 @@ final class ContentFeedClient {
     }
 
     static boolean isOfficialArticle(String registration, String url) {
-        if (url == null || url.length() > 512) return false;
+        return isOfficialArticle(registration, url, null);
+    }
+
+    static boolean isOfficialArticle(String registration, String url, String articleId) {
+        if (url == null || url.length() > 512 || (articleId != null && !validArticleId(articleId))) return false;
         try {
             URI uri = new URI(url);
             if (!"https".equals(uri.getScheme()) || uri.getRawUserInfo() != null || uri.getRawFragment() != null
                     || uri.getRawQuery() != null || uri.getPort() != -1) return false;
-            String id = appId(registration);
-            return ("store.steampowered.com".equals(uri.getHost())
-                    && uri.getPath().matches("/news/app/" + id + "/view/[0-9]+/?"))
-                    || ("steamcommunity.com".equals(uri.getHost())
-                    && uri.getPath().matches("/games/[A-Za-z0-9_-]+/announcements/detail/[0-9]+/?"));
+            String id = appId(registration), path = uri.getRawPath();
+            String pattern;
+            if ("steamstore-a.akamaihd.net".equals(uri.getHost()))
+                pattern = "/news/externalpost/steam_community_announcements/([1-9][0-9]{0,19})";
+            else if ("store.steampowered.com".equals(uri.getHost()))
+                pattern = "/news/app/" + id + "/view/([1-9][0-9]{0,19})/?";
+            else if ("steamcommunity.com".equals(uri.getHost()))
+                pattern = "/games/[A-Za-z0-9_-]+/announcements/detail/([1-9][0-9]{0,19})/?";
+            else return false;
+            Matcher match = Pattern.compile(pattern).matcher(path);
+            return match.matches() && validArticleId(match.group(1))
+                    && (articleId == null || articleId.equals(match.group(1)));
         } catch (Exception invalid) { return false; }
+    }
+
+    private static boolean validArticleId(String id) {
+        return id != null && id.matches("[1-9][0-9]{0,19}")
+                && new java.math.BigInteger(id).compareTo(new java.math.BigInteger("18446744073709551615")) <= 0;
     }
 
     private static String clean(String raw) {

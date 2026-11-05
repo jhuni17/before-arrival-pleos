@@ -70,6 +70,28 @@ public final class CatalogHarness {
     check(steam.items.size()==20,"cache limited to20");
     JSONArray tooMany = new JSONArray();for(int i=0;i<51;i++)tooMany.put(item);
     try {ContentFeedClient.parse(steam.registrationUrl,new JSONObject().put("appnews",new JSONObject().put("appid",570).put("newsitems",tooMany)).toString());throw new AssertionError("oversized item count accepted");}catch(IllegalArgumentException expected){assertions++;}
+    String captured=Files.readString(Path.of("shared/evidence/steam-real-response.json"));
+    String replay=ContentFeedClient.parse(steam.registrationUrl,captured);
+    check(c.importSnapshot(steam.id,replay,Instant.parse("2026-11-05T12:47:21Z")),"captured HTTP200 replay imports");
+    check(steam.items.size()==5,"all5 observed CDN records accepted");
+    check(steam.items.get(0).title.equals("Inside the Trove of Terror"),"observed title preserved");
+    check(steam.items.get(0).originalUrl.equals("https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1846018067924633"),"CDN original preserved");
+    for(int i=0;i<c.sources.size();i++)c.move(steam.id,-1);
+    route.select(18);check(c.plan(route.snapshot()).selected.get(0).title.equals("Inside the Trove of Terror"),"actual response ordered briefing");
+    route.select(4);check(c.plan(route.snapshot()).selected.get(0).sourceId.equals("sample-schedule"),"actual response keeps urgent schedule");
+    c.toggleSaved(steam.items.get(0));c.persist(preferences);
+    ContentCatalog restoredReal=new ContentCatalog(defaults,preferences);
+    check(restoredReal.savedItems.stream().anyMatch(v->v.originalUrl!=null&&v.originalUrl.contains("1846018067924633")),"CDN saved URL survives reload");
+    JSONObject capturedObject=new JSONObject(captured), firstReal=capturedObject.getJSONObject("appnews").getJSONArray("newsitems").getJSONObject(0);
+    String realUrl=firstReal.getString("url"), realGid=firstReal.getString("gid");
+    for(String unsafe:List.of(realUrl.replace(".net/",".net.evil.test/"),realUrl.replace("steamstore-a.","other.steamstore-a."),realUrl.replace("steam_community_announcements","pcgamer"),realUrl.replace("/"+realGid,"/%31"+realGid.substring(1)),realUrl.replace("/news/externalpost/","/news/ignored/../externalpost/"),realUrl+"?token=secret",realUrl+"#fragment",realUrl.replace(".net/",".net:443/"),realUrl.replace("https://","https://user@"),realUrl.replace(realGid,"0"),realUrl.replace(realGid,"18446744073709551616"))) {
+      check(!ContentFeedClient.isOfficialArticle(steam.registrationUrl,unsafe,realGid),"unsafe observed URL variant rejected");
+    }
+    for(JSONObject mutation:List.of(new JSONObject().put("gid","999"),new JSONObject().put("appid",730),new JSONObject().put("url",realUrl.replace(realGid,"999")))) {
+      JSONObject bad=new JSONObject(firstReal.toString());for(String key:mutation.keySet())bad.put(key,mutation.get(key));
+      JSONObject mixed=new JSONObject().put("appnews",new JSONObject().put("appid",570).put("newsitems",new JSONArray().put(firstReal).put(bad)));
+      try{ContentFeedClient.parse(steam.registrationUrl,mixed.toString());throw new AssertionError("mixed invalid actual feed accepted");}catch(IllegalArgumentException expected){assertions++;}
+    }
     state.clear();state.put("enabled_GAME",false);state.put("priority","COMMUNITY");state.put("saved",Set.of("GAME","SCHEDULE","COMMUNITY"));
     c=new ContentCatalog(defaults,preferences); check(c.sources.get(0).id.equals("sample-community"),"legacy priority");
     check(!c.source("sample-game").enabled&&c.savedItems.size()==3,"legacy enabled and saved");

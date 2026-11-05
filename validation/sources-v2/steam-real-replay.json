@@ -1,0 +1,16 @@
+{
+  "sourceBaseCommit": "df7b545fb6ef8b3531b4e55718626086e73a93c0",
+  "responseFile": "shared/evidence/steam-real-response.json",
+  "responseSha256": "bb56f7c09dbbf4f0cba6862ad5f8d9719ff46a7d3f661d26a524fad869c92d5b",
+  "provenanceFile": "shared/evidence/steam-real-response-meta.json",
+  "observation": "Separate approved cloud environment obtained real HTTP200 official API response; integration environment processed captured bytes only.",
+  "directApiSuccess": true,
+  "localReplayAcceptedItems": 5,
+  "browserReplayAcceptedItems": 5,
+  "actualApplicationNetworkRefreshConfirmed": false,
+  "androidMainSampleJavaCompile": "passed against public API35 classes, compile-only R, not APK",
+  "catalogAssertions": 60,
+  "browserScreens": 37,
+  "browserBehaviorChecks": 14,
+  "approvedWorkerFullAndroidTests": "pending rerun; df7 source had23 tests,22passed/1queued-callback timing failure"
+}

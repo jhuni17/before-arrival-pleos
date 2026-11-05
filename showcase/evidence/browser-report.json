@@ -1,16 +1,17 @@
 {
-  "createdAt": "2026-11-05T12:41:29.802Z",
+  "createdAt": "2026-11-05T13:00:08.669Z",
   "browser": "155.0.8059.79",
   "provenance": {
-    "gitHeadAtRun": "f24ebd278902117bdc077fba276923f3a1323044",
+    "gitHeadAtRun": "df7b545fb6ef8b3531b4e55718626086e73a93c0",
     "workingTreeDirtyAtRun": true,
-    "htmlSha256": "c3cd90490c2080c9e840f9eb11d21644cf5eead8a1ea20182ad5f4be48a63ebd",
+    "htmlSha256": "43eb0a170aecd2229440ca22fb1d7da07372d96271555afada2728f7783766e0",
     "sourceSha256": {
       "examples/before-arrival/index.tsx": "98841d9316d8ad88d371c0e29e9bdbacd4dc7a5c16d18b803d623a20980ac230",
-      "examples/before-arrival/catalog.ts": "1299ddcbed92815fe1b5f6a68877372a9f62a7632c9b1e772e783f7a9941f229",
+      "examples/before-arrival/catalog.ts": "24e5f183708ce51a83cc81faf71f420334a9f0ddaff157752494fabd4e3d3003",
       "../shared/catalog.json": "47ad03885c746770d381f2bcdcbbbde9f9e9bf1394df220133e082b029982595",
+      "../shared/evidence/steam-real-response.json": "bb56f7c09dbbf4f0cba6862ad5f8d9719ff46a7d3f661d26a524fad869c92d5b",
       "examples/before-arrival/showcase.css": "e816ba9f5e319370ec7b64aa6208d9e4b742a23b5fb0ebeabe7c40a9b834ecd1",
-      "browser-verify.mjs": "042011abcd43349ac6a400ff2d4dd2c949bbe9a0b7f942cd8557e9fd22819594",
+      "browser-verify.mjs": "621c45cd1b7847898fca27a0ca372da0d0383f942171138d5fd98951582bf0b9",
       "build.mjs": "57e366d10188d952c46179169d129e84d34de8491cc17f4e29c2450e58a0160a"
     },
     "originalInputs": [
@@ -7502,6 +7503,600 @@
       "font": "\"Asta Sans\", sans-serif"
     },
     {
+      "name": "night-real-steam-replay-390",
+      "path": "evidence/night-real-steam-replay-390.png",
+      "issues": [],
+      "minimumContrast": 7.58,
+      "contrasts": [
+        {
+          "text": "도착 전에 PLEOS CONNECT · 샘플 경로 시연",
+          "ratio": 17.32
+        },
+        {
+          "text": "PLEOS CONNECT · 샘플 경로 시연",
+          "ratio": 10.01
+        },
+        {
+          "text": "주간으로 보기",
+          "ratio": 17.32
+        },
+        {
+          "text": "내가 고른 출처, 남은 시간에 맞게",
+          "ratio": 10.01
+        },
+        {
+          "text": "남은 시간만큼,필요한 소식부터.",
+          "ratio": 17.32
+        },
+        {
+          "text": "01 18분",
+          "ratio": 16.43
+        },
+        {
+          "text": "02 저장",
+          "ratio": 17.32
+        },
+        {
+          "text": "03 4분",
+          "ratio": 17.32
+        },
+        {
+          "text": "04 도착",
+          "ratio": 17.32
+        },
+        {
+          "text": "출처 설정",
+          "ratio": 17.32
+        },
+        {
+          "text": "주행 제한",
+          "ratio": 17.32
+        },
+        {
+          "text": "상태 미확인",
+          "ratio": 17.32
+        },
+        {
+          "text": "자동 시연 다시 보기",
+          "ratio": 17.32
+        },
+        {
+          "text": "PLEOS CONNECT 시스템 UI 예시",
+          "ratio": 10.01
+        },
+        {
+          "text": "시스템 UI 예시",
+          "ratio": 10.01
+        },
+        {
+          "text": "08:40 · P",
+          "ratio": 10.01
+        },
+        {
+          "text": "도착 전에",
+          "ratio": 15.25
+        },
+        {
+          "text": "주차 시 사용 가능 · 샘플 상태",
+          "ratio": 8.81
+        },
+        {
+          "text": "목적지 · 회사",
+          "ratio": 8.81
+        },
+        {
+          "text": "18",
+          "ratio": 15.25
+        },
+        {
+          "text": "분",
+          "ratio": 15.25
+        },
+        {
+          "text": "도착까지 남은 시간",
+          "ratio": 8.81
+        },
+        {
+          "text": "이번에 들을 브리핑",
+          "ratio": 8.81
+        },
+        {
+          "text": "예상 39초 · 예산 45초",
+          "ratio": 8.81
+        },
+        {
+          "text": "검증 Steam",
+          "ratio": 7.58
+        },
+        {
+          "text": "Inside the Trove of Terror",
+          "ratio": 13.13
+        },
+        {
+          "text": "Some time ago, a time now none of us can quite recall, ",
+          "ratio": 7.58
+        },
+        {
+          "text": "실제로 가져온 공식 소식 · 원문 발췌게시 2026-10-07T00:22:41.000Z확인 2026",
+          "ratio": 13.13
+        },
+        {
+          "text": "공식 원문 확인 ↗",
+          "ratio": 13.13
+        },
+        {
+          "text": "브리핑 재생 상태 보기",
+          "ratio": 16.43
+        },
+        {
+          "text": "",
+          "ratio": 16.43
+        },
+        {
+          "text": "이 브라우저에 저장됨",
+          "ratio": 13.13
+        },
+        {
+          "text": "",
+          "ratio": 13.13
+        },
+        {
+          "text": "브라우저 재생은 상태 연출 · 실제 음성 없음",
+          "ratio": 7.58
+        },
+        {
+          "text": "다음 소식 · 리그 오브 레전드 26.22 패치 노트",
+          "ratio": 8.81
+        },
+        {
+          "text": "나중에 볼 소식",
+          "ratio": 15.25
+        },
+        {
+          "text": "검증 Steam",
+          "ratio": 8.81
+        },
+        {
+          "text": "7.41f Gameplay Patch",
+          "ratio": 15.25
+        },
+        {
+          "text": "실제로 가져온 공식 소식 · 원문 발췌게시 2026-09-15T18:44:25.000Z확인 2026",
+          "ratio": 15.25
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 15.25
+        },
+        {
+          "text": "검증 Steam",
+          "ratio": 8.81
+        },
+        {
+          "text": "The International 2026 Grand Champions",
+          "ratio": 15.25
+        },
+        {
+          "text": "실제로 가져온 공식 소식 · 원문 발췌게시 2026-08-27T01:07:42.000Z확인 2026",
+          "ratio": 15.25
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 15.25
+        },
+        {
+          "text": "검증 Steam",
+          "ratio": 8.81
+        },
+        {
+          "text": "The International Main Event",
+          "ratio": 15.25
+        },
+        {
+          "text": "실제로 가져온 공식 소식 · 원문 발췌게시 2026-08-19T02:46:04.000Z확인 2026",
+          "ratio": 15.25
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 15.25
+        },
+        {
+          "text": "검증 Steam",
+          "ratio": 8.81
+        },
+        {
+          "text": "The International: Streams, Secret Shop, and More",
+          "ratio": 15.25
+        },
+        {
+          "text": "실제로 가져온 공식 소식 · 원문 발췌게시 2026-08-12T00:28:39.000Z확인 2026",
+          "ratio": 15.25
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 15.25
+        },
+        {
+          "text": "게임 패치 예시",
+          "ratio": 8.81
+        },
+        {
+          "text": "이번 주말, 협동 모드가 열려요",
+          "ratio": 15.25
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 15.25
+        },
+        {
+          "text": "이 브라우저에 저장됨",
+          "ratio": 15.25
+        },
+        {
+          "text": "일정 변경 예시",
+          "ratio": 8.81
+        },
+        {
+          "text": "9시 팀 회의가 3층으로 바뀌었어요",
+          "ratio": 15.25
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 15.25
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 15.25
+        },
+        {
+          "text": "커뮤니티 예시",
+          "ratio": 8.81
+        },
+        {
+          "text": "출근길에 듣기 좋은 10분짜리 팟캐스트",
+          "ratio": 15.25
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 15.25
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 15.25
+        },
+        {
+          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "ratio": 8.81
+        },
+        {
+          "text": "앱 라이브러리",
+          "ratio": 10.01
+        },
+        {
+          "text": "내비게이션",
+          "ratio": 10.01
+        },
+        {
+          "text": "공조 22°",
+          "ratio": 10.01
+        },
+        {
+          "text": "시스템 GNB 예시",
+          "ratio": 10.01
+        },
+        {
+          "text": "01 / 18분 · 켜 둔 출처와 순서대로 브리핑을 준비합니다.",
+          "ratio": 17.32
+        },
+        {
+          "text": "경로·차량 상태·재생은 샘플 · 소식마다 실제/예시와 확인 시각을 표시출처·저장은 이 브라우저에만 ",
+          "ratio": 10.01
+        }
+      ],
+      "viewport": {
+        "width": 390,
+        "height": 1080
+      },
+      "font": "\"Asta Sans\", sans-serif"
+    },
+    {
+      "name": "day-real-steam-replay-390",
+      "path": "evidence/day-real-steam-replay-390.png",
+      "issues": [],
+      "minimumContrast": 5.95,
+      "contrasts": [
+        {
+          "text": "도착 전에 PLEOS CONNECT · 샘플 경로 시연",
+          "ratio": 15.28
+        },
+        {
+          "text": "PLEOS CONNECT · 샘플 경로 시연",
+          "ratio": 6.28
+        },
+        {
+          "text": "야간으로 보기",
+          "ratio": 15.28
+        },
+        {
+          "text": "내가 고른 출처, 남은 시간에 맞게",
+          "ratio": 6.28
+        },
+        {
+          "text": "남은 시간만큼,필요한 소식부터.",
+          "ratio": 15.28
+        },
+        {
+          "text": "01 18분",
+          "ratio": 15.4
+        },
+        {
+          "text": "02 저장",
+          "ratio": 15.28
+        },
+        {
+          "text": "03 4분",
+          "ratio": 15.28
+        },
+        {
+          "text": "04 도착",
+          "ratio": 15.28
+        },
+        {
+          "text": "출처 설정",
+          "ratio": 15.28
+        },
+        {
+          "text": "주행 제한",
+          "ratio": 15.28
+        },
+        {
+          "text": "상태 미확인",
+          "ratio": 15.28
+        },
+        {
+          "text": "자동 시연 다시 보기",
+          "ratio": 15.28
+        },
+        {
+          "text": "PLEOS CONNECT 시스템 UI 예시",
+          "ratio": 6.28
+        },
+        {
+          "text": "시스템 UI 예시",
+          "ratio": 6.28
+        },
+        {
+          "text": "08:40 · P",
+          "ratio": 6.28
+        },
+        {
+          "text": "도착 전에",
+          "ratio": 17.44
+        },
+        {
+          "text": "주차 시 사용 가능 · 샘플 상태",
+          "ratio": 7.17
+        },
+        {
+          "text": "목적지 · 회사",
+          "ratio": 7.17
+        },
+        {
+          "text": "18",
+          "ratio": 17.44
+        },
+        {
+          "text": "분",
+          "ratio": 17.44
+        },
+        {
+          "text": "도착까지 남은 시간",
+          "ratio": 7.17
+        },
+        {
+          "text": "이번에 들을 브리핑",
+          "ratio": 7.17
+        },
+        {
+          "text": "예상 39초 · 예산 45초",
+          "ratio": 7.17
+        },
+        {
+          "text": "검증 Steam",
+          "ratio": 5.95
+        },
+        {
+          "text": "Inside the Trove of Terror",
+          "ratio": 14.47
+        },
+        {
+          "text": "Some time ago, a time now none of us can quite recall, ",
+          "ratio": 5.95
+        },
+        {
+          "text": "실제로 가져온 공식 소식 · 원문 발췌게시 2026-10-07T00:22:41.000Z확인 2026",
+          "ratio": 14.47
+        },
+        {
+          "text": "공식 원문 확인 ↗",
+          "ratio": 14.47
+        },
+        {
+          "text": "브리핑 재생 상태 보기",
+          "ratio": 15.4
+        },
+        {
+          "text": "",
+          "ratio": 15.4
+        },
+        {
+          "text": "이 브라우저에 저장됨",
+          "ratio": 14.47
+        },
+        {
+          "text": "",
+          "ratio": 14.47
+        },
+        {
+          "text": "브라우저 재생은 상태 연출 · 실제 음성 없음",
+          "ratio": 5.95
+        },
+        {
+          "text": "다음 소식 · 리그 오브 레전드 26.22 패치 노트",
+          "ratio": 7.17
+        },
+        {
+          "text": "나중에 볼 소식",
+          "ratio": 17.44
+        },
+        {
+          "text": "검증 Steam",
+          "ratio": 7.17
+        },
+        {
+          "text": "7.41f Gameplay Patch",
+          "ratio": 17.44
+        },
+        {
+          "text": "실제로 가져온 공식 소식 · 원문 발췌게시 2026-09-15T18:44:25.000Z확인 2026",
+          "ratio": 17.44
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 17.44
+        },
+        {
+          "text": "검증 Steam",
+          "ratio": 7.17
+        },
+        {
+          "text": "The International 2026 Grand Champions",
+          "ratio": 17.44
+        },
+        {
+          "text": "실제로 가져온 공식 소식 · 원문 발췌게시 2026-08-27T01:07:42.000Z확인 2026",
+          "ratio": 17.44
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 17.44
+        },
+        {
+          "text": "검증 Steam",
+          "ratio": 7.17
+        },
+        {
+          "text": "The International Main Event",
+          "ratio": 17.44
+        },
+        {
+          "text": "실제로 가져온 공식 소식 · 원문 발췌게시 2026-08-19T02:46:04.000Z확인 2026",
+          "ratio": 17.44
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 17.44
+        },
+        {
+          "text": "검증 Steam",
+          "ratio": 7.17
+        },
+        {
+          "text": "The International: Streams, Secret Shop, and More",
+          "ratio": 17.44
+        },
+        {
+          "text": "실제로 가져온 공식 소식 · 원문 발췌게시 2026-08-12T00:28:39.000Z확인 2026",
+          "ratio": 17.44
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 17.44
+        },
+        {
+          "text": "게임 패치 예시",
+          "ratio": 7.17
+        },
+        {
+          "text": "이번 주말, 협동 모드가 열려요",
+          "ratio": 17.44
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 17.44
+        },
+        {
+          "text": "이 브라우저에 저장됨",
+          "ratio": 17.44
+        },
+        {
+          "text": "일정 변경 예시",
+          "ratio": 7.17
+        },
+        {
+          "text": "9시 팀 회의가 3층으로 바뀌었어요",
+          "ratio": 17.44
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 17.44
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 17.44
+        },
+        {
+          "text": "커뮤니티 예시",
+          "ratio": 7.17
+        },
+        {
+          "text": "출근길에 듣기 좋은 10분짜리 팟캐스트",
+          "ratio": 17.44
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 17.44
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 17.44
+        },
+        {
+          "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
+          "ratio": 7.17
+        },
+        {
+          "text": "앱 라이브러리",
+          "ratio": 6.28
+        },
+        {
+          "text": "내비게이션",
+          "ratio": 6.28
+        },
+        {
+          "text": "공조 22°",
+          "ratio": 6.28
+        },
+        {
+          "text": "시스템 GNB 예시",
+          "ratio": 6.28
+        },
+        {
+          "text": "01 / 18분 · 켜 둔 출처와 순서대로 브리핑을 준비합니다.",
+          "ratio": 15.28
+        },
+        {
+          "text": "경로·차량 상태·재생은 샘플 · 소식마다 실제/예시와 확인 시각을 표시출처·저장은 이 브라우저에만 ",
+          "ratio": 6.28
+        }
+      ],
+      "viewport": {
+        "width": 390,
+        "height": 1080
+      },
+      "font": "\"Asta Sans\", sans-serif"
+    },
+    {
       "name": "reduced-motion-arrival",
       "path": "evidence/reduced-motion-arrival.png",
       "issues": [],
@@ -7709,6 +8304,7 @@
     "Registered official-source briefing at390px in both themes: publication/provenance/original link visible; link and text contrast, clipping and horizontal overflow audited.",
     "Real add official LoL snapshot → move first → actual briefing → save/reload; 4-minute schedule deadline still wins. Publication URL/date preserved and imported-snapshot label explicit.",
     "Unsupported channel registers with setup-needed/no-content; duplicate and lookalike-host URLs are rejected.",
+    "Captured real HTTP200 Steam response REPLAY via intercepted network:5 exact CDN records accepted, user ordering selects real title, 4-minute deadline retained, save/reload preserves CDN original,390px both themes audited. This is NOT a live browser network success.",
     "Intercepted Steam fixtures only: official-schema items deduped, failed refresh preserves lastSuccess/items, empty success clears content, disabled-source late response discarded. This is NOT a real public fetch.",
     "Parked 4-minute deferred game has an explicit save action without changing urgent meeting; arrival and reload preserve its own provenance. Deferred actions hidden during restrictions.",
     "Restriction/unknown transition stops playback state; returning never automatically resumes; source settings unavailable during restrictions.",

@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
+import actualSteamResponse from "../../../shared/evidence/steam-real-response.json";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Showcase,frames,sequence } from "./index";
-import {defaults,addSource,moveSource,toggleSource,planRegistry,saveItem,readRegistry,registryKey,oldKey,applyFeed,parseSteam,refreshSteam,canonicalUrl} from "./catalog";
+import {defaults,addSource,moveSource,toggleSource,planRegistry,saveItem,readRegistry,registryKey,oldKey,applyFeed,parseSteam,refreshSteam,canonicalUrl,officialSteamUrl} from "./catalog";
 const render=(state:string)=>renderToStaticMarkup(<Showcase state={state}/>);
 assert.match(render("opening"),/이번 주말, 협동 모드가 열려요/);
 assert.match(render("opening"),/예상 32초 · 예산 45초/);
@@ -48,3 +49,31 @@ await assert.rejects(()=>refreshSteam(source,new AbortController().signal,async(
 await assert.rejects(()=>refreshSteam(source,new AbortController().signal,async()=>new Response("x".repeat(262145),{status:200})));
 assert.equal(planRegistry(null,when,state.sources).selected.length,0);
 console.log("PASS: shared catalog, legacy migration, add/order/enable→ETA plan,3 official snapshots provenance,date precision,local saved dedup,official URL allowlist,runtime Steam fixture dedup/failure/empty/size bounds. Fixtures do not establish live connection.");
+
+const observedAt="2026-11-05T12:47:21Z";
+const actualItems=parseSteam(actualSteamResponse,source,observedAt);
+assert.equal(actualItems.length,5);
+assert.equal(actualItems[0].title,"Inside the Trove of Terror");
+assert.equal(actualItems[0].originalUrl,"https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1846018067924633");
+let actualState=applyFeed(addSource(defaults(),"steam","Dota 2 실제 응답 재생","https://store.steampowered.com/news/app/570"),source.id,{items:actualItems},observedAt);
+for(let i=0;i<3;i++)actualState=moveSource(actualState,source.id,-1);
+assert.equal(planRegistry(1080,when,actualState.sources).selected[0].title,"Inside the Trove of Terror");
+assert.equal(planRegistry(240,short,actualState.sources).selected[0].sourceId,"sample-schedule");
+actualState=saveItem(actualState,actualItems[0]);assert.equal(readRegistry({getItem:key=>key===registryKey?JSON.stringify(actualState):null}).savedItems[0].originalUrl,actualItems[0].originalUrl);
+const realFirst=actualSteamResponse.appnews.newsitems[0];
+const unsafeUrls=[
+ "https://steamstore-a.akamaihd.net.evil.test/news/externalpost/steam_community_announcements/"+realFirst.gid,
+ "https://other.steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/"+realFirst.gid,
+ "https://steamstore-a.akamaihd.net/news/externalpost/pcgamer/"+realFirst.gid,
+ "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/%31"+realFirst.gid.slice(1),
+ "https://steamstore-a.akamaihd.net/news/ignored/../externalpost/steam_community_announcements/"+realFirst.gid,
+ realFirst.url+"?token=secret",realFirst.url+"#fragment",
+ realFirst.url.replace(".net/",".net:443/"),realFirst.url.replace("https://","https://user@"),
+ "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/0",
+ "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/18446744073709551616",
+];
+for(const url of unsafeUrls){assert.equal(officialSteamUrl(url,source.registrationUrl,realFirst.gid),false);assert.throws(()=>parseSteam({appnews:{appid:570,newsitems:[{...realFirst,url}]}},source,observedAt));}
+for(const delta of [{gid:"999"},{gid:"bad"},{appid:730},{url:realFirst.url.replace(realFirst.gid,"999")}])assert.throws(()=>parseSteam({appnews:{appid:570,newsitems:[{...realFirst,...delta}]}},source,observedAt));
+assert.throws(()=>parseSteam({appnews:{appid:730,newsitems:[realFirst]}},source,observedAt));
+assert.throws(()=>parseSteam({appnews:{appid:570,newsitems:[realFirst,{...realFirst,gid:"999"}]}},source,observedAt));
+console.log("PASS: captured real Steam HTTP200 response replay:5 official CDN articles → ordered 18-minute briefing → 4-minute schedule priority → saved/reload original URL; strict host/path/gid/uint64/response+item-appid negatives. Replay is not live browser refresh.");

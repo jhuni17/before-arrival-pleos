@@ -143,6 +143,42 @@ public class CatalogTest {
         assertTrue(catalog.plan(new NavigationRouteInput(ignored -> {}).snapshot()).selected.isEmpty());
     }
 
+    @Test public void capturedRealCdnFeedReplaysAndRejectsIdentityOrPathChanges() throws Exception {
+        String captured;
+        try (InputStream input = RuntimeEnvironment.getApplication().getAssets().open("evidence/steam-real-response.json");
+             ByteArrayOutputStream bytes = new ByteArrayOutputStream()) {
+            byte[] chunk = new byte[4096]; int count;
+            while ((count = input.read(chunk)) != -1) bytes.write(chunk, 0, count);
+            captured = new String(bytes.toByteArray(), StandardCharsets.UTF_8);
+        }
+        ContentCatalog.Source source = catalog.add("Dota 2", "steam", "https://store.steampowered.com/news/app/570");
+        assertTrue(catalog.importSnapshot(source.id, ContentFeedClient.parse(source.registrationUrl, captured), NOW));
+        assertEquals(5, source.items.size());
+        assertEquals("Inside the Trove of Terror", source.items.get(0).title);
+        assertEquals("https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1846018067924633", source.items.get(0).originalUrl);
+        for (int i = 0; i < 3; i++) catalog.move(source.id, -1);
+        SampleRouteInput route = new SampleRouteInput();
+        assertEquals(source.id, catalog.plan(route.snapshot()).selected.get(0).sourceId);
+        route.select(4); assertEquals("sample-schedule", catalog.plan(route.snapshot()).selected.get(0).sourceId);
+        JSONObject first = new JSONObject(captured).getJSONObject("appnews").getJSONArray("newsitems").getJSONObject(0);
+        String url = first.getString("url"), gid = first.getString("gid");
+        for (String unsafe : java.util.List.of(url.replace(".net/", ".net.evil.test/"), url.replace("steamstore-a.", "other.steamstore-a."),
+                url.replace("steam_community_announcements", "pcgamer"), url.replace("/" + gid, "/%31" + gid.substring(1)),
+                url.replace("/news/externalpost/", "/news/ignored/../externalpost/"), url + "?token=secret", url + "#fragment",
+                url.replace(".net/", ".net:443/"), url.replace("https://", "https://user@"), url.replace(gid, "0"),
+                url.replace(gid, "18446744073709551616"))) assertFalse(ContentFeedClient.isOfficialArticle(source.registrationUrl, unsafe, gid));
+        for (String key : java.util.List.of("gid", "appid", "url")) {
+            JSONObject invalid = new JSONObject(first.toString());
+            invalid.put(key, key.equals("gid") ? "999" : key.equals("appid") ? 730 : url.replace(gid, "999"));
+            String mixed = new JSONObject().put("appnews", new JSONObject().put("appid", 570)
+                    .put("newsitems", new JSONArray().put(first).put(invalid))).toString();
+            try { ContentFeedClient.parse(source.registrationUrl, mixed); fail("Invalid mixed batch must be rejected"); }
+            catch (IllegalArgumentException expected) { }
+            assertEquals(5, source.items.size());
+            assertEquals(NOW, source.lastSuccessAt);
+        }
+    }
+
     private static String steamResponse(int appId, String feed, boolean duplicate) throws Exception {
         JSONObject item = new JSONObject().put("gid", "123").put("title", "Official update").put("date", 1793880000L)
                 .put("url", "https://store.steampowered.com/news/app/" + appId + "/view/123")

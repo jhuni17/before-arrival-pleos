@@ -15,11 +15,24 @@ export function canonicalUrl(value:string) {
   if(steam) {const id=Number(steam[1]);if(!Number.isInteger(id)||id<1||id>4294967295)throw new Error("게임 주소를 확인해 주세요.");return `https://store.steampowered.com/news/app/${id}`;}
   return url.href.replace(/\/$/,"");
 }
-export function officialUrl(provider:string,value:string):boolean {
+function validSteamArticleId(value:unknown):value is string {
+  return typeof value==="string"&&/^[1-9][0-9]{0,19}$/.test(value)&&BigInt(value)<=18446744073709551615n;
+}
+export function officialSteamUrl(value:string,registrationUrl?:string|null,articleId?:string):boolean {
+  if(typeof value!=="string"||value.length>512||(articleId!==undefined&&!validSteamArticleId(articleId))) return false;
+  const cdn=value.match(/^https:\/\/steamstore-a\.akamaihd\.net\/news\/externalpost\/steam_community_announcements\/([1-9][0-9]{0,19})$/);
+  const community=value.match(/^https:\/\/steamcommunity\.com\/games\/[A-Za-z0-9_-]+\/announcements\/detail\/([1-9][0-9]{0,19})\/?$/);
+  const store=value.match(/^https:\/\/store\.steampowered\.com\/news\/app\/([1-9][0-9]*)\/view\/([1-9][0-9]{0,19})\/?$/);
+  const found=cdn?.[1]||community?.[1]||store?.[2];
+  if(!validSteamArticleId(found)||(articleId!==undefined&&found!==articleId))return false;
+  const registeredApp=registrationUrl?.match(/\/(?:app|news\/app)\/([0-9]+)/)?.[1];
+  return !store||!registrationUrl||Boolean(registeredApp&&store[1]===registeredApp);
+}
+export function officialUrl(provider:string,value:string,registrationUrl?:string|null):boolean {
   try {
+    if(provider==="steam")return officialSteamUrl(value,registrationUrl);
     const url=new URL(value);
     if(url.protocol!=="https:"||url.username||url.password||url.hash||value.length>512) return false;
-    if(provider==="steam") return /^https:\/\/steamcommunity\.com\/games\/[A-Za-z0-9_-]+\/announcements\/detail\/[0-9]+\/?$/.test(url.href) || /^https:\/\/store\.steampowered\.com\/news\/app\/[0-9]+\/view\/[0-9]+\/?$/.test(url.href);
     return Boolean(providers.find(p=>p.id===provider)&&new RegExp(providers.find(p=>p.id===provider)!.urlPattern).test(url.href));
   } catch {return false;}
 }
@@ -73,7 +86,7 @@ export function statusText(source:RegisteredSource) {
 }
 export function sourceName(state:Registry,item:ContentItem) {return state.sources.find(s=>s.id===item.sourceId)?.name||"저장한 출처";}
 function validItem(item:any,source:RegisteredSource) {
-  return typeof item?.id==="string"&&item.sourceId===source.id&&typeof item.title==="string"&&item.title.length>0&&item.title.length<=500&&typeof item.summary==="string"&&item.summary.length<=2000&&Number.isInteger(item.estimatedSeconds)&&item.estimatedSeconds>0&&item.estimatedSeconds<=3600&&(!item.originalUrl||officialUrl(source.provider,item.originalUrl));
+  return typeof item?.id==="string"&&item.sourceId===source.id&&typeof item.title==="string"&&item.title.length>0&&item.title.length<=500&&typeof item.summary==="string"&&item.summary.length<=2000&&Number.isInteger(item.estimatedSeconds)&&item.estimatedSeconds>0&&item.estimatedSeconds<=3600&&(!item.originalUrl||officialUrl(source.provider,item.originalUrl,source.registrationUrl));
 }
 export function readRegistry(storage:Pick<Storage,"getItem">):Registry {
   try {
@@ -116,7 +129,7 @@ export function parseSteam(body:any,source:RegisteredSource,observedAt:string):C
   const items:ContentItem[]=[];
   for(const n of body.appnews.newsitems) {
     if(n?.feedname!=="steam_community_announcements") continue;
-    if(typeof n.title!=="string"||!clean(n.title)||typeof n.contents!=="string"||!clean(n.contents)||typeof n.gid!=="string"||!n.gid||typeof n.url!=="string"||!officialUrl("steam",n.url)|| (n.url.startsWith("https://store.steampowered.com/")&&!n.url.startsWith(`https://store.steampowered.com/news/app/${appid}/view/`))||!Number.isFinite(n.date)||n.date<=0) throw new Error("공식 소식 내용을 확인하지 못했어요.");
+    if(typeof n.title!=="string"||!clean(n.title)||typeof n.contents!=="string"||!clean(n.contents)||(!validSteamArticleId(n.gid))||typeof n.url!=="string"||!officialSteamUrl(n.url,source.registrationUrl,n.gid)||(n.appid!==undefined&&String(n.appid)!==appid)||!Number.isFinite(n.date)||n.date<=0) throw new Error("공식 소식 내용을 확인하지 못했어요.");
     const summary=clean(n.contents);
     items.push({id:"steam:"+n.gid,sourceId:source.id,title:clean(n.title),publishedAt:new Date(n.date*1000).toISOString(),publishedPrecision:"instant",originalUrl:n.url,summary,estimatedSeconds:Math.min(30,Math.max(8,Math.ceil(summary.length/6))),deadlineAt:null,provenance:"official_runtime",fetchedAt:observedAt});
   }

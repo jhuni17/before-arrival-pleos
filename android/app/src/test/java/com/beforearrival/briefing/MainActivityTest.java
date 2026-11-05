@@ -219,15 +219,22 @@ public class MainActivityTest {
         ((Button) rows.getChildAt(0)).performClick();
         AlertDialog dialog = field("activeDialog");
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        // AlertDialog dispatches its button callback through the main Handler.
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
         android.content.Intent opened = Shadows.shadowOf(activity).getNextStartedActivity();
+        assertNotNull("Official action must dispatch after draining the button callback", opened);
         assertEquals(android.content.Intent.ACTION_VIEW, opened.getAction());
         assertEquals(item.originalUrl, opened.getDataString());
         ((Button) rows.getChildAt(0)).performClick();
         dialog = field("activeDialog");
         Button open = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        open.performClick(); // Queue while allowed; permission must be checked when dispatched.
         setAccess(AccessPolicy.State.RESTRICTED);
         assertFalse(dialog.isShowing());
-        open.performClick();
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertNull(Shadows.shadowOf(activity).getNextStartedActivity());
+        open.performClick(); // Stale button after dismissal must also remain blocked.
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
         assertNull(Shadows.shadowOf(activity).getNextStartedActivity());
     }
 

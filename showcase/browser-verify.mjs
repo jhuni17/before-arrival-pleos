@@ -9,6 +9,7 @@ const executablePath = process.env.CHROMIUM_PATH || "/usr/bin/chromium";
 const evidenceDir = process.env.EVIDENCE_DIR || "evidence";
 await mkdir(evidenceDir, { recursive: true });
 const html = await readFile("before-arrival-showcase.html");
+const capturedSteam = JSON.parse(await readFile("../shared/evidence/steam-real-response.json", "utf8"));
 const server = createServer((req, res) => {
   if (req.url?.startsWith("/before-arrival-showcase.html")) {
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
@@ -33,7 +34,7 @@ const report = {
     workingTreeDirtyAtRun: Boolean(execFileSync("git", ["status", "--porcelain"], {encoding:"utf8"}).trim()),
     htmlSha256: createHash("sha256").update(html).digest("hex"),
     sourceSha256: Object.fromEntries(await Promise.all([
-      "examples/before-arrival/index.tsx", "examples/before-arrival/catalog.ts", "../shared/catalog.json",
+      "examples/before-arrival/index.tsx", "examples/before-arrival/catalog.ts", "../shared/catalog.json", "../shared/evidence/steam-real-response.json",
       "examples/before-arrival/showcase.css", "browser-verify.mjs", "build.mjs",
     ].map(async (path) => [path, createHash("sha256").update(await readFile(path)).digest("hex")]))),
     originalInputs: ["479db2bc4e55bd58e9cda1f9408ea294e1c8ebf3", "3ff697d261e417fa6a2ff18ddcb91ebd83c32a6a"],
@@ -259,6 +260,7 @@ try {
   const fixture={gid:"123",title:"Fixture official update",url:"https://steamcommunity.com/games/dota2/announcements/detail/123",contents:"<p>Fixture test only, not retrieved public news.</p>",date:1793870400,feedname:"steam_community_announcements"};
   await page.route("https://api.steampowered.com/**",async route=>{
     if(phase==="fail")return route.fulfill({status:403,body:"Denied fixture"});
+    if(phase==="captured")return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify(capturedSteam)});
     if(phase==="malformed")return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({appnews:{appid:570,newsitems:[{...fixture,title:""}]}})});
     if(phase==="late")await new Promise(resolve=>releasePending=resolve);
     await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({appnews:{appid:570,newsitems:phase==="empty"?[]:[fixture,fixture]}})}).catch(()=>{});
@@ -283,6 +285,21 @@ try {
   await page.getByLabel("검증 Steam 사용",{exact:true}).uncheck();
   releasePending?.();await page.waitForTimeout(150);
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem("before-arrival-sources-v2")).sources.find(s=>s.provider==="steam").items.length),0);
+  await page.getByLabel("검증 Steam 사용",{exact:true}).check();
+  phase="captured";await page.getByRole("button",{name:"검증 Steam 새 소식 확인",exact:true}).click();
+  await page.waitForFunction(()=>JSON.parse(localStorage.getItem("before-arrival-sources-v2")).sources.find(s=>s.provider==="steam").items.length===5);
+  for(let i=0;i<5;i++)await page.getByRole("button",{name:"검증 Steam 위로",exact:true}).click();
+  assert.match(await page.locator("h1").innerText(),/Inside the Trove of Terror/);
+  await page.locator(".secondary").click();
+  await page.reload();
+  assert.match(await page.locator("h1").innerText(),/Inside the Trove of Terror/);
+  await page.setViewportSize({width:390,height:1080});await audit("night-real-steam-replay-390");
+  await page.getByRole("button",{name:"주간으로 보기",exact:true}).click();await audit("day-real-steam-replay-390");
+  await page.setViewportSize({width:1440,height:1080});
+  await page.getByRole("button",{name:"03 4분",exact:true}).click();assert.match(await page.locator("h1").innerText(),/9시 팀 회의/);
+  await page.getByRole("button",{name:"04 도착",exact:true}).click();
+  assert.equal(await page.locator(".saved-article").filter({hasText:"Inside the Trove of Terror"}).locator("a").getAttribute("href"),"https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1846018067924633");
+  report.checks.push("Captured real HTTP200 Steam response REPLAY via intercepted network:5 exact CDN records accepted, user ordering selects real title, 4-minute deadline retained, save/reload preserves CDN original,390px both themes audited. This is NOT a live browser network success.");
   await page.unroute("https://api.steampowered.com/**");
   report.checks.push("Intercepted Steam fixtures only: official-schema items deduped, failed refresh preserves lastSuccess/items, empty success clears content, disabled-source late response discarded. This is NOT a real public fetch.");
   await page.evaluate(()=>localStorage.clear());await open("state=priority");
