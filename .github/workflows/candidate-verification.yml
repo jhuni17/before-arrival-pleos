@@ -54,7 +54,15 @@ jobs:
               }
           }
           GRADLE
-          bash ./gradlew --no-daemon -Pandroid.builder.sdkDownload=false \
+          wrapper=gradle/wrapper/gradle-wrapper.properties
+          distribution="$(sed -n 's/^distributionUrl=//p' "$wrapper" | tr -d '\\')"
+          checksum="$(sed -n 's/^distributionSha256Sum=//p' "$wrapper")"
+          archive="$RUNNER_TEMP/gradle.zip"
+          curl --fail --location --retry 2 --connect-timeout 20 --max-time 180 --output "$archive" "$distribution"
+          printf '%s  %s\n' "$checksum" "$archive" | sha256sum --check
+          unzip -q "$archive" -d "$RUNNER_TEMP/gradle"
+          gradle_bin=("$RUNNER_TEMP"/gradle/gradle-*/bin/gradle)
+          "${gradle_bin[0]}" --no-daemon -Pandroid.builder.sdkDownload=false \
             --init-script "$RUNNER_TEMP/unsigned-sample.gradle" \
             :app:testSampleDebugUnitTest :app:lintSampleDebug :app:assembleSampleDebug \
             2>&1 | tee ../ci-evidence/android.log
@@ -65,6 +73,7 @@ jobs:
           sha256sum app-sample-debug-unsigned.apk > apk-sha256.txt
 
       - uses: actions/setup-node@v6
+        if: ${{ !cancelled() }}
         with:
           node-version: '22'
           package-manager-cache: false
