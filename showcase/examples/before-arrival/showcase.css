@@ -607,3 +607,9 @@ select:focus-visible {
 .deferred-card h3{font-size:20px;line-height:1.5;word-break:keep-all;margin:8px 0}
 .deferred-save{min-height:48px;border:1px solid var(--line);background:var(--surface);color:var(--text);padding:10px 14px;border-radius:8px;margin-top:12px}
 .original-link{color:var(--text)}
+
+/* Arrival content leads in reading order; wide screens retain the vehicle/pocket pair. */
+@media (min-width:1151px){
+ .scene-composition[data-arrived="true"]>.vehicle{grid-column:1;grid-row:1}
+ .scene-composition[data-arrived="true"]>.phone{grid-column:2;grid-row:1}
+}

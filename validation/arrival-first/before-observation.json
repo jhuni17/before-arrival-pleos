@@ -1,0 +1,39 @@
+{
+  "sourceSha": "6db5411b009b0464fce52217f159118c7d68f4f1",
+  "upstreamRequests": 0,
+  "method": "Actual UI register official snapshot,4min deferred save,04 arrival click; no scripted scroll after arrival click",
+  "results": [
+    {
+      "width": 390,
+      "height": 1080,
+      "scrollY": 0,
+      "heading": {
+        "top": 1306.484375,
+        "bottom": 1340.28125
+      },
+      "firstSaved": {
+        "top": 1502.28125,
+        "bottom": 1566.65625
+      },
+      "title": "리그 오브 레전드 26.22 패치 노트",
+      "link": "https://www.leagueoflegends.com/ko-kr/news/game-updates/league-of-legends-patch-26-22-notes/",
+      "savedCount": 1
+    },
+    {
+      "width": 320,
+      "height": 960,
+      "scrollY": 0,
+      "heading": {
+        "top": 1520.96875,
+        "bottom": 1554.765625
+      },
+      "firstSaved": {
+        "top": 1740.765625,
+        "bottom": 1805.140625
+      },
+      "title": "리그 오브 레전드 26.22 패치 노트",
+      "link": "https://www.leagueoflegends.com/ko-kr/news/game-updates/league-of-legends-patch-26-22-notes/",
+      "savedCount": 1
+    }
+  ]
+}
