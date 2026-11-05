@@ -2,7 +2,7 @@ package com.beforearrival.briefing;
 
 import java.util.EnumSet;
 import java.util.List;
-import java.util.OptionalInt;
+import java.util.OptionalLong;
 
 import com.beforearrival.briefing.Briefing.Item;
 
@@ -28,16 +28,25 @@ public final class BriefingCheck {
         check(disabled.selected.equals(List.of(Item.GAME)), "disabled schedule and oversized priority");
         check(disabled.deferred.equals(List.of(Item.COMMUNITY)), "estimate determines eligibility");
 
-        RouteInput.Snapshot unknown = new RouteInput.Snapshot(OptionalInt.empty(), route.snapshot().observedAt, "테스트");
+        RouteInput.Snapshot unknown = new RouteInput.Snapshot(OptionalLong.empty(), route.snapshot().observedAt, RouteInput.Source.SAMPLE, "테스트");
         Briefing.Plan noEta = Briefing.plan(unknown, all, Item.GAME);
         check(noEta.budgetSeconds == 0 && noEta.selected.isEmpty() && noEta.deferred.size() == 3, "unknown ETA");
 
-        RouteInput.Snapshot afterDeadline = new RouteInput.Snapshot(OptionalInt.of(4),
-                SampleRouteInput.demoTime(8, 59), "테스트");
+        RouteInput.Snapshot afterDeadline = new RouteInput.Snapshot(OptionalLong.of(240),
+                SampleRouteInput.demoTime(8, 59), RouteInput.Source.SAMPLE, "테스트");
         check(Briefing.plan(afterDeadline, all, Item.GAME).selected.equals(List.of(Item.GAME)), "expired deadline");
 
         Briefing.Plan none = Briefing.plan(route.snapshot(), EnumSet.noneOf(Item.class), Item.SCHEDULE);
         check(none.narration().isEmpty() && none.deferred.isEmpty(), "all sources disabled");
+        RouteInput.Snapshot seconds = new RouteInput.Snapshot(OptionalLong.of(239),
+                route.snapshot().observedAt, RouteInput.Source.NAVI_HELPER, "테스트");
+        check(Briefing.plan(seconds, all, Item.GAME).budgetSeconds == 11, "sub-minute duration precision");
+        RouteInput.Snapshot arrival = new RouteInput.Snapshot(OptionalLong.of(0),
+                route.snapshot().observedAt, RouteInput.Source.NAVI_HELPER, "테스트");
+        check(Briefing.plan(arrival, all, Item.GAME).selected.isEmpty(), "arrival is not a parked state");
+        RouteInput.Snapshot huge = new RouteInput.Snapshot(OptionalLong.of(Long.MAX_VALUE),
+                route.snapshot().observedAt, RouteInput.Source.NAVI_HELPER, "테스트");
+        check(Briefing.plan(huge, all, Item.GAME).budgetSeconds == 45, "large duration never overflows");
         System.out.println("Briefing checks passed");
     }
 

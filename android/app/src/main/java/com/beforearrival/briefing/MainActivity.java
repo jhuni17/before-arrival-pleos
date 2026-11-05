@@ -22,6 +22,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -30,25 +31,23 @@ import java.util.List;
 import java.util.Set;
 
 import com.beforearrival.briefing.Briefing.Item;
-import com.beforearrival.briefing.CarRestrictions.State;
+import com.beforearrival.briefing.AccessPolicy.State;
 
 public final class MainActivity extends Activity {
-    private static final int BACKGROUND = Color.rgb(13, 22, 36);
-    private static final int SURFACE = Color.rgb(24, 37, 54);
-    private static final int BORDER = Color.rgb(57, 76, 96);
-    private static final int TEXT = Color.rgb(243, 247, 250);
-    private static final int MUTED = Color.rgb(187, 202, 216);
-    private static final int ACCENT = Color.rgb(114, 228, 221);
+    private int BACKGROUND, SURFACE, BORDER, TEXT, MUTED, ACCENT, ON_ACCENT;
     private static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("HH:mm")
             .withZone(SampleRouteInput.SEOUL);
 
     private final SampleRouteInput sampleRoute = new SampleRouteInput();
-    private final RouteInput routeInput = sampleRoute;
+    private boolean liveMode;
+    private final NavigationRouteInput navigationRoute = new NavigationRouteInput(this::onNavigationChanged);
+    private RouteInput routeInput = sampleRoute;
+    private RouteConnection liveConnection;
     private final EnumSet<Item> enabled = EnumSet.noneOf(Item.class);
     private final EnumSet<Item> saved = EnumSet.noneOf(Item.class);
     private SharedPreferences preferences;
     private AlertDialog activeDialog;
-    private Item priority = Item.SCHEDULE;
+    private Item priority = Item.GAME;
     private Briefing.Plan plan;
     private SpeechPlayback speech;
     private CarRestrictions restrictions;
@@ -62,6 +61,9 @@ public final class MainActivity extends Activity {
     private LinearLayout savedRows;
     private TextView restrictionNotice;
     private TextView eta;
+    private TextView accessLabel;
+    private TextView nextItem;
+    private Button routeMode;
     private TextView routeLabel;
     private TextView summary;
     private TextView transcript;
@@ -77,6 +79,10 @@ public final class MainActivity extends Activity {
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         automotive = getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+        configurePalette();
+        liveMode = state == null ? LiveConnectionFactory.isSdkIncluded()
+                : state.getBoolean("live_mode", LiveConnectionFactory.isSdkIncluded());
+        routeInput = liveMode ? navigationRoute : sampleRoute;
         if (state != null) sampleRoute.select(state.getInt("sample_eta", 18));
         preferences = getSharedPreferences("briefing", MODE_PRIVATE);
         for (Item item : Item.values()) {
@@ -85,7 +91,7 @@ public final class MainActivity extends Activity {
             if (item.name().equals(preferences.getString("priority", ""))) priority = item;
         }
         buildScreen();
-        speech = new SpeechPlayback(this, this::renderSpeechStatus);
+        speech = new SpeechPlayback(this, this::canInteract, this::renderSpeechStatus);
         render();
         renderAccess();
     }
@@ -93,6 +99,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onStart() {
         super.onStart();
+        if (liveMode) connectLive();
         if (!automotive) return;
         try {
             restrictions = new CarRestrictions(state -> {
@@ -124,6 +131,10 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onStop() {
+        if (liveConnection != null) {
+            liveConnection.close();
+            liveConnection = null;
+        }
         if (restrictions != null) {
             restrictions.close();
             restrictions = null;
@@ -135,7 +146,8 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onSaveInstanceState(Bundle state) {
-        state.putInt("sample_eta", sampleRoute.snapshot().remainingMinutes.orElse(18));
+        state.putInt("sample_eta", (int) (sampleRoute.snapshot().remainingSeconds.orElse(1080) / 60));
+        state.putBoolean("live_mode", liveMode);
         super.onSaveInstanceState(state);
     }
 
@@ -174,24 +186,34 @@ public final class MainActivity extends Activity {
         restrictionNotice.setPadding(dp(24), dp(24), dp(24), dp(24));
         frame.addView(restrictionNotice, new FrameLayout.LayoutParams(-1, -1));
 
-        add(content, label("BEFORE ARRIVAL  /  정차용 데모", 12, ACCENT, true), 0);
+        add(content, label("정차용 브리핑 · 예시 콘텐츠", 18, MUTED, true), 0);
         add(content, heading("도착 전에", 34), 4);
-        add(content, label("남은 시간에 맞춰 듣는 내 출근길 브리핑", 16, MUTED, false), 4);
+        accessLabel = label("", 18, MUTED, false);
+        add(content, accessLabel, 4);
 
         LinearLayout route = panel();
         add(content, route, 20);
-        add(route, label("목적지까지", 13, MUTED, true), 0);
-        eta = label("", 34, ACCENT, true);
+        add(route, label("도착까지", 20, MUTED, true), 0);
+        eta = label("", 48, TEXT, true);
         add(route, eta, 2);
-        routeLabel = label("", 14, MUTED, false);
+        routeLabel = label("", 18, MUTED, false);
         add(route, routeLabel, 2);
         etaLong = button("18분", false, () -> selectRoute(18));
         etaShort = button("4분", false, () -> selectRoute(4));
-        add(route, buttonRow(etaLong, etaShort), 8);
+        routeMode = button("", false, () -> {
+            if (!canInteract()) return;
+            liveMode = !liveMode;
+            routeInput = liveMode ? navigationRoute : sampleRoute;
+            if (liveConnection != null) { liveConnection.close(); liveConnection = null; }
+            if (liveMode) connectLive();
+            refreshPlan();
+        });
 
         LinearLayout briefing = panel();
         add(content, briefing, 12);
-        add(briefing, heading("오늘 브리핑", 21), 0);
+        add(briefing, heading("이번에 들을 소식", 20), 0);
+        nextItem = heading("", 28);
+        add(briefing, nextItem, 8);
         summary = label("", 14, MUTED, false);
         summary.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         add(briefing, summary, 4);
@@ -201,7 +223,8 @@ public final class MainActivity extends Activity {
             transcriptVisible = !transcriptVisible;
             renderTranscript();
         });
-        add(briefing, buttonRow(listen, transcriptButton), 8);
+        add(briefing, listen, 16);
+        add(briefing, transcriptButton, 8);
         speechStatus = label("", 14, ACCENT, false);
         speechStatus.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         add(briefing, speechStatus, 4);
@@ -213,11 +236,18 @@ public final class MainActivity extends Activity {
         LinearLayout settings = panel();
         add(content, settings, 12);
         add(settings, heading("내 브리핑 설정", 21), 0);
+        add(settings, buttonRow(etaLong, etaShort), 8);
+        add(settings, routeMode, 8);
+        add(settings, button("실제 경로 다시 연결", false, () -> {
+            if (canInteract() && liveMode) connectLive();
+        }), 8);
         for (Item item : Item.values()) {
             CheckBox check = new CheckBox(this);
             check.setText(item.label);
             check.setTextColor(TEXT);
-            check.setMinHeight(dp(48));
+            check.setMinHeight(dp(56));
+            check.setTextSize(20);
+            check.setTypeface(getResources().getFont(R.font.asta_sans));
             check.setChecked(enabled.contains(item));
             check.setOnCheckedChangeListener((view, checked) -> {
                 if (!canInteract()) return;
@@ -250,9 +280,25 @@ public final class MainActivity extends Activity {
     }
 
     private void selectRoute(int minutes) {
-        if (!canInteract()) return;
+        if (!canInteract() || liveMode) return;
         sampleRoute.select(minutes);
         refreshPlan();
+    }
+
+    private void onNavigationChanged(RouteInput.Snapshot snapshot) {
+        if (!liveMode || speech == null) return;
+        Briefing.Plan updated = Briefing.plan(snapshot, enabled, priority);
+        if (plan == null || updated.budgetSeconds != plan.budgetSeconds || !updated.selected.equals(plan.selected)) {
+            refreshPlan();
+        } else {
+            render();
+        }
+    }
+
+    private void connectLive() {
+        if (liveConnection != null) liveConnection.close();
+        liveConnection = LiveConnectionFactory.create(this, navigationRoute);
+        liveConnection.start();
     }
 
     private void choosePriority() {
@@ -291,7 +337,7 @@ public final class MainActivity extends Activity {
     private void togglePlayback() {
         if (!canInteract() || plan.selected.isEmpty()) return;
         if (speech.isPlaying()) speech.stop();
-        else speech.play(plan.narration());
+        else speech.play(plan.narration(), plan.budgetSeconds);
     }
 
     private void refreshPlan() {
@@ -302,22 +348,27 @@ public final class MainActivity extends Activity {
 
     private void render() {
         RouteInput.Snapshot route = routeInput.snapshot();
-        int minutes = route.remainingMinutes.orElse(-1);
-        eta.setText(minutes >= 0 ? minutes + "분" : "도착 시간 미확인");
-        routeLabel.setText(route.sourceLabel + " · " + CLOCK.format(route.observedAt) + " 기준");
+        long seconds = route.remainingSeconds.orElse(-1);
+        long minutes = seconds < 0 ? -1 : seconds / 60;
+        eta.setText(seconds >= 0 ? (seconds == 0 ? "도착" : seconds < 60 ? "1분 미만" : minutes + "분") : "도착 시간 미확인");
+        routeMode.setText(liveMode ? "샘플 경로로 전환" : "실제 경로로 전환");
+        etaLong.setVisibility(liveMode ? View.GONE : View.VISIBLE);
+        etaShort.setVisibility(liveMode ? View.GONE : View.VISIBLE);
+        routeLabel.setText(route.observedAt.equals(Instant.EPOCH) ? route.sourceLabel
+                : getString(R.string.route_observation, route.sourceLabel, CLOCK.format(route.observedAt)));
         setRouteButton(etaLong, minutes == 18);
         setRouteButton(etaShort, minutes == 4);
-        priorityButton.setText("먼저 듣기 · " + priority.label);
+        priorityButton.setText(getString(R.string.priority_label, priority.label));
         plan = Briefing.plan(route, enabled, priority);
+        nextItem.setText(plan.selected.isEmpty() ? "브리핑을 기다리고 있어요" : plan.selected.get(0).title);
         if (enabled.isEmpty()) {
             summary.setText("브리핑에 넣을 소식 출처를 선택해 주세요.");
         } else if (minutes < 0) {
             summary.setText("남은 시간을 확인하면 브리핑을 준비할 수 있어요.");
         } else if (plan.selected.isEmpty()) {
-            summary.setText("듣기 예산 " + plan.budgetSeconds + "초 · 도착 후 볼 수 있어요.");
+            summary.setText(getString(R.string.budget_empty, plan.budgetSeconds));
         } else {
-            summary.setText("듣기 예산 " + plan.budgetSeconds + "초 · " + plan.selected.size()
-                    + "건 약 " + plan.selectedSeconds + "초");
+            summary.setText(getString(R.string.budget_selected, plan.budgetSeconds, plan.selected.size(), plan.selectedSeconds));
         }
         renderRows(route);
         renderSaved();
@@ -327,24 +378,27 @@ public final class MainActivity extends Activity {
 
     private void renderAccess() {
         boolean allowed = canUse();
+        accessLabel.setText(allowed ? "주차 시 사용 가능 · 차량 UX 제한 해제" : "차량 상태 미확인");
         content.setVisibility(allowed ? View.VISIBLE : View.GONE);
         restrictionNotice.setVisibility(allowed ? View.GONE : View.VISIBLE);
         if (!allowed) {
             dismissDialog();
+            transcriptVisible = false;
+            renderTranscript();
             speech.stop();
             restrictionNotice.setText(restrictionState == State.RESTRICTED
-                    ? "정차 후 브리핑을 열어 주세요."
-                    : "차량의 사용 가능 상태를 확인하고 있어요. 확인되면 브리핑을 열 수 있어요.");
+                    ? "주행 제한 · 화면과 음성을 중지했어요.\n정차 후 브리핑을 열어 주세요."
+                    : "차량 상태 미확인 · 화면과 음성을 중지했어요.\n차량의 사용 가능 상태를 확인하면 브리핑을 열 수 있어요.");
         }
         renderSpeechStatus("");
     }
 
     private boolean canUse() {
-        return !automotive || restrictionState == State.PARKED_USE_ALLOWED;
+        return restrictionState == State.PARKED_USE_ALLOWED;
     }
 
     private boolean canInteract() {
-        return resumed && canUse();
+        return AccessPolicy.canInteract(resumed, restrictionState);
     }
 
     private void renderRows(RouteInput.Snapshot route) {
@@ -397,7 +451,7 @@ public final class MainActivity extends Activity {
     }
 
     private void renderSaved() {
-        savedHeading.setText("도착해서 보기 · " + saved.size());
+        savedHeading.setText(getString(R.string.saved_heading, saved.size()));
         savedRows.removeAllViews();
         if (saved.isEmpty()) {
             add(savedRows, label("저장한 소식이 없어요.", 14, MUTED, false), 4);
@@ -429,7 +483,7 @@ public final class MainActivity extends Activity {
 
     private void setRouteButton(Button button, boolean selected) {
         button.setSelected(selected);
-        button.setTextColor(selected ? BACKGROUND : TEXT);
+        button.setTextColor(selected ? ON_ACCENT : TEXT);
         button.setBackground(buttonBackground(selected));
     }
 
@@ -451,9 +505,10 @@ public final class MainActivity extends Activity {
         Button button = new Button(this);
         button.setAllCaps(false);
         button.setText(text);
-        button.setTextSize(15);
-        button.setTextColor(primary ? BACKGROUND : TEXT);
-        button.setMinimumHeight(dp(48));
+        button.setTextSize(20);
+        button.setTypeface(getResources().getFont(R.font.asta_sans));
+        button.setTextColor(primary ? ON_ACCENT : TEXT);
+        button.setMinimumHeight(dp(56));
         button.setPadding(dp(12), dp(6), dp(12), dp(6));
         button.setBackground(buttonBackground(primary));
         button.setOnClickListener(view -> action.run());
@@ -496,9 +551,10 @@ public final class MainActivity extends Activity {
     private TextView label(String text, int size, int color, boolean bold) {
         TextView view = new TextView(this);
         view.setText(text);
-        view.setTextSize(size);
+        view.setTextSize(Math.max(18, size));
+        view.setTypeface(getResources().getFont(R.font.asta_sans));
         view.setTextColor(color);
-        if (bold) view.setTypeface(null, Typeface.BOLD);
+        if (bold) view.setTypeface(view.getTypeface(), Typeface.BOLD);
         return view;
     }
 
@@ -506,6 +562,16 @@ public final class MainActivity extends Activity {
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
         params.topMargin = dp(top);
         parent.addView(view, params);
+    }
+
+    private void configurePalette() {
+        BACKGROUND = getColor(R.color.app_background);
+        SURFACE = getColor(R.color.app_surface);
+        BORDER = getColor(R.color.app_border);
+        TEXT = getColor(R.color.app_text);
+        MUTED = getColor(R.color.app_text_secondary);
+        ACCENT = getColor(R.color.app_button);
+        ON_ACCENT = getColor(R.color.app_on_button);
     }
 
     private int dp(int value) {

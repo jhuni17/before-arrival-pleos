@@ -1,0 +1,48 @@
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/workspace/tools-before-arrival/cacerts -Dhttps.proxyHost=proxy -Dhttps.proxyPort=8080 -Dhttp.proxyHost=proxy -Dhttp.proxyPort=8080
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.11.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:clean
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preSampleDebugBuild UP-TO-DATE
+> Task :app:mergeSampleDebugNativeDebugMetadata NO-SOURCE
+> Task :app:javaPreCompileSampleDebug
+> Task :app:checkSampleDebugAarMetadata
+> Task :app:generateSampleDebugResValues
+> Task :app:mapSampleDebugSourceSetPaths
+> Task :app:generateSampleDebugResources
+> Task :app:packageSampleDebugResources
+> Task :app:createSampleDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksSampleDebug
+> Task :app:mergeSampleDebugResources
+> Task :app:processSampleDebugMainManifest
+> Task :app:parseSampleDebugLocalResources
+> Task :app:processSampleDebugManifest
+> Task :app:mergeSampleDebugShaders
+> Task :app:compileSampleDebugShaders NO-SOURCE
+> Task :app:generateSampleDebugAssets UP-TO-DATE
+> Task :app:mergeSampleDebugAssets
+> Task :app:processSampleDebugManifestForPackage
+> Task :app:checkSampleDebugDuplicateClasses
+> Task :app:compressSampleDebugAssets
+> Task :app:desugarSampleDebugFileDependencies
+> Task :app:processSampleDebugJavaRes NO-SOURCE
+> Task :app:mergeSampleDebugJniLibFolders
+> Task :app:mergeExtDexSampleDebug
+> Task :app:mergeLibDexSampleDebug
+> Task :app:mergeSampleDebugNativeLibs NO-SOURCE
+> Task :app:stripSampleDebugDebugSymbols NO-SOURCE
+> Task :app:mergeSampleDebugJavaResource
+> Task :app:validateSigningSampleDebug
+> Task :app:writeSampleDebugAppMetadata
+> Task :app:writeSampleDebugSigningConfigVersions
+> Task :app:processSampleDebugResources
+> Task :app:compileSampleDebugJavaWithJavac
+> Task :app:dexBuilderSampleDebug
+> Task :app:mergeSampleDebugGlobalSynthetics
+> Task :app:mergeProjectDexSampleDebug
+> Task :app:packageSampleDebug
+> Task :app:createSampleDebugApkListingFileRedirect
+> Task :app:assembleSampleDebug
+
+BUILD SUCCESSFUL in 11s
+33 actionable tasks: 33 executed

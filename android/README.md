@@ -1,39 +1,42 @@
-# 도착 전에 · Android Automotive OS 스타터
+# 도착 전에 · 차량 앱
 
-Android Automotive OS 헤드유닛에서 정차 중 사용할 수 있도록 만든 네이티브 Android 앱입니다. Android 10 이상 일반 Android 기기에서도 데모 화면을 열 수 있습니다. 화면의 도착 시간과 일정·게임 패치·커뮤니티 소식에는 예시 데이터를 사용합니다.
+차량 UX 제한이 해제된 상태에서 예시 콘텐츠를 편성하는 프로토타입입니다. `sample`은 샘플 경로로 실행할 수 있고, `pleos`는 NaviHelper 3.0.5 연결 후보입니다. **실제 ETA 연동은 아직 완료되지 않았습니다.** Pleos Maven 접근이 차단됐고 `DestinationInfo.remainTime`의 단위·유효 범위를 확인하지 못해 실제 값 변환을 차단했습니다. 실제 SDK 콜백·Connect 실행 성공으로 소개하면 안 됩니다.
 
-## 빌드와 실행
+## 빌드
 
-1. Android Studio에서 이 `android` 폴더를 엽니다. Gradle JDK는 JDK 17을 선택하고, SDK Manager에서 Android API 35와 Build-Tools 35.0.0을 설치합니다.
-2. Gradle 동기화 후 Android Automotive OS 에뮬레이터 또는 Android API 29 이상 기기를 선택해 `app`을 실행합니다. 한국어 음성 재생을 확인하려면 기기의 TTS 엔진에 오프라인 한국어 음성을 설치합니다.
-3. CLI에서는 이 폴더에서 Windows의 `gradlew.bat :app:assembleDebug` 또는 macOS·Linux의 `sh ./gradlew :app:assembleDebug`를 실행합니다. 결과 경로는 `app/build/outputs/apk/debug/app-debug.apk`입니다.
+JDK 17, Android API 35, Build-Tools 35.0.0을 설치하고 Android SDK 라이선스에 동의합니다. `JAVA_HOME`, `ANDROID_HOME`을 해당 설치 위치로 설정한 뒤 이 폴더에서 실행합니다.
 
-## 데모에서 확인할 동작
-
-- **18분 · 08:40** — 듣기 예산은 45초입니다. 세 출처가 모두 켜져 있으면 약 32초 분량을 고른 우선순위대로 보여 줍니다.
-- **4분 · 08:54** — 듣기 예산은 12초입니다. 08:58까지 회의 장소 확인이 필요한 일정이 먼저 나오고, 게임·커뮤니티 소식은 나중에 듣기로 옮겨집니다. 일정 출처를 끄면 11초짜리 게임 패치가 들어갈 수 있습니다. 13초짜리 커뮤니티는 4분 시나리오 예산을 넘습니다.
-- 출처 켜기·끄기와 먼저 듣기 설정은 이 기기에 저장됩니다. 선택되거나 보류된 소식에 `저장`을 눌러 `도착해서 보기`에 넣고, 목록의 제목을 눌러 본문을 확인합니다.
-- `브리핑 듣기`는 설치된 오프라인 한국어 음성을 사용합니다. `대본 보기`로 화면에서 같은 내용을 읽을 수 있습니다. 오디오 포커스를 얻지 못하거나 음성이 준비되지 않으면 상태가 표시됩니다.
-- AAOS에서 UX 제한을 받거나 상태를 확인할 수 없을 때 화면을 잠그고 음성과 대화상자를 닫습니다. 액티비티가 일시정지될 때도 음성과 대화상자를 닫습니다. 정차 상태로 돌아왔을 때는 사용자가 다시 듣기를 눌러야 합니다.
-
-## 브리핑 규칙
-
-도착까지 3분을 남기고, 나머지 시간의 20%를 최대 45초까지 듣기 예산으로 배정합니다. 예시 소식에는 8초, 11초, 13초의 추정 낭독 길이를 두었습니다. 마감이 지난 소식의 우선권은 만료됩니다. 마감이 10분 이내에 다가온 소식을 먼저 검토한 뒤 선택한 우선순위와 기본 순서를 적용합니다. 각 소식은 남은 예산에 들어갈 때 포함합니다. 경로 입력에서 ETA를 확인할 수 없으면 예산은 0초입니다.
-
-`RouteInput`은 남은 분, 관측 시각, 출처 표시를 제공하는 교체 지점입니다. 이 프로젝트에서는 `SampleRouteInput`을 연결했습니다. Pleos 환경에서 권한과 SDK를 확보한 뒤 NaviHelper v3.0.5의 `onDestinationInfo` 콜백으로 받는 `DestinationInfo.remainTime` 값의 단위와 유효 범위를 확인하고 이 인터페이스로 변환할 수 있습니다. 업데이트가 들어올 때 화면의 계획을 다시 계산하는 연결도 필요합니다. 일정·패치·커뮤니티의 외부 연동과 Pleos 실기 검증은 다음 단계입니다. [NaviHelper SDK 소개](https://document.pleos.ai/api-reference/connect-sdk-pleos/NaviHelper/intro), [목적지 조회](https://document.pleos.ai/api-reference/connect-sdk-pleos/NaviHelper/destinations), [DestinationInfo API](https://document.pleos.ai/en/api-reference/connect-sdk-pleos/NaviHelper/navi-helper/ai.pleos.playground.navi.data/destination-info/entry)
-
-## 브리핑 규칙 검사
-
-JDK만 있는 환경에서는 이 폴더에서 다음 명령으로 두 ETA, 우선순위, 소스 비활성화, 예상 낭독 초과, ETA 미확인, 마감 경과를 검증할 수 있습니다.
-
-```text
-javac -encoding UTF-8 --release 17 -d build/core-check app/src/main/java/com/beforearrival/briefing/RouteInput.java app/src/main/java/com/beforearrival/briefing/SampleRouteInput.java app/src/main/java/com/beforearrival/briefing/Briefing.java checks/BriefingCheck.java
-java -cp build/core-check com.beforearrival.briefing.BriefingCheck
+```sh
+sh ./gradlew --no-daemon :app:assembleSampleDebug
+sh ./gradlew --no-daemon :app:testSampleDebugUnitTest :app:lintSampleDebug
+sh checks/verify-core.sh
+python3 checks/verify-colors.py
 ```
 
-이 작업 환경에서 위 JVM 검사를 통과했고, 공개 AOSP API 35와 차량 API 스텁으로 전체 Java 소스를 컴파일했습니다. APK 빌드와 에뮬레이터 검증에는 Android SDK 설치와 SDK 라이선스 동의가 필요합니다.
+APK: `app/build/outputs/apk/sample/debug/app-sample-debug.apk`
+패키지: `com.beforearrival.briefing.sample`
+테스트: `app/build/reports/tests/testSampleDebugUnitTest/index.html`
+lint: `app/build/reports/lint-results-sampleDebug.html`
 
-- [AAOS 정차용 앱과 UX 제한](https://developer.android.com/training/cars/parked/automotive-os)
-- [AAOS 에뮬레이터 설정](https://developer.android.com/training/cars/testing/emulator)
-- [Android 오디오 포커스](https://developer.android.com/media/optimize/audio-focus)
-- [Android Gradle Plugin 8.9 요구 사항](https://developer.android.com/build/releases/agp-8-9-0-release-notes)
+`assembleDebug`는 두 flavor를 모두 빌드하므로 Pleos 저장소 접근도 필요합니다. SDK가 없는 환경에서는 반드시 `assembleSampleDebug`를 사용합니다. 샘플 APK에는 Pleos SDK나 내비 조회 권한이 들어가지 않습니다. 실제 연결 후보는 `sh ./gradlew :app:assemblePleosDebug`로 별도 빌드하며 패키지는 `com.beforearrival.briefing`입니다. 이 후보는 실제 AAR 컴파일과 API 시그니처 검증이 남아 있습니다.
+
+## 동작과 제한
+
+- 기본 우선순위는 게임 패치입니다. 18분 · 08:40에서는 45초 예산으로 게임→일정→커뮤니티, 총 약 32초를 선택합니다. 4분 · 08:54에서는 마감 08:58인 일정 변경 8초를 우선하고 예산은 12초입니다. 일정 출처를 끄면 게임 패치 11초가 들어갑니다.
+- 모델에는 남은 **초**와 관측 시각, SAMPLE/NAVI_HELPER 출처를 전달합니다. 예산은 `min(45, max(0, 남은초 - 180) / 5)`입니다. 시각은 마감 우선권 판단에 쓰고, ETA에서 주차·주행 상태를 추론하지 않습니다.
+- 경로·설정으로 실제 편성이나 예산이 바뀌면 재생을 멈추며 사용자가 다시 눌러야 합니다. 같은 편성의 반복 갱신은 진행 중인 재생을 끊지 않습니다. 표시된 8/11/13초는 추정치이며 실제 한국어 음성 길이를 실측한 값이 아닙니다. TTS에는 전체 듣기 예산을 넘기지 않는 실행 시간 상한과 200ms 선행 묵음을 적용했습니다.
+- 실제 경로 모드는 권한 누락·취소·목적지 변경·오류·응답 시간 초과·해제 시 ETA를 비웁니다. 이전 세션의 늦은 콜백은 무시합니다. 자동 샘플 대체는 하지 않고, 샘플 전환은 사용자가 명시적으로 선택해야 합니다.
+- 실제 연결은 초기화 뒤 조회하고, 정상 수신 후 5초 간격으로 다시 조회하는 후보입니다. 각 조회의 응답 대기 상한은 10초입니다. SDK 초기화 콜백은 지속적인 서비스 연결 감시가 아니므로 조용한 서비스 단절은 즉시 확인할 수 없고 다음 조회의 오류/시간 초과에서 무효화합니다. 취소·목적지 변경 뒤에는 세션을 닫고 명시적으로 다시 연결합니다.
+- 화면과 음성은 전경 상태이고 `CarUxRestrictions`가 사용을 허용할 때만 열립니다. 제한 또는 미확인 상태는 화면·대본·대화상자·TTS를 차단합니다. **일반 Android 기기도 차량 상태가 미확인이므로 잠깁니다.** 테스트의 상태 주입은 배포 APK에 조작 우회 기능을 추가하지 않습니다.
+- TTS는 설치된 오프라인 한국어 음성만 선택하고 MEDIA/SPEECH 포커스를 얻은 뒤 시작합니다. 포커스 거부 시 발화하지 않으며 손실, 중단, 오류, 완료, 일시정지, 해제 시 포커스를 반납합니다. 포커스 복귀로 자동 재생하지 않습니다.
+- 출처·우선순위·저장은 이 기기의 앱 저장소에 보관합니다. 휴대폰 동기화와 외부 콘텐츠 연결은 구현하지 않았습니다.
+
+## Pleos 연결을 완료하려면
+
+1. 네트워크 정책에서 `nexus-playground.pleos.ai` 접근을 허용한 환경을 준비합니다. 현재 차단은 프록시 CONNECT 403으로, 계정 인증 실패나 SDK 사용 신청 반려로 확인된 것이 아닙니다.
+2. [3.0.5 문서](https://document.pleos.ai/en/docs/pleos-only/connect-sdk-pleos/NaviHelper/intro)와 실제 AAR로 `remainTime`의 타입·단위·유효 범위·미설정/도착 표현을 확인합니다. 근거와 실제 콜백 fixture를 남기고 `NaviTimeContract.decode()`의 차단을 검증된 변환으로 교체합니다. 이름만 보고 분/초를 선택하면 안 됩니다.
+3. `pleos.car.permission.NAVI_ROUTE`의 기기 부여 상태를 확인합니다. 조회만 하므로 NAVI_ROUTE_SEARCH/CUSTOM_MAP은 선언하지 않습니다. [공식 권한 문서](https://document.pleos.ai/en/docs/pleos-only/connect-sdk-pleos/NaviHelper/declaring-permissions)
+4. 실제 3.0.5 AAR로 `assemblePleosDebug`를 통과시킨 뒤 Connect 2.1.0에서 설치, 실제 콜백·ETA 갱신, 권한 회수·목적지 취소·서비스 해제·제한 전환·한국어 음성·포커스 경쟁을 검증합니다. 수신값만으로 요청/경로 식별을 보장할 수 있는지도 확인합니다.
+5. 검증 전까지 실제 연결 완료 문구와 영상 자막을 사용하지 않습니다.
+
+[검증 기록](VALIDATION.md) · [시연 문자열·색상·글꼴 계약](DEMO-CONTRACT.md)

@@ -15,6 +15,14 @@ android {
         versionName '0.1'
     }
 
+    flavorDimensions 'route'
+    productFlavors {
+        sample { dimension 'route'; applicationIdSuffix '.sample' }
+        pleos { dimension 'route' }
+    }
+
+    testOptions { unitTests.includeAndroidResources = true }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
@@ -23,4 +31,19 @@ android {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+}
+
+dependencies {
+    testImplementation "junit:junit:4.13.2"
+    testImplementation "org.robolectric:robolectric:4.16.1"
+    pleosImplementation "ai.pleos.playground:NaviHelper:3.0.5"
+}
+
+// Use the same session proxy/trust configuration for the Robolectric test JVM.
+tasks.withType(Test).configureEach {
+    ['https.proxyHost', 'https.proxyPort', 'http.proxyHost', 'http.proxyPort',
+     'javax.net.ssl.trustStore'].each { key ->
+        if (System.getProperty(key)) systemProperty key, System.getProperty(key)
+    }
+    systemProperty 'robolectric.dependency.repo.url', 'https://repo.maven.apache.org/maven2'
 }

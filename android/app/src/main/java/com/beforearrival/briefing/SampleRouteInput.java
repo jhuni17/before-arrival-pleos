@@ -3,7 +3,7 @@ package com.beforearrival.briefing;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.OptionalInt;
+import java.util.OptionalLong;
 
 final class SampleRouteInput implements RouteInput {
     static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
@@ -23,7 +23,7 @@ final class SampleRouteInput implements RouteInput {
 
     @Override
     public Snapshot snapshot() {
-        return new Snapshot(OptionalInt.of(demoMinutes), demoTime(8, demoMinutes == 18 ? 40 : 54),
-                "경로 시뮬레이션");
+        return new Snapshot(OptionalLong.of(demoMinutes * 60L), demoTime(8, demoMinutes == 18 ? 40 : 54),
+                Source.SAMPLE, "샘플 경로 · 예시 시각");
     }
 }
