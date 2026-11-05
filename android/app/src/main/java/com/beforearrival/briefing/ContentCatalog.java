@@ -255,6 +255,7 @@ final class ContentCatalog {
                 if (!validItem(item, source.id) || !acceptsArticle(provider, source.registrationUrl, item.originalUrl)) throw new IllegalArgumentException();
                 if (seen.add(item.key())) imported.add(item);
             }
+            if (imported.size() > 20) imported = new ArrayList<>(imported.subList(0, 20));
             source.items.clear(); source.items.addAll(imported); source.status = runtime ? "connected" : "connected_snapshot";
             source.fetchState = imported.isEmpty() ? "empty" : "ready"; source.lastAttemptAt = observedAt; source.lastSuccessAt = observedAt;
             source.failureMessage = ""; return true;

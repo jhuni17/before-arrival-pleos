@@ -64,6 +64,12 @@ public final class CatalogHarness {
     check(steam.items.size()==1,"invalid preserves previous");
     check(c.importSnapshot(steam.id,"{\"items\":[]}",now.plusSeconds(60)),"empty success");
     check(steam.items.isEmpty()&&steam.fetchState.equals("empty"),"empty clears stale content");
+    JSONArray many = new JSONArray();
+    for(int i=0;i<25;i++)many.put(new JSONObject().put("id","bulk"+i).put("title","Bulk item").put("summary","Public fixture").put("estimatedSeconds",8).put("originalUrl","https://store.steampowered.com/news/app/570/view/"+(1000+i)));
+    check(c.importSnapshot(steam.id,new JSONObject().put("items",many).toString(),now.plusSeconds(70)),"bounded bulk accepted");
+    check(steam.items.size()==20,"cache limited to20");
+    JSONArray tooMany = new JSONArray();for(int i=0;i<51;i++)tooMany.put(item);
+    try {ContentFeedClient.parse(steam.registrationUrl,new JSONObject().put("appnews",new JSONObject().put("appid",570).put("newsitems",tooMany)).toString());throw new AssertionError("oversized item count accepted");}catch(IllegalArgumentException expected){assertions++;}
     state.clear();state.put("enabled_GAME",false);state.put("priority","COMMUNITY");state.put("saved",Set.of("GAME","SCHEDULE","COMMUNITY"));
     c=new ContentCatalog(defaults,preferences); check(c.sources.get(0).id.equals("sample-community"),"legacy priority");
     check(!c.source("sample-game").enabled&&c.savedItems.size()==3,"legacy enabled and saved");

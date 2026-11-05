@@ -35,9 +35,12 @@ assert.equal(canonicalUrl("https://store.steampowered.com/app/00570/"),"https://
 assert.throws(()=>addSource(state,"lol","중복","https://www.leagueoflegends.com/ko-kr/news/game-updates/"));
 let steamState=addSource(defaults(),"steam","Dota 2","https://store.steampowered.com/app/570/");const source=steamState.sources.at(-1)!;
 const item={gid:"123",title:"Fixture official update",url:"https://steamcommunity.com/games/dota2/announcements/detail/123",contents:"<p>Fixture only, not fetched news.</p>",date:1793870400,feedname:"steam_community_announcements"};
-const parsed=parseSteam({appnews:{appid:570,newsitems:[item,item,{...item,gid:"external",url:"https://evil.test/news"}]}},source,"2026-11-05T12:00:00Z");assert.equal(parsed.length,1);
+const parsed=parseSteam({appnews:{appid:570,newsitems:[item,item,{...item,gid:"external",feedname:"pcgamer",url:"https://evil.test/news"}]}},source,"2026-11-05T12:00:00Z");assert.equal(parsed.length,1);
+assert.throws(()=>parseSteam({appnews:{appid:570,newsitems:[{...item,url:"https://store.steampowered.com/news/app/730/view/123"}]}},source,when));
 assert.throws(()=>parseSteam({appnews:{appid:730,newsitems:[item]}},source,when));
 steamState=applyFeed(steamState,source.id,{items:parsed},"2026-11-05T12:00:00Z");
+assert.throws(()=>parseSteam({appnews:{appid:570,newsitems:[{...item,title:""}]}},source,when));
+const malformed=applyFeed(steamState,source.id,{items:[{...parsed[0],title:""}]},"2026-11-05T12:59:00Z");assert.deepEqual(malformed.sources.at(-1)!.items,parsed);assert(malformed.sources.at(-1)!.refreshError);
 const failed=applyFeed(steamState,source.id,{error:"network"},"2026-11-05T13:00:00Z");assert.deepEqual(failed.sources.at(-1)!.items,parsed);assert.equal(failed.sources.at(-1)!.lastSuccessAt,"2026-11-05T12:00:00Z");
 assert.equal(applyFeed(failed,source.id,{items:[]},"2026-11-05T13:01:00Z").sources.at(-1)!.items.length,0);
 let requested="";const fetched=await refreshSteam(source,new AbortController().signal,async(url,options)=>{requested=String(url);assert.equal(options?.credentials,"omit");assert.equal(options?.redirect,"error");return new Response(JSON.stringify({appnews:{appid:570,newsitems:[item]}}),{status:200});});assert.match(requested,/^https:\/\/api.steampowered.com\/ISteamNews\/GetNewsForApp\/v2\//);assert.equal(fetched.items.length,1);

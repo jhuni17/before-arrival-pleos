@@ -600,3 +600,9 @@ select:focus-visible {
 .source-actions button:disabled{opacity:.65}
 .source-form,.source-form label{min-width:0;grid-template-columns:minmax(0,1fr)}
 .source-form input,.source-form select{box-sizing:border-box}
+
+.deferred-items{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
+.deferred-items h2{font-size:20px;line-height:1.5;margin:0 0 12px}
+.deferred-card{padding:14px 0;border-bottom:1px solid var(--line)}
+.deferred-card h3{font-size:20px;line-height:1.5;word-break:keep-all;margin:8px 0}
+.deferred-save{min-height:48px;border:1px solid var(--line);background:var(--surface);color:var(--text);padding:10px 14px;border-radius:8px;margin-top:12px}

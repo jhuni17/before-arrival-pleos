@@ -183,6 +183,54 @@ public class MainActivityTest {
         assertEquals(1, source.items.size()); assertEquals("connected", source.status);
     }
 
+    @Test public void disablingThenReenablingSourceDiscardsItsOldRefresh() throws Exception {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ContentCatalog catalog = field("catalog");
+        ContentCatalog.Source source = catalog.add("Steam", "steam", "https://store.steampowered.com/news/app/570");
+        ReflectionHelpers.callInstanceMethod(activity, "refreshPlan");
+        java.util.concurrent.CountDownLatch started = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch finish = new java.util.concurrent.CountDownLatch(1);
+        ReflectionHelpers.setField(activity, "feedLoader", (MainActivity.FeedLoader) ignored -> {
+            started.countDown(); finish.await(2, java.util.concurrent.TimeUnit.SECONDS); return "{\"items\":[]}";
+        });
+        Thread worker = ReflectionHelpers.callInstanceMethod(activity, "refreshSource",
+                ReflectionHelpers.ClassParameter.from(ContentCatalog.Source.class, source));
+        assertTrue(started.await(2, java.util.concurrent.TimeUnit.SECONDS));
+        LinearLayout rows = field("sourceRows");
+        ((CheckBox) rows.findViewWithTag("enabled:" + source.id)).setChecked(false);
+        Button refresh = rows.findViewWithTag("refresh:" + source.id);
+        assertFalse(refresh.isEnabled());
+        assertNull(ReflectionHelpers.callInstanceMethod(activity, "refreshSource",
+                ReflectionHelpers.ClassParameter.from(ContentCatalog.Source.class, source)));
+        ((CheckBox) rows.findViewWithTag("enabled:" + source.id)).setChecked(true);
+        finish.countDown(); worker.join(2000); Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertEquals("link_saved", source.status);
+        assertNull(source.lastSuccessAt);
+    }
+
+    @Test public void savedOfficialArticleOpensExactUrlOnlyWhileAllowed() throws Exception {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ContentCatalog catalog = field("catalog");
+        ContentCatalog.Source source = catalog.add("내 롤", "lol", "https://www.leagueoflegends.com/ko-kr/news/game-updates/");
+        ContentCatalog.Item item = source.items.get(0);
+        catalog.toggleSaved(item);
+        ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
+        LinearLayout rows = field("savedRows");
+        ((Button) rows.getChildAt(0)).performClick();
+        AlertDialog dialog = field("activeDialog");
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        android.content.Intent opened = Shadows.shadowOf(activity).getNextStartedActivity();
+        assertEquals(android.content.Intent.ACTION_VIEW, opened.getAction());
+        assertEquals(item.originalUrl, opened.getDataString());
+        ((Button) rows.getChildAt(0)).performClick();
+        dialog = field("activeDialog");
+        Button open = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        setAccess(AccessPolicy.State.RESTRICTED);
+        assertFalse(dialog.isShowing());
+        open.performClick();
+        assertNull(Shadows.shadowOf(activity).getNextStartedActivity());
+    }
+
     private static <T> List<T> descendants(View view, Class<T> type) {
         List<T> result = new ArrayList<>();
         if (type.isInstance(view)) result.add(type.cast(view));

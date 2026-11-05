@@ -10,6 +10,14 @@
 
 주행 제한·상태 미확인·백그라운드에서는 Android의 화면 조작·음성을 막고 대화상자를 닫는다. 새로고침 응답도 화면 상태·출처 활성·세대 토큰을 확인해 폐기한다. 실제 경로의 ETA 부재/취소를 샘플 ETA로 바꾸지 않는다. 브라우저 음성은 계속 재생 상태 연출이며 실제 TTS가 아니다.
 
+## 독립 검토 후 선택한 두 개선
+
+4분에서 듣지 못하는 게임·소식마다 브라우저의 명시적 ‘나중에 보기로 저장’ 버튼을 제공한다. 회의 우선순위를 바꾸거나 자동 저장하지 않는다. 저장한 항목의 원문·출처·실제/예시 표시가 도착 보관함과 새로고침 뒤에도 유지된다. 제한·미확인 상태에서는 이 버튼들을 숨긴다. Android는 이미 보류 항목별 저장을 제공한다.
+
+Android 보관함의 공식 항목 상세에 ‘공식 원문 열기’를 추가했다. 버튼을 누르는 시점에도 주차 사용 허용과 공식 URL을 다시 검사한다. 제한 전환으로 대화상자가 닫힌 뒤 오래된 버튼을 눌러도 외부 앱을 열지 않도록 검사하는 UI 테스트를 추가했다. 이 UI 테스트의 실행은 승인된 SDK 작업 환경의 결과를 기다린다.
+
+재검토에서 확인한 Android 출처 비활성→재활성 사이 늦은 갱신 응답을 세대 토큰으로 폐기한다. 비활성 출처의 갱신 버튼도 막는다. 브라우저의 공식 응답이 손상된 경우 정상 빈 목록으로 오인해 마지막 내용을 지우지 않도록 수정했고, 해당 공개 게임과 다른 원문 URL도 거절한다. 명시적 정상 빈 목록만 캐시를 비운다. 피드는 최대50건 검사·20건 보관한다.
+
 ## 콘텐츠의 실제 범위
 
 공식 원문에서 직접 확인한 연구 스냅샷3개(LoL26.22, Valorant13.09, 메이플1.2.420)를 사용자가 선택해 브리핑에 넣을 수 있다. [조회 근거](shared/evidence/official-observations.json)의 게시일·원문·확인 시각을 유지한다. 메이플은 날짜만 제공돼 시각을 만들지 않았다. 이3개는 앱의 자동 갱신 성공이 아니다.
@@ -20,10 +28,12 @@ YouTube 채널·치지직 스트리머·카페는 연결 설정 필요, SOOP·�
 
 ## 현재 검증과 남은 작업
 
-- 브라우저 build 및 모델/정적 검사 [통과](validation/sources-v2/verify.txt): 등록→순서→ETA, 출처 제외, 마이그레이션,3스냅샷 원문/날짜, 중복·실패·빈 목록·용량 제한 fixture. 실제 Chromium155 브라우저도 [33캡처·11동작 검사](validation/sources-v2/browser.txt)를 통과했다. 실제 출처 추가·위아래 이동·사용 여부·공식 원문/게시일·ETA 재편성·다중 저장·새로고침·구형 마이그레이션·중복/위장 URL 거절·늦은 refresh 응답 폐기를 검사했다. 캡처의 최소 대비는5.95:1이고 가로 넘침·글자 잘림·page error가 없었다. [상세 보고서](showcase/evidence/browser-report.json)의 HTML·소스 해시가 검사 바이트를 고정한다. Steam 성공/실패/빈 목록 응답은 브라우저에서 차단해 넣은 fixture이며 실제 갱신 성공이 아니다.
+- 브라우저 build 및 모델/정적 검사 [통과](validation/sources-v2/verify.txt): 등록→순서→ETA, 출처 제외, 마이그레이션,3스냅샷 원문/날짜, 중복·실패·빈 목록·용량 제한 fixture. 실제 Chromium155 브라우저도 [33캡처·12동작 검사](validation/sources-v2/browser.txt)를 통과했다. 실제 출처 추가·위아래 이동·사용 여부·공식 원문/게시일·ETA 재편성·다중 저장·새로고침·구형 마이그레이션·중복/위장 URL 거절·늦은 refresh 응답 폐기를 검사했다. 캡처의 최소 대비는5.95:1이고 가로 넘침·글자 잘림·page error가 없었다. [상세 보고서](showcase/evidence/browser-report.json)의 HTML·소스 해시가 검사 바이트를 고정한다. Steam 성공/실패/빈 목록 응답은 브라우저에서 차단해 넣은 fixture이며 실제 갱신 성공이 아니다.
 - 실제 API35 공개 클래스와 JDK17로 main/sample Java13파일 [컴파일 통과](validation/sources-v2/android-java-compile.txt). 현재 XML에서 생성한 compile-only R을 사용했으며 리소스 패키징·DEX·APK 빌드가 아니다.
-- API35 클래스에서 실행한 공통 모델 JVM [36개 assertion 통과](validation/sources-v2/catalog-jvm.txt), [실행 harness](validation/sources-v2/CatalogHarness.java). 등록한 공식 LoL→순서→낭독 Plan→저장, 날짜 정밀도, 미지원 빈 내용, Steam URI/중복/실패/빈 응답, 구형 설정·저장 이전, 손상 URL 검사를 포함한다.
+- API35 클래스에서 실행한 공통 모델 JVM [39개 assertion 통과](validation/sources-v2/catalog-jvm.txt), [실행 harness](validation/sources-v2/CatalogHarness.java). 등록한 공식 LoL→순서→낭독 Plan→저장, 날짜 정밀도, 미지원 빈 내용, Steam URI/중복/실패/빈 응답, 구형 설정·저장 이전, 손상 URL 검사를 포함한다.
 - Android Robolectric UI/오디오 테스트는 추가했으나 이 후보에서 아직 실행하지 않았다. 실제 제한 콜백·한국어 음성·Pleos ETA·에뮬레이터/실차도 미검증이다.
 - 현재 환경에는 승인된 SDK와 기존 debug 키가 없다. 새 SDK 라이선스 동의·새 서명키 생성 없이 원래 승인된 작업 환경에서 정확한 새 커밋을 빌드해 전달하는 절차를 진행 중이다. **최신 APK 파일·다운로드·해시·서명 확인은 아직 완료하지 않았다.** 과거 worker 로컬 APK 링크는 사용자가 다운로드할 수 없는 이전 산출물이다.
+
+공개 API35 모델 검사는 저장소 루트에서 `JAVA_HOME=/path/to/jdk17 sh validation/sources-v2/verify-model.sh /path/to/android-all-api35.jar`로 재현한다. `org.robolectric:android-all:15-robolectric-13954326`의 공개 API 클래스를 사용하며, 동봉한 compile-only R은 리소스 패키징을 대신하지 않는다. 실제 UI·기기 실행 검사로 소개하지 않는다.
 
 코드/리소스/Gradle/공통 입력의 [SHA-256 목록](validation/sources-v2/android-input-sha256.txt)은 이번 컴파일/모델 검사의 소스 범위를 고정한다. APK·Android UI 검증 결과를 받으면 그 결과의 정확한 커밋·입력 해시·다운로드 주소를 따로 기록한다. main 병합·출품 접수·공유 권한 변경은 수행하지 않았다.

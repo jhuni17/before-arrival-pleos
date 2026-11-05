@@ -15,7 +15,7 @@ export async function sequence(act:Act<Scene>) {
 const sampleTime=(short:boolean)=>short?"2026-11-04T23:54:00Z":"2026-11-04T23:40:00Z";
 function Glyph({kind}:{kind:"play"|"save"|"check"|"pause"}) {return <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">{kind==="play"?<path d="m9 5 11 7-11 7V5Z" fill="currentColor"/>:kind==="check"?<path d="m4 12 5 5L20 6" stroke="currentColor" strokeWidth="2.5"/>:kind==="pause"?<path d="M8 5v14M16 5v14" stroke="currentColor" strokeWidth="4"/>:<path d="M6 3h12v18l-6-4-6 4V3Z" stroke="currentColor" strokeWidth="2"/>}</svg>}
 function Published({item}:{item:ContentItem}) {
- return <span className="item-provenance">{item.provenance==="demo_sample"?"예시 콘텐츠 · 게시 시각 없음":<>{item.provenance==="official_runtime"?"실제로 가져온 공식 소식":"가져온 공식 소식 · 자동 갱신 아님"}<br/>게시 {item.publishedAt||"시각 미제공"}{item.publishedPrecision==="date"?" · 날짜만 제공":""}<br/>확인 {item.fetchedAt||"시각 미확인"}</>}</span>;
+ return <span className="item-provenance">{item.provenance==="demo_sample"?"예시 콘텐츠 · 게시 시각 없음":<>{item.provenance==="official_runtime"?"실제로 가져온 공식 소식 · 원문 발췌":"가져온 공식 소식 · 자동 갱신 아님"}<br/>게시 {item.publishedAt||"시각 미제공"}{item.publishedPrecision==="date"?" · 날짜만 제공":""}<br/>확인 {item.fetchedAt||"시각 미확인"}</>}</span>;
 }
 function Vehicle({frame,state,save,long}:{frame:Frame;state:Registry;save:(item:ContentItem)=>void;long:boolean}) {
  const blocked=frame==="restricted"||frame==="unknown",short=frame==="priority",arrived=frame==="arrived";
@@ -42,6 +42,10 @@ function Vehicle({frame,state,save,long}:{frame:Frame;state:Registry;save:(item:
       <span className="play-status" role="status">{playing?"재생 상태 연출 · 실제 음성 없음":frame==="saved"?"저장 완료 장면 · 실제 저장은 버튼을 눌러요":"브라우저 재생은 상태 연출 · 실제 음성 없음"}</span>
      </div>
      <div className="next-up">{blocked?"제한 상태에서는 목록 전환과 재생을 중지해요.":arrived?"브라우저 보관함 · Android 앱과 동기화 안 됨":<>{short?"나중에 확인":"다음 소식"} · {(short?plan.deferred:plan.selected.slice(1)).map(i=>i.title).join(" · ")||"없음"}</>}</div>
+     {!blocked&&!arrived&&plan.deferred.length>0&&<section className="deferred-items" aria-label="도착 후 이어볼 소식"><h2>나중에 볼 소식</h2>{plan.deferred.map(item=>{
+      const saved=state.savedItems.some(i=>(i.originalUrl||i.sourceId+":"+i.id)===(item.originalUrl||item.sourceId+":"+item.id));
+      return <article className="deferred-card" key={item.originalUrl||item.sourceId+item.id}><span className="category">{sourceName(state,item)}</span><h3>{item.title}</h3><Published item={item}/><button className="deferred-save" aria-label={`${item.title} 나중에 보기 저장`} disabled={saved} onClick={()=>save(item)}>{saved?"이 브라우저에 저장됨":"나중에 보기로 저장"}</button></article>;
+     })}</section>}
     </section>
    </div><div className="app-boundary">이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨</div>
   </div><div className="system-nav" aria-label="시스템 내비게이션 예시"><span>앱 라이브러리</span><span>내비게이션</span><span>공조 22°</span><small>시스템 GNB 예시</small></div>

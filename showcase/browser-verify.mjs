@@ -253,6 +253,7 @@ try {
   const fixture={gid:"123",title:"Fixture official update",url:"https://steamcommunity.com/games/dota2/announcements/detail/123",contents:"<p>Fixture test only, not retrieved public news.</p>",date:1793870400,feedname:"steam_community_announcements"};
   await page.route("https://api.steampowered.com/**",async route=>{
     if(phase==="fail")return route.fulfill({status:403,body:"Denied fixture"});
+    if(phase==="malformed")return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({appnews:{appid:570,newsitems:[{...fixture,title:""}]}})});
     if(phase==="late")await new Promise(resolve=>releasePending=resolve);
     await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({appnews:{appid:570,newsitems:phase==="empty"?[]:[fixture,fixture]}})}).catch(()=>{});
   });
@@ -264,6 +265,10 @@ try {
   await page.waitForFunction(()=>Boolean(JSON.parse(localStorage.getItem("before-arrival-sources-v2")).sources.find(s=>s.provider==="steam").refreshError));
   assert.match(await steam.innerText(),/갱신 실패/);
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem("before-arrival-sources-v2")).sources.find(s=>s.provider==="steam").lastSuccessAt),firstSuccess);
+  phase="malformed";await page.getByRole("button",{name:"검증 Steam 새 소식 확인",exact:true}).click();
+  await page.waitForFunction(()=>!document.querySelector('[aria-label="검증 Steam 새 소식 확인"]').disabled);
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem("before-arrival-sources-v2")).sources.find(s=>s.provider==="steam").items.length),1);
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem("before-arrival-sources-v2")).sources.find(s=>s.provider==="steam").lastSuccessAt),firstSuccess);
   phase="empty";await page.getByRole("button",{name:"검증 Steam 새 소식 확인",exact:true}).click();
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem("before-arrival-sources-v2")).sources.find(s=>s.provider==="steam").items.length===0);
   assert.match(await steam.innerText(),/새 소식 없음/);
@@ -274,6 +279,17 @@ try {
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem("before-arrival-sources-v2")).sources.find(s=>s.provider==="steam").items.length),0);
   await page.unroute("https://api.steampowered.com/**");
   report.checks.push("Intercepted Steam fixtures only: official-schema items deduped, failed refresh preserves lastSuccess/items, empty success clears content, disabled-source late response discarded. This is NOT a real public fetch.");
+  await page.evaluate(()=>localStorage.clear());await open("state=priority");
+  assert.match(await page.locator("h1").innerText(),/9시 팀 회의/);
+  await page.getByRole("button",{name:"이번 주말, 협동 모드가 열려요 나중에 보기 저장",exact:true}).click();
+  assert.match(await page.locator("h1").innerText(),/9시 팀 회의/);
+  await page.getByRole("button",{name:"04 도착",exact:true}).click();
+  assert.match(await page.locator(".saved-article h3").innerText(),/협동 모드/);
+  await page.reload();await page.getByRole("button",{name:"04 도착",exact:true}).click();
+  assert.match(await page.locator(".saved-article h3").innerText(),/협동 모드/);
+  await page.getByRole("button",{name:"주행 제한",exact:true}).click();
+  assert.equal(await page.locator(".deferred-save").count(),0);
+  report.checks.push("Parked 4-minute deferred game has an explicit save action without changing urgent meeting; arrival and reload preserve its own provenance. Deferred actions hidden during restrictions.");
   await page.evaluate(()=>localStorage.clear());await open("state=opening");
   await page.locator(".primary").click();await page.getByRole("button",{name:"주행 제한",exact:true}).click();
   assert(await page.locator(".primary").isDisabled());assert.equal(await page.locator(".primary").getAttribute("aria-pressed"),"false");

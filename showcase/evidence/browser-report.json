@@ -1,16 +1,16 @@
 {
-  "createdAt": "2026-11-05T12:25:46.078Z",
+  "createdAt": "2026-11-05T12:35:17.456Z",
   "browser": "155.0.8059.79",
   "provenance": {
-    "gitHeadAtRun": "de8cc10e029b09863b551dbfbedf97f8d582b194",
+    "gitHeadAtRun": "02f83ffada2733b4413339f4b75b1ac0e36d88fb",
     "workingTreeDirtyAtRun": true,
-    "htmlSha256": "55a225788070b5cc1b70b9bf8a7eae037fde8f2baaf7731b20ca8bd471aefcf2",
+    "htmlSha256": "6586e9befc439268e523321cc7f33fe18b70392501160f20d5529f15d87100b8",
     "sourceSha256": {
-      "examples/before-arrival/index.tsx": "ec463d1abfce665b875ed0810b1a136d83a1b5ca44a638d2fddd5524544455c8",
-      "examples/before-arrival/catalog.ts": "fcff998652d615446d8cc07ecc20edda78f446926237146432a483ae0ddb307d",
+      "examples/before-arrival/index.tsx": "98841d9316d8ad88d371c0e29e9bdbacd4dc7a5c16d18b803d623a20980ac230",
+      "examples/before-arrival/catalog.ts": "1299ddcbed92815fe1b5f6a68877372a9f62a7632c9b1e772e783f7a9941f229",
       "../shared/catalog.json": "47ad03885c746770d381f2bcdcbbbde9f9e9bf1394df220133e082b029982595",
-      "examples/before-arrival/showcase.css": "62ef5e9c1401a009921c2b128397ab39b42467fa4d3a6b83efe66080ea1b1997",
-      "browser-verify.mjs": "b25425f9921a5efdcb8f505a417998c0f574db337949e4b2e49a8eccf0d57b17",
+      "examples/before-arrival/showcase.css": "46156b22f6692255e7d2d243734a9631fec0d62aca19f7eab7e895f88ad5b22a",
+      "browser-verify.mjs": "482da095240e1977500b6d58d3195464d4af30240d6e855479734cfcfd1ef7fb",
       "build.mjs": "57e366d10188d952c46179169d129e84d34de8491cc17f4e29c2450e58a0160a"
     },
     "originalInputs": [
@@ -526,6 +526,42 @@
         {
           "text": "나중에 확인 · 이번 주말, 협동 모드가 열려요 · 출근길에 듣기 좋은 10분짜리 팟캐스트",
           "ratio": 8.81
+        },
+        {
+          "text": "나중에 볼 소식",
+          "ratio": 15.25
+        },
+        {
+          "text": "게임 패치 예시",
+          "ratio": 8.81
+        },
+        {
+          "text": "이번 주말, 협동 모드가 열려요",
+          "ratio": 15.25
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 15.25
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 15.25
+        },
+        {
+          "text": "커뮤니티 예시",
+          "ratio": 8.81
+        },
+        {
+          "text": "출근길에 듣기 좋은 10분짜리 팟캐스트",
+          "ratio": 15.25
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 15.25
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 15.25
         },
         {
           "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
@@ -1541,6 +1577,42 @@
           "ratio": 8.81
         },
         {
+          "text": "나중에 볼 소식",
+          "ratio": 15.25
+        },
+        {
+          "text": "게임 패치 예시",
+          "ratio": 8.81
+        },
+        {
+          "text": "이번 주말, 협동 모드가 열려요",
+          "ratio": 15.25
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 15.25
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 15.25
+        },
+        {
+          "text": "커뮤니티 예시",
+          "ratio": 8.81
+        },
+        {
+          "text": "출근길에 듣기 좋은 10분짜리 팟캐스트",
+          "ratio": 15.25
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 15.25
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 15.25
+        },
+        {
           "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
@@ -2190,6 +2262,42 @@
         {
           "text": "나중에 확인 · 이번 주말, 협동 모드가 열려요 · 출근길에 듣기 좋은 10분짜리 팟캐스트",
           "ratio": 8.81
+        },
+        {
+          "text": "나중에 볼 소식",
+          "ratio": 15.25
+        },
+        {
+          "text": "게임 패치 예시",
+          "ratio": 8.81
+        },
+        {
+          "text": "이번 주말, 협동 모드가 열려요",
+          "ratio": 15.25
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 15.25
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 15.25
+        },
+        {
+          "text": "커뮤니티 예시",
+          "ratio": 8.81
+        },
+        {
+          "text": "출근길에 듣기 좋은 10분짜리 팟캐스트",
+          "ratio": 15.25
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 15.25
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 15.25
         },
         {
           "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
@@ -2847,6 +2955,42 @@
           "ratio": 8.81
         },
         {
+          "text": "나중에 볼 소식",
+          "ratio": 15.25
+        },
+        {
+          "text": "게임 패치 예시",
+          "ratio": 8.81
+        },
+        {
+          "text": "이번 주말, 협동 모드가 열려요",
+          "ratio": 15.25
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 15.25
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 15.25
+        },
+        {
+          "text": "커뮤니티 예시",
+          "ratio": 8.81
+        },
+        {
+          "text": "출근길에 듣기 좋은 10분짜리 팟캐스트",
+          "ratio": 15.25
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 15.25
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 15.25
+        },
+        {
           "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
@@ -3388,6 +3532,42 @@
         {
           "text": "나중에 확인 · 이번 주말, 협동 모드가 열려요 · 출근길에 듣기 좋은 10분짜리 팟캐스트",
           "ratio": 7.17
+        },
+        {
+          "text": "나중에 볼 소식",
+          "ratio": 17.44
+        },
+        {
+          "text": "게임 패치 예시",
+          "ratio": 7.17
+        },
+        {
+          "text": "이번 주말, 협동 모드가 열려요",
+          "ratio": 17.44
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 17.44
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 17.44
+        },
+        {
+          "text": "커뮤니티 예시",
+          "ratio": 7.17
+        },
+        {
+          "text": "출근길에 듣기 좋은 10분짜리 팟캐스트",
+          "ratio": 17.44
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 17.44
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 17.44
         },
         {
           "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
@@ -4403,6 +4583,42 @@
           "ratio": 7.17
         },
         {
+          "text": "나중에 볼 소식",
+          "ratio": 17.44
+        },
+        {
+          "text": "게임 패치 예시",
+          "ratio": 7.17
+        },
+        {
+          "text": "이번 주말, 협동 모드가 열려요",
+          "ratio": 17.44
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 17.44
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 17.44
+        },
+        {
+          "text": "커뮤니티 예시",
+          "ratio": 7.17
+        },
+        {
+          "text": "출근길에 듣기 좋은 10분짜리 팟캐스트",
+          "ratio": 17.44
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 17.44
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 17.44
+        },
+        {
           "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
@@ -5052,6 +5268,42 @@
         {
           "text": "나중에 확인 · 이번 주말, 협동 모드가 열려요 · 출근길에 듣기 좋은 10분짜리 팟캐스트",
           "ratio": 7.17
+        },
+        {
+          "text": "나중에 볼 소식",
+          "ratio": 17.44
+        },
+        {
+          "text": "게임 패치 예시",
+          "ratio": 7.17
+        },
+        {
+          "text": "이번 주말, 협동 모드가 열려요",
+          "ratio": 17.44
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 17.44
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 17.44
+        },
+        {
+          "text": "커뮤니티 예시",
+          "ratio": 7.17
+        },
+        {
+          "text": "출근길에 듣기 좋은 10분짜리 팟캐스트",
+          "ratio": 17.44
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 17.44
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 17.44
         },
         {
           "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
@@ -5709,6 +5961,42 @@
           "ratio": 7.17
         },
         {
+          "text": "나중에 볼 소식",
+          "ratio": 17.44
+        },
+        {
+          "text": "게임 패치 예시",
+          "ratio": 7.17
+        },
+        {
+          "text": "이번 주말, 협동 모드가 열려요",
+          "ratio": 17.44
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 17.44
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 17.44
+        },
+        {
+          "text": "커뮤니티 예시",
+          "ratio": 7.17
+        },
+        {
+          "text": "출근길에 듣기 좋은 10분짜리 팟캐스트",
+          "ratio": 17.44
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 17.44
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 17.44
+        },
+        {
           "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
@@ -5890,6 +6178,42 @@
           "ratio": 8.81
         },
         {
+          "text": "나중에 볼 소식",
+          "ratio": 15.25
+        },
+        {
+          "text": "게임 패치 예시",
+          "ratio": 8.81
+        },
+        {
+          "text": "이번 주말, 협동 모드가 열려요",
+          "ratio": 15.25
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 15.25
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 15.25
+        },
+        {
+          "text": "커뮤니티 예시",
+          "ratio": 8.81
+        },
+        {
+          "text": "출근길에 듣기 좋은 10분짜리 팟캐스트",
+          "ratio": 15.25
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 15.25
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 15.25
+        },
+        {
           "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 8.81
         },
@@ -6065,6 +6389,42 @@
         {
           "text": "나중에 확인 · 이번 주말, 협동 모드가 열려요 · 출근길에 듣기 좋은 10분짜리 팟캐스트",
           "ratio": 8.81
+        },
+        {
+          "text": "나중에 볼 소식",
+          "ratio": 15.25
+        },
+        {
+          "text": "게임 패치 예시",
+          "ratio": 8.81
+        },
+        {
+          "text": "이번 주말, 협동 모드가 열려요",
+          "ratio": 15.25
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 15.25
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 15.25
+        },
+        {
+          "text": "커뮤니티 예시",
+          "ratio": 8.81
+        },
+        {
+          "text": "출근길에 듣기 좋은 10분짜리 팟캐스트",
+          "ratio": 15.25
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 15.25
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 15.25
         },
         {
           "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
@@ -6248,6 +6608,42 @@
           "ratio": 7.17
         },
         {
+          "text": "나중에 볼 소식",
+          "ratio": 17.44
+        },
+        {
+          "text": "게임 패치 예시",
+          "ratio": 7.17
+        },
+        {
+          "text": "이번 주말, 협동 모드가 열려요",
+          "ratio": 17.44
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 17.44
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 17.44
+        },
+        {
+          "text": "커뮤니티 예시",
+          "ratio": 7.17
+        },
+        {
+          "text": "출근길에 듣기 좋은 10분짜리 팟캐스트",
+          "ratio": 17.44
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 17.44
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 17.44
+        },
+        {
           "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
           "ratio": 7.17
         },
@@ -6423,6 +6819,42 @@
         {
           "text": "나중에 확인 · 이번 주말, 협동 모드가 열려요 · 출근길에 듣기 좋은 10분짜리 팟캐스트",
           "ratio": 7.17
+        },
+        {
+          "text": "나중에 볼 소식",
+          "ratio": 17.44
+        },
+        {
+          "text": "게임 패치 예시",
+          "ratio": 7.17
+        },
+        {
+          "text": "이번 주말, 협동 모드가 열려요",
+          "ratio": 17.44
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 17.44
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 17.44
+        },
+        {
+          "text": "커뮤니티 예시",
+          "ratio": 7.17
+        },
+        {
+          "text": "출근길에 듣기 좋은 10분짜리 팟캐스트",
+          "ratio": 17.44
+        },
+        {
+          "text": "예시 콘텐츠 · 게시 시각 없음",
+          "ratio": 17.44
+        },
+        {
+          "text": "나중에 보기로 저장",
+          "ratio": 17.44
         },
         {
           "text": "이 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨",
@@ -6667,6 +7099,7 @@
     "Real add official LoL snapshot → move first → actual briefing → save/reload; 4-minute schedule deadline still wins. Publication URL/date preserved and imported-snapshot label explicit.",
     "Unsupported channel registers with setup-needed/no-content; duplicate and lookalike-host URLs are rejected.",
     "Intercepted Steam fixtures only: official-schema items deduped, failed refresh preserves lastSuccess/items, empty success clears content, disabled-source late response discarded. This is NOT a real public fetch.",
+    "Parked 4-minute deferred game has an explicit save action without changing urgent meeting; arrival and reload preserve its own provenance. Deferred actions hidden during restrictions.",
     "Restriction/unknown transition stops playback state; returning never automatically resumes; source settings unavailable during restrictions.",
     "Legacy booleans/priority/saved title migrate into generic registry; first v2 write and reload preserve them.",
     "Storage denial never reports a successful settings/save write.",

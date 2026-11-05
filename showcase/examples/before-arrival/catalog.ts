@@ -104,18 +104,23 @@ export function applyFeed(state:Registry,sourceId:string,result:{items?:ContentI
   return {...state,sources:state.sources.map(source=>{
     if(source.id!==sourceId) return source;
     if(result.error) return {...source,lastAttemptAt:attemptedAt,refreshError:"갱신 실패"};
-    const items=deduplicate((result.items||[]).filter(i=>validItem(i,source))).slice(0,20);
+    if((result.items||[]).some(i=>!validItem(i,source))) return {...source,lastAttemptAt:attemptedAt,refreshError:"갱신 실패"};
+    const items=deduplicate(result.items||[]).slice(0,20);
     return {...source,items,status:"connected",lastAttemptAt:attemptedAt,lastSuccessAt:attemptedAt,refreshError:null};
   })};
 }
 export function parseSteam(body:any,source:RegisteredSource,observedAt:string):ContentItem[] {
   const appid=source.registrationUrl?.match(/\/(?:app|news\/app)\/([0-9]+)/)?.[1];
   if(!appid||String(body?.appnews?.appid)!==appid||!Array.isArray(body.appnews.newsitems)||body.appnews.newsitems.length>50) throw new Error("소식 내용을 확인하지 못했어요.");
-  const clean=(text:string)=>text.replace(/<[^>]*>/g," ").replace(/\[[^\]]*\]/g," ").replace(/&(?:nbsp|amp|lt|gt|quot);/g," ").replace(/\s+/g," ").trim().slice(0,300);
-  return deduplicate(body.appnews.newsitems.filter((n:any)=>n?.feedname==="steam_community_announcements"&&typeof n.title==="string"&&typeof n.contents==="string"&&typeof n.url==="string"&&officialUrl("steam",n.url)&&Number.isFinite(n.date)&&n.date>0).map((n:any)=>{
-    const summary=clean(n.contents)||"자세한 변경은 공식 원문에서 확인하세요.";
-    return {id:"steam:"+String(n.gid),sourceId:source.id,title:n.title.slice(0,500),publishedAt:new Date(n.date*1000).toISOString(),publishedPrecision:"instant",originalUrl:n.url,summary,estimatedSeconds:Math.min(30,Math.max(8,Math.ceil(summary.length/6))),deadlineAt:null,provenance:"official_runtime",fetchedAt:observedAt};
-  })).slice(0,20);
+  const clean=(text:string)=>text.replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi," ").replace(/<[^>]*>/g," ").replace(/\[\/?[A-Za-z][^\]]*\]/g," ").replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&nbsp;/g," ").replace(/\s+/g," ").trim().slice(0,300);
+  const items:ContentItem[]=[];
+  for(const n of body.appnews.newsitems) {
+    if(n?.feedname!=="steam_community_announcements") continue;
+    if(typeof n.title!=="string"||!clean(n.title)||typeof n.contents!=="string"||!clean(n.contents)||typeof n.gid!=="string"||!n.gid||typeof n.url!=="string"||!officialUrl("steam",n.url)|| (n.url.startsWith("https://store.steampowered.com/")&&!n.url.startsWith(`https://store.steampowered.com/news/app/${appid}/view/`))||!Number.isFinite(n.date)||n.date<=0) throw new Error("공식 소식 내용을 확인하지 못했어요.");
+    const summary=clean(n.contents);
+    items.push({id:"steam:"+n.gid,sourceId:source.id,title:clean(n.title),publishedAt:new Date(n.date*1000).toISOString(),publishedPrecision:"instant",originalUrl:n.url,summary,estimatedSeconds:Math.min(30,Math.max(8,Math.ceil(summary.length/6))),deadlineAt:null,provenance:"official_runtime",fetchedAt:observedAt});
+  }
+  return deduplicate(items).slice(0,20);
 }
 export async function refreshSteam(source:RegisteredSource,signal:AbortSignal,fetcher:typeof fetch=fetch) {
   if(source.provider!=="steam") throw new Error("이 출처는 자동 갱신을 지원하지 않아요.");

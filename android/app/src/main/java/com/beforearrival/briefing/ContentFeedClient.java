@@ -55,6 +55,7 @@ final class ContentFeedClient {
         JSONObject news = new JSONObject(response).getJSONObject("appnews");
         if (!id.equals(String.valueOf(news.getLong("appid")))) throw new IllegalArgumentException("게임이 일치하지 않아요.");
         JSONArray entries = news.getJSONArray("newsitems"), items = new JSONArray();
+        if (entries.length() > 50) throw new IllegalArgumentException("소식 개수를 확인해 주세요.");
         for (int i = 0; i < entries.length(); i++) {
             JSONObject entry = entries.getJSONObject(i);
             if (!"steam_community_announcements".equals(entry.optString("feedname"))) continue;

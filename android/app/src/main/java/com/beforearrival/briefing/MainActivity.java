@@ -352,7 +352,9 @@ public final class MainActivity extends Activity {
             check.setTag("enabled:" + source.id);
             check.setOnCheckedChangeListener((view, checked) -> {
                 if (!canInteract()) { check.setChecked(source.enabled); return; }
-                source.enabled = checked; catalog.persist(preferences); refreshPlan();
+                source.enabled = checked;
+                refreshGenerations.put(source.id, refreshGenerations.getOrDefault(source.id, 0) + 1);
+                catalog.persist(preferences); refreshPlan();
             });
             add(sourceRows, check, 8);
             add(sourceRows, label(source.statusLabel(), 13, MUTED, false), 0);
@@ -366,7 +368,7 @@ public final class MainActivity extends Activity {
             add(sourceRows, buttonRow(up, down), 4);
             if ("steam".equals(source.provider)) {
                 Button refresh = button("공식 소식 가져오기", false, () -> refreshSource(source));
-                refresh.setTag("refresh:" + source.id); add(sourceRows, refresh, 4);
+                refresh.setTag("refresh:" + source.id); enableButton(refresh, source.enabled); add(sourceRows, refresh, 4);
             }
         }
     }
@@ -377,7 +379,7 @@ public final class MainActivity extends Activity {
     }
 
     private Thread refreshSource(Source source) {
-        if (!canInteract()) return null;
+        if (!canInteract() || !source.enabled || catalog.source(source.id) != source) return null;
         int generation = refreshGenerations.getOrDefault(source.id, 0) + 1;
         int lifecycle = lifecycleGeneration;
         refreshGenerations.put(source.id, generation);
@@ -386,7 +388,7 @@ public final class MainActivity extends Activity {
             try { result = feedLoader.load(source.registrationUrl); } catch (Exception failed) { /* Recorded below. */ }
             String snapshot = result;
             runOnUiThread(() -> {
-                if (!canInteract() || lifecycle != lifecycleGeneration
+                if (!canInteract() || !source.enabled || catalog.source(source.id) != source || lifecycle != lifecycleGeneration
                         || refreshGenerations.getOrDefault(source.id, 0) != generation) return;
                 Instant now = Instant.now();
                 if (snapshot == null) catalog.markFailure(source.id, now);
@@ -543,11 +545,15 @@ public final class MainActivity extends Activity {
             add(savedRows, label("저장한 소식이 없어요.", 14, MUTED, false), 4);
         }
         for (Item item : catalog.savedItems) {
-            Button entry = button(item.title, false, () -> showDialog(new AlertDialog.Builder(this)
+            Button entry = button(item.title, false, () -> {
+                AlertDialog.Builder detail = new AlertDialog.Builder(this)
                     .setTitle(item.title)
                     .setMessage(item.summary + "\n\n" + (item.originalUrl == null ? "예시 콘텐츠" : item.originalUrl) + "\n\n" + ContentCatalog.LOCAL_NOTICE)
-                    .setPositiveButton("닫기", null)
-                    .setNeutralButton("저장 취소", (dialog, which) -> toggleSaved(item))));
+                    .setNegativeButton("닫기", null)
+                    .setNeutralButton("저장 취소", (dialog, which) -> toggleSaved(item));
+                if (catalog.canOpen(item)) detail.setPositiveButton("공식 원문 열기", (dialog, which) -> openOriginal(item));
+                showDialog(detail);
+            });
             add(savedRows, entry, 6);
         }
     }

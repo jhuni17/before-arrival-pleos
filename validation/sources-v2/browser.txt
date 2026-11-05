@@ -2,4 +2,4 @@
 > verify:browser
 > node browser-verify.mjs
 
-PASS: 33 screenshots, 11 behavioral checks; minimum contrast 5.95:1
+PASS: 33 screenshots, 12 behavioral checks; minimum contrast 5.95:1
