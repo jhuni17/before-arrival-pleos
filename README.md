@@ -10,7 +10,7 @@
 
 ## 검증
 
-별도 깨끗한 detached 체크아웃에서 소스를 수정하지 않고 `:app:assembleSampleDebug :app:testSampleDebugUnitTest :app:lintSampleDebug`를 실행했습니다. SDK 자동 다운로드를 끄고, 기존 debug 키가 없거나 다른 경로면 중단하는 외부 Gradle 검사를 적용했습니다. 실제 APK에 공통 `catalog.json`이 소스와 같은 바이트로 들어 있고 ContentCatalog가 DEX에 포함됐는지도 확인했습니다.
+별도 깨끗한 detached 체크아웃에서 소스를 수정하지 않고 `:app:assembleSampleDebug :app:testSampleDebugUnitTest :app:lintSampleDebug`를 실행했습니다. SDK 자동 다운로드를 끄고, 기존 debug 키가 없거나 다른 경로면 중단하는 외부 Gradle 검사를 적용했습니다. lint는 오류 0개·경고 3개입니다. 실제 APK에 공통 `catalog.json`이 소스와 같은 바이트로 들어 있고 ContentCatalog가 DEX에 포함됐는지도 확인했습니다.
 
 Android JVM 테스트 21개가 실패/오류/skip 없이 통과했습니다. 핵심 경로·접근 정책 JVM 검사 2개와 색상 검사도 통과했습니다. Android JVM은 Robolectric 모형이며 실기 콜백/실제 음성 검증이 아닙니다. APK v2 서명 검증이 통과하고 이전 APK의 public debug 인증서와 일치합니다. 빌드·테스트·lint·서명 로그는 [evidence](evidence)에 있습니다.
 
@@ -29,3 +29,15 @@ python3 checks/verify-colors.py
 이 파일은 **sample debug APK**이며 공모전 제출용 release APK가 아닙니다. 실제 차량 상태를 확인하지 못하면 앱 조작·TTS가 잠깁니다. Pleos SDK 콜백·실제 ETA·에뮬레이터/실차·한국어 소리·차량 오디오 정책·기기 간 동기화는 실행 검증하지 않았습니다. 공식 페이지에서 확인한 콘텐츠 스냅샷 3개와 앱의 실제 새로고침 성공(0건)을 구분합니다. 이 산출물은 Astra의 최종 제출 승인이나 실제 콘텐츠 자동 조회 성공을 의미하지 않습니다.
 
 소스 브랜치와 main은 이 빌드 작업에서 수정하지 않았습니다. 이 브랜치는 바이너리와 공개 검증 정보만 보관하는 비공개 산출물 브랜치입니다.
+
+## 원격 재다운로드 확인
+
+인증된 Git으로 이 비공개 산출물 브랜치를 별도 폴더에 새로 clone한 뒤 APK의 SHA-256 및 apksigner 검사를 다시 통과했습니다. [다운로드 확인 기록](evidence/download-verification.json)에 검사한 산출물 커밋·APK 해시·방법을 기록했습니다. 로그인 없는 raw HTTPS 요청은 404였으며, 로그인된 브라우저에서의 다운로드 조작을 실행했다고 주장하지 않습니다. 저장소 접근 권한으로 GitHub에 로그인한 뒤 위 APK 파일의 **Download raw file**을 사용하세요.
+
+Git을 사용할 경우:
+
+```sh
+git clone --depth 1 --single-branch --branch artifacts/sample-content-02f83ffada27 https://github.com/jhuni17/before-arrival-pleos.git
+cd before-arrival-pleos
+sha256sum -c SHA256SUMS
+```

@@ -30,5 +30,14 @@
   "raw_eta_conversion": "blocked; SDK unit unverified",
   "official_content_snapshots": 3,
   "runtime_content_refresh_successes": 0,
-  "download_verification": "pending upload and remote re-download"
+  "download_verification": {
+    "completed": true,
+    "method": "fresh authenticated Git clone of the remote artifact branch",
+    "verified_artifact_commit": "1d1113179dd89a7a3d9bd07276e1b7b7c4d658bb",
+    "apk_sha256": "881c82e0aefabd7e3e91544b96e00deb15e20e92c8abc231975f4b2b55d80f4f",
+    "signature_verified": true,
+    "unauthenticated_http_raw_status": 404
+  },
+  "lint_errors": 0,
+  "lint_warnings": 3
 }

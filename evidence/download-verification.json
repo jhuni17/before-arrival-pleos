@@ -1,0 +1,13 @@
+{
+  "verified_at_kst": "2026-11-05T21:35:21+09:00",
+  "method": "fresh authenticated Git clone of the remote artifact branch",
+  "artifact_commit": "1d1113179dd89a7a3d9bd07276e1b7b7c4d658bb",
+  "branch": "artifacts/sample-content-02f83ffada27",
+  "source_sha": "02f83ffada2733b4413339f4b75b1ac0e36d88fb",
+  "remote_apk_sha256": "881c82e0aefabd7e3e91544b96e00deb15e20e92c8abc231975f4b2b55d80f4f",
+  "matches_local_apk": true,
+  "redownloaded_apk_signature_verified": true,
+  "unauthenticated_http_raw_status": 404,
+  "browser_download_requires_private_repository_login": true,
+  "browser_logged_in_download_executed": false
+}
