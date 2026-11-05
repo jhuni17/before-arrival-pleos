@@ -1,0 +1,17 @@
+.gradle/
+build/
+local.properties
+.idea/
+node_modules/
+dist/
+.env
+.env.*
+*.jks
+*.keystore
+*.log
+/showcase/chrome-*/
+/showcase/edge-*/
+/showcase/*.err
+/showcase/*-probe.png
+/showcase/test-*.png
+/showcase/small.html
