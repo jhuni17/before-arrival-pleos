@@ -1,0 +1,63 @@
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/workspace/tools-before-arrival/cacerts -Dhttps.proxyHost=proxy -Dhttps.proxyPort=8080 -Dhttp.proxyHost=proxy -Dhttp.proxyPort=8080
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.11.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preSampleDebugBuild UP-TO-DATE
+> Task :app:mergeSampleDebugNativeDebugMetadata NO-SOURCE
+> Task :app:javaPreCompileSampleDebug UP-TO-DATE
+> Task :app:checkSampleDebugAarMetadata UP-TO-DATE
+> Task :app:generateSampleDebugResValues UP-TO-DATE
+> Task :app:mapSampleDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateSampleDebugResources UP-TO-DATE
+> Task :app:mergeSampleDebugResources UP-TO-DATE
+> Task :app:packageSampleDebugResources UP-TO-DATE
+> Task :app:parseSampleDebugLocalResources UP-TO-DATE
+> Task :app:createSampleDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksSampleDebug UP-TO-DATE
+> Task :app:processSampleDebugMainManifest UP-TO-DATE
+> Task :app:processSampleDebugManifest UP-TO-DATE
+> Task :app:processSampleDebugManifestForPackage UP-TO-DATE
+> Task :app:processSampleDebugResources UP-TO-DATE
+> Task :app:compileSampleDebugJavaWithJavac UP-TO-DATE
+> Task :app:mergeSampleDebugShaders UP-TO-DATE
+> Task :app:compileSampleDebugShaders NO-SOURCE
+> Task :app:generateSampleDebugAssets UP-TO-DATE
+> Task :app:mergeSampleDebugAssets UP-TO-DATE
+> Task :app:compressSampleDebugAssets UP-TO-DATE
+> Task :app:checkSampleDebugDuplicateClasses UP-TO-DATE
+> Task :app:desugarSampleDebugFileDependencies UP-TO-DATE
+> Task :app:mergeExtDexSampleDebug UP-TO-DATE
+> Task :app:mergeLibDexSampleDebug UP-TO-DATE
+> Task :app:dexBuilderSampleDebug UP-TO-DATE
+> Task :app:mergeProjectDexSampleDebug UP-TO-DATE
+> Task :app:mergeSampleDebugGlobalSynthetics UP-TO-DATE
+> Task :app:processSampleDebugJavaRes NO-SOURCE
+> Task :app:mergeSampleDebugJavaResource UP-TO-DATE
+> Task :app:mergeSampleDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeSampleDebugNativeLibs NO-SOURCE
+> Task :app:stripSampleDebugDebugSymbols NO-SOURCE
+> Task :app:validateSigningSampleDebug UP-TO-DATE
+> Task :app:writeSampleDebugAppMetadata UP-TO-DATE
+> Task :app:writeSampleDebugSigningConfigVersions UP-TO-DATE
+> Task :app:packageSampleDebug UP-TO-DATE
+> Task :app:createSampleDebugApkListingFileRedirect UP-TO-DATE
+> Task :app:assembleSampleDebug UP-TO-DATE
+> Task :app:bundleSampleDebugClassesToCompileJar UP-TO-DATE
+> Task :app:preSampleDebugAndroidTestBuild SKIPPED
+> Task :app:generateSampleDebugAndroidTestResValues UP-TO-DATE
+> Task :app:generateSampleDebugAndroidTestLintModel UP-TO-DATE
+> Task :app:extractProguardFiles UP-TO-DATE
+> Task :app:generateSampleDebugLintReportModel
+> Task :app:preSampleDebugUnitTestBuild UP-TO-DATE
+> Task :app:generateSampleDebugUnitTestLintModel
+> Task :app:lintAnalyzeSampleDebug
+> Task :app:lintAnalyzeSampleDebugAndroidTest
+> Task :app:lintAnalyzeSampleDebugUnitTest
+
+> Task :app:lintReportSampleDebug
+Wrote HTML report to file:///workspace/apk-rebuild-20261105/source-df7b545fb6ef/android/app/build/reports/lint-results-sampleDebug.html
+
+> Task :app:lintSampleDebug
+
+BUILD SUCCESSFUL in 17s
+43 actionable tasks: 7 executed, 36 up-to-date
