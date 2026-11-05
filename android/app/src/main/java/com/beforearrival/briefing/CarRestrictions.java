@@ -10,8 +10,10 @@ import android.util.Log;
 
 import java.util.function.Consumer;
 
+import com.beforearrival.briefing.AccessPolicy.State;
+
 final class CarRestrictions {
-    enum State { UNKNOWN, PARKED_USE_ALLOWED, RESTRICTED }
+    // PARKED_USE_ALLOWED describes platform UX permission, not the gear position.
 
     private final Consumer<State> onChange;
     private Car car;
@@ -56,7 +58,8 @@ final class CarRestrictions {
         if (restrictions == null) {
             onChange.accept(State.UNKNOWN);
         } else {
-            onChange.accept(restrictions.isRequiresDistractionOptimization()
+            onChange.accept((restrictions.isRequiresDistractionOptimization()
+                    || restrictions.getActiveRestrictions() != CarUxRestrictions.UX_RESTRICTIONS_BASELINE)
                     ? State.RESTRICTED : State.PARKED_USE_ALLOWED);
         }
     }
@@ -64,7 +67,12 @@ final class CarRestrictions {
     void close() {
         closed = true;
         unregister();
-        if (car != null) car.disconnect();
+        onChange.accept(State.UNKNOWN);
+        if (car != null) {
+            try { car.disconnect(); }
+            catch (RuntimeException error) { Log.w("BeforeArrival", "Car already disconnected", error); }
+            car = null;
+        }
     }
 
     private void unregister() {

@@ -65,8 +65,8 @@ final class Briefing {
     }
 
     static Plan plan(RouteInput.Snapshot route, Set<Item> enabled, Item priority) {
-        int minutes = route.remainingMinutes.orElse(0);
-        int budget = (int) Math.min(45, Math.max(0, minutes * 60L - 180) / 5);
+        long seconds = route.remainingSeconds.orElse(0);
+        int budget = (int) Math.min(45, Math.max(0, seconds - 180) / 5);
         List<Item> candidates = new ArrayList<>(enabled);
         candidates.sort((left, right) -> {
             int urgency = Boolean.compare(right.isUrgent(route.observedAt), left.isUrgent(route.observedAt));

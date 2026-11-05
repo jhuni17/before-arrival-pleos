@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">도착 전에</string>
-    <style name="AppTheme" parent="android:style/Theme.Material.NoActionBar">
-        <item name="android:fontFamily">sans</item>
-        <item name="android:colorAccent">#72E4DD</item>
-        <item name="android:windowBackground">#0D1624</item>
-        <item name="android:statusBarColor">#0D1624</item>
-        <item name="android:navigationBarColor">#0D1624</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
-    </style>
+    <string name="route_observation">%1$s · %2$s 기준</string>
+    <string name="priority_label">먼저 듣기 · %1$s</string>
+    <string name="budget_empty">듣기 예산 %1$d초 · 도착 후 볼 수 있어요.</string>
+    <string name="budget_selected">듣기 예산 %1$d초 · %2$d건 약 %3$d초</string>
+    <string name="saved_heading">도착해서 보기 · %1$d</string>
 </resources>

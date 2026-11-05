@@ -1,0 +1,79 @@
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/workspace/tools-before-arrival/cacerts -Dhttps.proxyHost=proxy -Dhttps.proxyPort=8080 -Dhttp.proxyHost=proxy -Dhttp.proxyPort=8080
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.11.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:clean
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preSampleDebugBuild UP-TO-DATE
+> Task :app:mergeSampleDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkSampleDebugAarMetadata
+> Task :app:javaPreCompileSampleDebug
+> Task :app:generateSampleDebugResValues
+> Task :app:mapSampleDebugSourceSetPaths
+> Task :app:generateSampleDebugResources
+> Task :app:packageSampleDebugResources
+> Task :app:createSampleDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksSampleDebug
+> Task :app:mergeSampleDebugResources
+> Task :app:parseSampleDebugLocalResources
+> Task :app:processSampleDebugMainManifest
+> Task :app:processSampleDebugManifest
+> Task :app:mergeSampleDebugShaders
+> Task :app:compileSampleDebugShaders NO-SOURCE
+> Task :app:generateSampleDebugAssets UP-TO-DATE
+> Task :app:mergeSampleDebugAssets
+> Task :app:compressSampleDebugAssets
+> Task :app:checkSampleDebugDuplicateClasses
+> Task :app:desugarSampleDebugFileDependencies
+> Task :app:processSampleDebugJavaRes NO-SOURCE
+> Task :app:processSampleDebugManifestForPackage
+> Task :app:mergeExtDexSampleDebug
+> Task :app:mergeLibDexSampleDebug
+> Task :app:mergeSampleDebugJniLibFolders
+> Task :app:mergeSampleDebugNativeLibs NO-SOURCE
+> Task :app:stripSampleDebugDebugSymbols NO-SOURCE
+> Task :app:validateSigningSampleDebug
+> Task :app:writeSampleDebugAppMetadata
+> Task :app:mergeSampleDebugJavaResource
+> Task :app:writeSampleDebugSigningConfigVersions
+> Task :app:preSampleDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileSampleDebugUnitTest
+> Task :app:processSampleDebugUnitTestJavaRes NO-SOURCE
+> Task :app:preSampleDebugAndroidTestBuild SKIPPED
+> Task :app:generateSampleDebugAndroidTestResValues
+> Task :app:extractProguardFiles
+> Task :app:processSampleDebugResources
+> Task :app:compileSampleDebugJavaWithJavac
+> Task :app:dexBuilderSampleDebug
+> Task :app:mergeSampleDebugGlobalSynthetics
+> Task :app:bundleSampleDebugClassesToCompileJar
+> Task :app:bundleSampleDebugClassesToRuntimeJar
+> Task :app:packageSampleDebugUnitTestForUnitTest
+> Task :app:mergeProjectDexSampleDebug
+
+> Task :app:compileSampleDebugUnitTestJavaWithJavac
+Note: /workspace/before-arrival-pleos/android/app/src/test/java/com/beforearrival/briefing/SpeechPlaybackTest.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :app:generateSampleDebugUnitTestConfig
+> Task :app:generateSampleDebugAndroidTestLintModel
+
+> Task :app:testSampleDebugUnitTest
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/workspace/tools-before-arrival/cacerts -Dhttps.proxyHost=proxy -Dhttps.proxyPort=8080 -Dhttp.proxyHost=proxy -Dhttp.proxyPort=8080
+
+> Task :app:generateSampleDebugLintReportModel
+> Task :app:generateSampleDebugUnitTestLintModel
+> Task :app:packageSampleDebug
+> Task :app:createSampleDebugApkListingFileRedirect
+> Task :app:assembleSampleDebug
+> Task :app:lintAnalyzeSampleDebug
+> Task :app:lintAnalyzeSampleDebugAndroidTest
+> Task :app:lintAnalyzeSampleDebugUnitTest
+
+> Task :app:lintReportSampleDebug
+Wrote HTML report to file:///workspace/before-arrival-pleos/android/app/build/reports/lint-results-sampleDebug.html
+
+> Task :app:lintSampleDebug
+[Incubating] Problems report is available at: file:///workspace/before-arrival-pleos/android/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 41s
+50 actionable tasks: 50 executed

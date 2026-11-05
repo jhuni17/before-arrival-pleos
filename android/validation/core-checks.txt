@@ -1,0 +1,2 @@
+Briefing checks passed
+Navigation and access checks passed (normalized fixtures; not SDK callbacks)

@@ -1,0 +1,7 @@
+{
+  "first_clean_sha256": "d5be44601d9085ba2c863508472e5b97d333b3a4a7d930778f33b84e693d1e35",
+  "second_clean_sha256": "d5be44601d9085ba2c863508472e5b97d333b3a4a7d930778f33b84e693d1e35",
+  "same_bytes": true,
+  "scope": "same source, toolchain, workspace, debug signing key; not cross-machine reproducibility",
+  "apk_bytes": 2014935
+}

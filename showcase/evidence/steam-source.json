@@ -1,0 +1,16 @@
+{
+  "checkedAt": "2026-11-05T11:26:11.202122+00:00",
+  "requestUrl": "https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=570&count=5&maxlength=0&feeds=steam_community_announcements",
+  "officialHub": "https://store.steampowered.com/news/app/570",
+  "liveIntegration": false,
+  "status": "connection-failed",
+  "error": "<urlopen error Tunnel connection failed: 403 Forbidden>",
+  "items": [],
+  "fallback": {
+    "mode": "sample",
+    "title": "이번 주말, 협동 모드가 열려요",
+    "publishedAt": null,
+    "sourceArticle": null,
+    "notice": "가상 패치 소식. 실제 게시물·게시 시각으로 주장하지 않음. 브라우저 시연은 네트워크 호출 없이 이 샘플을 사용함."
+  }
+}
