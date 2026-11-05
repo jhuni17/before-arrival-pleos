@@ -30,3 +30,13 @@ python3 checks/verify-colors.py
 [빌드·검사·입력 해시·서명 근거](evidence)와 [provenance.json](provenance.json)을 동봉했습니다. 다운로드 후 `sha256sum -c SHA256SUMS`로 확인할 수 있습니다.
 
 이 파일은 **sample debug APK**이며 제출용 release APK가 아닙니다. Android JVM/Robolectric 결과는 실제 기기·Pleos 콜백·ETA·한국어 음성·차량 오디오 정책 실행 증거가 아닙니다. 이 작업은 APK 빌드·검증·전달만 수행하며 main·통합 소스·기존 서명키를 변경하지 않았습니다. Astra의 독립 검수 판정은 별도입니다.
+
+## 원격 재다운로드 검증
+
+인증된 Git으로 이 비공개 산출물 브랜치를 별도 폴더에 새로 clone한 뒤 APK 해시·apksigner·기존 인증서 일치를 다시 확인했습니다. [다운로드 검사 기록](evidence/download-verification.json)과 [다운로드 APK 서명](evidence/redownload-signature.txt)을 동봉합니다. 로그인된 브라우저에서 다운로드 버튼을 직접 실행한 것으로 주장하지 않습니다. 저장소 권한으로 GitHub 로그인 후 APK 파일의 **Download raw file**을 사용하세요.
+
+```sh
+git clone --depth 1 --single-branch --branch artifacts/sample-content-27d297b29818 https://github.com/jhuni17/before-arrival-pleos.git
+cd before-arrival-pleos
+sha256sum -c SHA256SUMS
+```

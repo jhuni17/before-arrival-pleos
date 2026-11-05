@@ -1,0 +1,16 @@
+{
+  "verified_at_kst": "2026-11-05T22:32:36+09:00",
+  "method": "fresh authenticated Git clone of the remote artifact branch",
+  "artifact_commit": "c2bd4cb5b0fc05b5960034648c8fadcd4efa0e11",
+  "source_sha": "27d297b2981826be52ee360c21c999379c82f776",
+  "branch": "artifacts/sample-content-27d297b29818",
+  "downloaded_apk_sha256": "ae3118ea2a235d50d36e74b6f563071eca4ff37f178bc023b3d773f6d9fa7f4e",
+  "matches_built_apk": true,
+  "redownloaded_signature_verified": true,
+  "matches_existing_debug_certificate": true,
+  "browser_login_required": true,
+  "browser_download_executed": false,
+  "previous_failure_regression": "passed",
+  "android_tests": 24,
+  "failures": 0
+}
