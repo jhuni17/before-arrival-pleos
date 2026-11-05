@@ -3,8 +3,11 @@ import { chromium } from "playwright-core";
 import { createServer } from "node:http";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
+import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 const executablePath = process.env.CHROMIUM_PATH || "/usr/bin/chromium";
-await mkdir("evidence", { recursive: true });
+const evidenceDir = process.env.EVIDENCE_DIR || "evidence";
+await mkdir(evidenceDir, { recursive: true });
 const html = await readFile("before-arrival-showcase.html");
 const server = createServer((req, res) => {
   if (req.url?.startsWith("/before-arrival-showcase.html")) {
@@ -25,7 +28,16 @@ const browser = await chromium.launch({
 const report = {
   createdAt: new Date().toISOString(),
   browser: await browser.version(),
-  baseCommit: "94fa9ca1324029c07a8cee25b7771bb4f007e215",
+  provenance: {
+    gitHeadAtRun: execFileSync("git", ["rev-parse", "HEAD"], {encoding:"utf8"}).trim(),
+    workingTreeDirtyAtRun: Boolean(execFileSync("git", ["status", "--porcelain"], {encoding:"utf8"}).trim()),
+    htmlSha256: createHash("sha256").update(html).digest("hex"),
+    sourceSha256: Object.fromEntries(await Promise.all([
+      "examples/before-arrival/index.tsx", "examples/before-arrival/planner.ts",
+      "examples/before-arrival/showcase.css", "browser-verify.mjs", "build.mjs",
+    ].map(async (path) => [path, createHash("sha256").update(await readFile(path)).digest("hex")]))),
+    originalInputs: ["479db2bc4e55bd58e9cda1f9408ea294e1c8ebf3", "3ff697d261e417fa6a2ff18ddcb91ebd83c32a6a"],
+  },
   screens: [],
   checks: [],
 };
@@ -133,7 +145,7 @@ async function audit(name) {
     [],
     `${name}: ${JSON.stringify(result.issues)}`,
   );
-  const path = `evidence/${name}.png`;
+  const path = `${evidenceDir}/${name}.png`;
   await page.screenshot({ path, fullPage: true });
   report.screens.push({ name, path, ...result });
 }
@@ -214,7 +226,7 @@ try {
   );
   await page.getByRole("button", { name: "관심사 설정", exact: true }).click();
   await page.getByLabel("게임 패치", { exact: true }).uncheck();
-  assert.match(await page.locator("h1").innerText(), /9시 회의/);
+  assert.match(await page.locator("h1").innerText(), /9시 팀 회의/);
   await page.reload();
   await page.getByRole("button", { name: "관심사 설정", exact: true }).click();
   assert.equal(
@@ -222,20 +234,34 @@ try {
     false,
   );
   await page.getByLabel("일정 변경", { exact: true }).uncheck();
+  await page.getByLabel("커뮤니티", { exact: true }).uncheck();
   assert(await page.locator(".primary").isDisabled());
   await page.getByLabel("커뮤니티", { exact: true }).check();
   assert.match(await page.locator("h1").innerText(), /팟캐스트/);
+  await page.getByRole("button", { name: "03 4분", exact: true }).click();
+  assert(await page.locator(".primary").isDisabled());
+  assert(await page.locator(".secondary").isDisabled());
+  assert.match(await page.locator("h1").innerText(), /도착해서 확인/);
+  assert.match(await page.locator(".brief-meta").innerText(), /예상 0초 · 예산 12초/);
+  await page.getByRole("button", { name: "01 18분", exact: true }).click();
+  await page.getByRole("button", { name: "관심사 설정", exact: true }).click();
+  await page.getByLabel("먼저 들을 소식").selectOption("community");
+  assert.match(await page.locator("h1").innerText(), /팟캐스트/);
+  report.checks.push("Community-only at 4 minutes exceeds the 12-second budget; play/save disabled. Community priority is supported at 18 minutes.");
   await page.getByLabel("게임 패치", { exact: true }).check();
   await page.getByLabel("일정 변경", { exact: true }).check();
   await page.getByLabel("먼저 들을 소식").selectOption("meeting");
-  assert.match(await page.locator("h1").innerText(), /9시 회의/);
+  assert.match(await page.locator("h1").innerText(), /9시 팀 회의/);
   await page.getByLabel("먼저 들을 소식").selectOption("game");
   assert.match(await page.locator("h1").innerText(), /협동 모드/);
   await page.getByRole("button", { name: "03 4분", exact: true }).click();
-  assert.match(await page.locator("h1").innerText(), /9시 회의/);
+  assert.match(await page.locator("h1").innerText(), /9시 팀 회의/);
+  assert.match(await page.locator(".brief-meta").innerText(), /예상 8초 · 예산 12초/);
   await page.locator(".secondary").click();
   await page.getByRole("button", { name: "04 도착", exact: true }).click();
-  assert.match(await page.locator(".phone h3").innerText(), /9시 회의/);
+  assert(await page.locator(".primary").isDisabled());
+  assert(await page.locator(".secondary").isDisabled());
+  assert.match(await page.locator(".phone h3").innerText(), /9시 팀 회의/);
   assert.equal(await page.locator(".phone a").count(), 0);
   report.checks.push(
     "Saving a meeting preserves its own title in arrival review and does not attach an unrelated game link.",
@@ -258,6 +284,16 @@ try {
   report.checks.push(
     "Transition from sample playback to restriction cancels playback state and disables both application actions.",
   );
+  await page.getByRole("button", { name: "상태 미확인", exact: true }).click();
+  assert(await page.locator(".primary").isDisabled());
+  await page.getByRole("button", { name: "01 18분", exact: true }).click();
+  assert.equal(await page.locator(".primary").getAttribute("aria-pressed"), "false");
+  report.checks.push("Unknown vehicle state disables actions; return to allowed sample state never resumes playback automatically. Arrival poster has no playable route.");
+  await page.evaluate(() => localStorage.setItem("before-arrival-showcase-v1", "{broken"));
+  await open("state=settings");
+  for (const name of ["게임 패치", "일정 변경", "커뮤니티"]) assert(await page.getByLabel(name, {exact:true}).isChecked());
+  assert.match(await page.locator(".brief-meta").innerText(), /예상 32초 · 예산 45초/);
+  report.checks.push("Malformed saved settings recover to all three Android source defaults without page errors.");
   await page.evaluate(() => localStorage.clear());
   await open("state=opening");
   await page.evaluate(() => {
@@ -306,7 +342,7 @@ try {
     {},
     { timeout: 6000 },
   );
-  assert.match(await page.locator("h1").innerText(), /9시 회의/);
+  assert.match(await page.locator("h1").innerText(), /9시 팀 회의/);
   await page.waitForFunction(
     () =>
       document
@@ -324,7 +360,7 @@ try {
     "No browser page errors. Offline font and all code embedded in HTML.",
   );
   await writeFile(
-    "evidence/browser-report.json",
+    `${evidenceDir}/browser-report.json`,
     JSON.stringify(report, null, 2) + "\n",
   );
   console.log(

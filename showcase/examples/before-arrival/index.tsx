@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Stage } from "../../kit/stage";
 import type { Act } from "../../kit/act";
 import "./showcase.css";
+import { items, planSample, type Source } from "./planner";
 export type Frame =
   | "opening"
   | "saved"
@@ -41,14 +42,14 @@ type LocalData = {
   game: boolean;
   meeting: boolean;
   community: boolean;
-  first: "game" | "meeting";
+  first: Source;
 };
 const defaults: LocalData = {
   saved: false,
   savedTitle: "",
   game: true,
   meeting: true,
-  community: false,
+  community: true,
   first: "game",
 };
 function readLocal(): LocalData {
@@ -59,7 +60,7 @@ function readLocal(): LocalData {
         (k) => typeof d?.[k] === "boolean",
       ) &&
       typeof d?.savedTitle === "string" &&
-      ["game", "meeting"].includes(d?.first)
+      ["game", "meeting", "community"].includes(d?.first)
     )
       return d;
   } catch {}
@@ -103,28 +104,16 @@ function Vehicle({
 }) {
   const blocked = frame === "restricted" || frame === "unknown",
     urgent = frame === "priority" || frame === "arrived";
-  const meeting =
-      data.meeting && (urgent || !data.game || data.first === "meeting"),
-    community = !data.game && !data.meeting && data.community,
-    any = data.game || data.meeting || data.community;
-  const title = meeting
-    ? long
-      ? "오전 9시 팀 회의 장소가 본관 3층 라운지로 변경되었어요"
-      : "9시 회의, 3층 라운지로 변경"
-    : community
-      ? "출근길 팟캐스트 추천"
-      : gameTitle;
-  const pending = meeting
-    ? data.game
-      ? "게임 패치"
-      : data.community
-        ? "커뮤니티"
-        : "없음"
-    : data.meeting
-      ? "9시 팀 회의 장소 변경"
-      : data.community && !community
-        ? "커뮤니티"
-        : "없음";
+  const arrived = frame === "arrived";
+  const plan = planSample(arrived ? 0 : urgent ? 4 : 18, data);
+  const lead = plan.selected[0];
+  const meeting = lead === "meeting", community = lead === "community";
+  const any = data.game || data.meeting || data.community;
+  const title = meeting && long
+    ? "오전 9시 팀 회의 장소가 본관 3층 라운지로 변경되었어요"
+    : lead ? items[lead].title : "";
+  const pending = (urgent ? plan.deferred : plan.selected.slice(1))
+    .map((key) => items[key].label).join(" · ") || "없음";
   const [playing, setPlaying] = useState(false);
   useEffect(() => setPlaying(false), [frame, data]);
   useEffect(() => {
@@ -139,7 +128,7 @@ function Vehicle({
           PLEOS CONNECT <small>시스템 UI 예시</small>
         </span>
         <span>
-          {frame === "arrived" ? "09:00" : urgent ? "08:56" : "08:42"} ·{" "}
+          {frame === "arrived" ? "09:00" : urgent ? "08:54" : "08:40"} ·{" "}
           {frame === "unknown" ? "?" : blocked ? "D" : "P"}
         </span>
       </div>
@@ -148,10 +137,10 @@ function Vehicle({
           <b>도착 전에</b>
           <span className="status">
             {frame === "unknown"
-              ? "차량 상태 확인 불가 · 조작·음성 중지"
+              ? "차량 상태 미확인 · 조작·음성 중지"
               : blocked
                 ? "주행 제한 · 조작·음성 중지"
-                : "주차 중 · 브리핑 이용 가능"}
+                : "주차 시 사용 가능 · 샘플 상태"}
           </span>
         </header>
         <div className="vehicle-content">
@@ -189,15 +178,17 @@ function Vehicle({
                     : "이번에 들을 브리핑"}
               </span>
               <span>
-                {blocked ? "안전 상태" : meeting ? "약 40초" : "약 2분"}
+                {blocked ? "안전 상태" : arrived ? "재생 종료" : `예상 ${plan.seconds}초 · 예산 ${plan.budget}초`}
               </span>
             </div>
             <div className="lead-card">
               <span className="category">
                 {blocked
                   ? "주차 후 다시 이용"
-                  : !any
-                    ? "관심사 설정 필요"
+                  : arrived
+                    ? "도착 후 확인 · 연출"
+                    : !lead
+                    ? any ? "듣기 예산 부족" : "관심사 설정 필요"
                     : meeting
                       ? "일정 변경 · 샘플"
                       : community
@@ -209,15 +200,19 @@ function Vehicle({
                   ? frame === "unknown"
                     ? "차량 상태를 확인해 주세요"
                     : "안전하게 주차한 뒤 이용해 주세요"
-                  : !any
-                    ? "들을 출처를 선택해 주세요"
+                  : arrived
+                    ? "저장한 소식을 확인하세요"
+                    : !lead
+                    ? any ? "이 소식은 도착해서 확인해 주세요" : "들을 출처를 선택해 주세요"
                     : title}
               </h1>
               <p>
                 {blocked
                   ? "브리핑 화면 조작과 음성을 중지했어요."
-                  : !any
-                    ? "휴대폰 설정에서 게임 또는 일정을 켜 주세요."
+                  : arrived
+                    ? "휴대폰 화면은 저장 흐름을 보여주는 연출이에요."
+                    : !lead
+                    ? any ? "예상 낭독 길이가 남은 듣기 예산을 넘었어요." : "휴대폰 설정에서 들을 출처를 켜 주세요."
                     : meeting
                       ? "도착 직후 시작하는 회의라 먼저 알려드려요."
                       : community
@@ -226,7 +221,7 @@ function Vehicle({
               </p>
               <button
                 className="primary"
-                disabled={blocked || !any}
+                disabled={blocked || !lead}
                 onClick={() => setPlaying(!playing)}
                 aria-pressed={playing}
               >
@@ -235,7 +230,7 @@ function Vehicle({
               </button>
               <button
                 className="secondary"
-                disabled={blocked || !any}
+                disabled={blocked || !lead}
                 onClick={() => save(title)}
               >
                 <Glyph
@@ -263,6 +258,7 @@ function Vehicle({
             <div className="next-up">
               {blocked
                 ? "제한 상태에서는 목록 전환과 재생을 중지해요."
+                : arrived ? "도착 후 보관함 · 기기 간 동기화 연출"
                 : urgent
                   ? `나중에 확인 · ${pending}`
                   : `다음 소식 · ${pending}`}
@@ -336,6 +332,7 @@ function Pocket({
               >
                 <option value="game">게임 패치</option>
                 <option value="meeting">일정 변경</option>
+                <option value="community">커뮤니티</option>
               </select>
             </label>
             <p>기한이 가까운 일정은 먼저 안내해요.</p>

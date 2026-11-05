@@ -1,4 +1,6 @@
-# Android 검증 기록
+# Android 검증 기록 · 원본 차량 작업
+
+> 이 기록과 validation/ 로그는 차량 입력 `479db2bc4e55bd58e9cda1f9408ea294e1c8ebf3` 작업 환경의 결과다. 이 통합 환경에서 APK 바이너리를 받거나 서명을 다시 검사한 기록이 아니다. Android 소스 입력 30개는 통합 후 해시 대조를 통과했다. 현재 재현 범위는 [통합 기록](../integration-notes.md)에 있다.
 
 확인 시각: 2026-11-05T20:41:46+09:00 (Asia/Seoul). 환경: before-arrival-pleos. 저장소: 비공개 `jhuni17/before-arrival-pleos`.
 

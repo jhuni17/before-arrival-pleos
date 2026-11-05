@@ -1,4 +1,6 @@
-# 차량 앱 담당 인계
+# 차량 앱 담당 인계 · 원본 기록
+
+> 아래는 시연 입력 커밋 `3ff697d261e417fa6a2ff18ddcb91ebd83c32a6a`의 인계 기록이다. 이후 Android 입력 `479db2bc4e55bd58e9cda1f9408ea294e1c8ebf3`와 통합하고 시간·편성·문구를 맞췄다. 현재 상태는 [통합 기록](../integration-notes.md)에 있다.
 
 - 독립 시작점: `94fa9ca1324029c07a8cee25b7771bb4f007e215` (`main`). Android 작업과 합치지 않은 독립 시연 변경이다.
 - 변경 소유권: `showcase/`만. `android/`, 루트 기획서, 기존 Cloud 지시서를 수정하지 않았다.
