@@ -1,3 +1,4 @@
+import {prepareSavedRemoval,prepareSavedRestore,savedIdentity} from "./saved-undo";
 import assert from "node:assert/strict";
 import actualSteamResponse from "../../../shared/evidence/steam-real-response.json";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -77,3 +78,23 @@ for(const delta of [{gid:"999"},{gid:"bad"},{appid:730},{url:realFirst.url.repla
 assert.throws(()=>parseSteam({appnews:{appid:730,newsitems:[realFirst]}},source,observedAt));
 assert.throws(()=>parseSteam({appnews:{appid:570,newsitems:[realFirst,{...realFirst,gid:"999"}]}},source,observedAt));
 console.log("PASS: captured real Steam HTTP200 response replay:5 official CDN articles → ordered 18-minute briefing → 4-minute schedule priority → saved/reload original URL; strict host/path/gid/uint64/response+item-appid negatives. Replay is not live browser refresh.");
+
+const undoBase=defaults();
+const undoA={...undoBase.sources[0].items[0],id:"undo-a",originalUrl:"https://www.leagueoflegends.com/ko-kr/news/game-updates/a/"};
+const undoB={...undoBase.sources[0].items[0],id:"undo-b",originalUrl:"https://www.leagueoflegends.com/ko-kr/news/game-updates/b/",summary:"original saved text"};
+const undoC={...undoBase.sources[0].items[0],id:"undo-c",originalUrl:"https://www.leagueoflegends.com/ko-kr/news/game-updates/c/"};
+const undoD={...undoBase.sources[0].items[0],id:"undo-d",originalUrl:null};
+const removal=prepareSavedRemoval({...undoBase,savedItems:[undoA,undoB,undoC]},undoB)!;
+assert.deepEqual(removal.next.savedItems.map(item=>item.id),["undo-a","undo-c"]);
+assert.equal(prepareSavedRemoval(removal.next,undoB),null);
+const latestUndoState={...removal.next,sources:[...removal.next.sources].reverse(),savedItems:[undoA,undoC,undoD]};
+const restoredUndo=prepareSavedRestore(latestUndoState,removal.removal);
+assert.deepEqual(restoredUndo.next.savedItems.map(item=>item.id),["undo-a","undo-b","undo-c","undo-d"]);
+assert.equal(restoredUndo.next.sources,latestUndoState.sources);
+assert.deepEqual(restoredUndo.next.savedItems[1],undoB);
+const newerCopy={...undoB,originalUrl:undoB.originalUrl!.replace(/\/$/,""),summary:"newer saved copy"};
+const alreadySaved={...latestUndoState,savedItems:[undoA,undoC,undoD,newerCopy]};
+const duplicateUndo=prepareSavedRestore(alreadySaved,removal.removal);
+assert.equal(duplicateUndo.alreadyPresent,true);assert.equal(duplicateUndo.next,alreadySaved);assert.equal(duplicateUndo.next.savedItems.at(-1)!.summary,"newer saved copy");
+assert.equal(savedIdentity(newerCopy),savedIdentity(undoB));
+console.log("PASS: saved undo merges only removed item at original relative position, preserves intervening state, missing targets and newer canonical duplicate copies.");

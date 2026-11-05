@@ -10,7 +10,8 @@
     "verify:server": "python3 -m unittest -v test_app_server.py",
     "verify:local-app": "node local-app-browser-verify.mjs",
     "verify:arrival": "node arrival-browser-verify.mjs",
-    "verify:refresh-feedback": "node refresh-feedback-browser-verify.mjs"
+    "verify:refresh-feedback": "node refresh-feedback-browser-verify.mjs",
+    "verify:saved-undo": "node saved-undo-browser-verify.mjs"
   },
   "dependencies": {
     "react": "18.3.1",

@@ -617,3 +617,8 @@ select:focus-visible {
 .refresh-feedback-label{display:block;color:var(--muted);font-size:13px;line-height:1.5;margin-top:8px}
 .refresh-feedback{color:var(--text);font-size:15px;line-height:1.6;margin:4px 0 10px;overflow-wrap:anywhere}
 .refresh-feedback:empty{margin:0}
+
+.saved-undo[data-active="true"]{border:1px solid var(--line);border-radius:10px;padding:12px;margin:12px 0}
+.phone .saved-undo-status{margin:0;color:var(--text);line-height:1.6;overflow-wrap:anywhere}
+.saved-undo-button{min-height:48px;margin-top:10px;padding:10px 14px;background:var(--button);color:var(--on-button);border:1px solid var(--line);border-radius:8px}
+.saved-article h3:focus-visible{outline:2px solid var(--text);outline-offset:4px}

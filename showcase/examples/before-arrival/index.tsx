@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import {completedRefreshFeedback,failedRefreshFeedback} from "./refresh-feedback";
+import {savedIdentity,prepareSavedRemoval,prepareSavedRestore,type SavedRemoval} from "./saved-undo";
 import { Stage } from "../../kit/stage";
 import type { Act } from "../../kit/act";
 import { providers,defaults,registryKey,readRegistry,addSource,moveSource,toggleSource,planRegistry,saveItem,statusText,sourceName,refreshSteam,applyFeed,officialUrl,localSteamConnectionAvailable,type Registry,type ContentItem,type RegisteredSource } from "./catalog";
@@ -14,6 +15,7 @@ export async function sequence(act:Act<Scene>) {
  act.mark("arrival-review");await act.wait(4500);
 }
 const RefreshFeedbackContext=createContext<Record<string,string>>({});
+const SavedUndoContext=createContext<{pending:SavedRemoval|null;notice:string;focusKey:string|null;remove:(item:ContentItem)=>void;restore:()=>void;focusDone:()=>void}>({pending:null,notice:"",focusKey:null,remove:()=>{},restore:()=>{},focusDone:()=>{}});
 const sampleTime=(short:boolean)=>short?"2026-11-04T23:54:00Z":"2026-11-04T23:40:00Z";
 function Glyph({kind}:{kind:"play"|"save"|"check"|"pause"}) {return <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">{kind==="play"?<path d="m9 5 11 7-11 7V5Z" fill="currentColor"/>:kind==="check"?<path d="m4 12 5 5L20 6" stroke="currentColor" strokeWidth="2.5"/>:kind==="pause"?<path d="M8 5v14M16 5v14" stroke="currentColor" strokeWidth="4"/>:<path d="M6 3h12v18l-6-4-6 4V3Z" stroke="currentColor" strokeWidth="2"/>}</svg>}
 function Published({item}:{item:ContentItem}) {
@@ -73,8 +75,16 @@ function SourceSettings({state,update,refresh,busy}:{state:Registry;update:(next
  </form></>;
 }
 function Pocket({frame,state,update,refresh,busy}:{frame:Frame;state:Registry;update:(next:Registry)=>void;refresh:(source:RegisteredSource)=>void;busy:string[]}) {
- return <aside className="phone" aria-label={frame==="settings"?"이 브라우저 출처 설정":"이 브라우저 도착 후 확인"}><div className="phone-system">{frame==="settings"?"8:30":"9:00"}<span>휴대폰 모형 · 브라우저에서 동작</span></div><div className="phone-app"><span className="eyebrow">도착 전에</span><h2>{frame==="settings"?"내 출근길 출처":"도착해서 보기"}</h2><p className="local-only">현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨</p>
- {frame==="settings"?<SourceSettings state={state} update={update} refresh={refresh} busy={busy}/>:state.savedItems.length?state.savedItems.map(item=><article className="saved-article" key={item.originalUrl||item.sourceId+item.id}><span className="category">{sourceName(state,item)}</span><h3>{item.title}</h3><p>{item.summary}</p><Published item={item}/>{item.originalUrl&&<a href={item.originalUrl} target="_blank" rel="noreferrer">공식 원문 확인 ↗</a>}<button aria-label={`${item.title} 저장 취소`} onClick={()=>update({...state,savedItems:state.savedItems.filter(i=>i!==item)})}>저장 취소</button></article>):<p className="empty-saved">저장한 소식이 없어요. 차량 모형에서 저장 버튼을 누르면 이 브라우저 보관함에 남아요. 자동 시연은 실제 저장을 만들지 않아요.</p>}
+ const undo=useContext(SavedUndoContext),undoButton=useRef<HTMLButtonElement>(null),pocket=useRef<HTMLElement>(null);
+ useEffect(()=>{if(frame==="arrived"&&undo.pending)undoButton.current?.focus();},[frame,undo.pending]);
+ useEffect(()=>{
+  if(frame!=="arrived"||!undo.focusKey)return;
+  const article=[...(pocket.current?.querySelectorAll<HTMLElement>(".saved-article")||[])].find(node=>node.dataset.savedKey===undo.focusKey);
+  article?.querySelector<HTMLElement>("h3")?.focus();undo.focusDone();
+ },[frame,undo.focusKey]);
+ return <aside className="phone" ref={pocket} aria-label={frame==="settings"?"이 브라우저 출처 설정":"이 브라우저 도착 후 확인"}><div className="phone-system">{frame==="settings"?"8:30":"9:00"}<span>휴대폰 모형 · 브라우저에서 동작</span></div><div className="phone-app"><span className="eyebrow">도착 전에</span><h2>{frame==="settings"?"내 출근길 출처":"도착해서 보기"}</h2><p className="local-only">현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨</p>
+ {frame==="arrived"&&<section className="saved-undo" data-active={Boolean(undo.notice||undo.pending)} aria-label="최근 삭제 실행 취소"><p className="saved-undo-status" role="status" aria-live="polite" aria-atomic="true">{undo.notice}</p>{undo.pending&&<button className="saved-undo-button" ref={undoButton} onClick={undo.restore}>삭제 실행 취소</button>}</section>}
+ {frame==="settings"?<SourceSettings state={state} update={update} refresh={refresh} busy={busy}/>:state.savedItems.length?state.savedItems.map(item=><article className="saved-article" data-saved-key={savedIdentity(item)} key={item.originalUrl||item.sourceId+item.id}><span className="category">{sourceName(state,item)}</span><h3 tabIndex={-1}>{item.title}</h3><p>{item.summary}</p><Published item={item}/>{item.originalUrl&&<a href={item.originalUrl} target="_blank" rel="noreferrer">공식 원문 확인 ↗</a>}<button aria-label={`${item.title} 저장 취소`} onClick={()=>undo.remove(item)}>저장 취소</button></article>):<p className="empty-saved">저장한 소식이 없어요. 차량 모형에서 저장 버튼을 누르면 이 브라우저 보관함에 남아요. 자동 시연은 실제 저장을 만들지 않아요.</p>}
  <div className="phone-scope">브라우저 보관함 · 기기 간 동기화 미구현</div></div><div className="phone-home" aria-hidden="true"/></aside>;
 }
 function SceneView({scene,state,update,refresh,busy,long}:{scene:Scene;state:Registry;update:(next:Registry)=>void;refresh:(source:RegisteredSource)=>void;busy:string[];long:boolean}) {
@@ -82,8 +92,9 @@ function SceneView({scene,state,update,refresh,busy,long}:{scene:Scene;state:Reg
 }
 export function Showcase({state:initialState}:{state:string|null}) {
  const params=typeof location==="undefined"?new URLSearchParams():new URLSearchParams(location.search);
- const [theme,setTheme]=useState(params.get("theme")==="day"?"day":"night"),[manual,setManual]=useState<Frame|null>(frames.includes(initialState as Frame)?initialState as Frame:null),[state,setState]=useState<Registry>(defaults),[replay,setReplay]=useState(0),[error,setError]=useState(""),[busy,setBusy]=useState<string[]>([]),[feedback,setFeedback]=useState<Record<string,string>>({});
+ const [theme,setTheme]=useState(params.get("theme")==="day"?"day":"night"),[manual,setManual]=useState<Frame|null>(frames.includes(initialState as Frame)?initialState as Frame:null),[state,setState]=useState<Registry>(defaults),[replay,setReplay]=useState(0),[error,setError]=useState(""),[busy,setBusy]=useState<string[]>([]),[feedback,setFeedback]=useState<Record<string,string>>({}),[pendingUndo,setPendingUndo]=useState<SavedRemoval|null>(null),[undoNotice,setUndoNotice]=useState(""),[undoFocusKey,setUndoFocusKey]=useState<string|null>(null);
  const current=useRef(state);current.current=state;
+ const pendingUndoRef=useRef<SavedRemoval|null>(null);
  const jobs=useRef(new Map<string,AbortController>());
  const allowed=manual!=="restricted"&&manual!=="unknown";
  const allowedRef=useRef(allowed);allowedRef.current=allowed;
@@ -92,10 +103,25 @@ export function Showcase({state:initialState}:{state:string|null}) {
   for(const [id,job] of jobs.current) if(!allowed||!state.sources.some(s=>s.id===id&&s.enabled)){job.abort();jobs.current.delete(id);setBusy(old=>old.filter(v=>v!==id));}
   setFeedback(old=>{const kept=Object.fromEntries(Object.entries(old).filter(([id])=>allowed&&state.sources.some(s=>s.id===id&&s.enabled)));return Object.keys(kept).length===Object.keys(old).length?old:kept;});
  },[allowed,state.sources]);
+ useEffect(()=>{if(!allowed){pendingUndoRef.current=null;setPendingUndo(null);setUndoNotice("");setUndoFocusKey(null);}},[allowed]);
  useEffect(()=>()=>{for(const job of jobs.current.values())job.abort();},[]);
  function update(next:Registry) {
   if(!allowedRef.current)return false;
   try{localStorage.setItem(registryKey,JSON.stringify(next));current.current=next;setState(next);setError("");return true;}catch{setError("저장하지 못했어요. 브라우저 저장 공간을 확인해 주세요.");return false;}
+ }
+ function removeSaved(item:ContentItem) {
+  if(!allowedRef.current)return;
+  const deletion=prepareSavedRemoval(current.current,item);
+  if(!deletion||!update(deletion.next))return;
+  pendingUndoRef.current=deletion.removal;setPendingUndo(deletion.removal);setUndoFocusKey(null);
+  setUndoNotice(`「${deletion.removal.item.title}」을 보관함에서 뺐어요.`);
+ }
+ function restoreSaved() {
+  if(!allowedRef.current||!pendingUndoRef.current)return;
+  const removal=pendingUndoRef.current,restored=prepareSavedRestore(current.current,removal);
+  if(!restored.alreadyPresent&&!update(restored.next))return;
+  pendingUndoRef.current=null;setPendingUndo(null);setUndoFocusKey(savedIdentity(removal.item));
+  setUndoNotice(restored.alreadyPresent?"이미 보관함에 있는 소식이에요.":`「${removal.item.title}」을 다시 보관했어요.`);
  }
  async function refresh(source:RegisteredSource) {
   if(!allowed||!source.enabled||jobs.current.has(source.id))return;
@@ -118,5 +144,5 @@ export function Showcase({state:initialState}:{state:string|null}) {
   } finally {clearTimeout(timer);if(jobs.current.get(source.id)===job){jobs.current.delete(source.id);setBusy(old=>old.filter(id=>id!==source.id));}}
  }
  const render=(scene:Scene)=><SceneView scene={scene} state={state} update={update} refresh={refresh} busy={busy} long={params.get("long")==="1"}/>;
- return <RefreshFeedbackContext.Provider value={feedback}><main className="ba-page" data-theme={theme}><div className="page-inner"><header className="masthead"><span>도착 전에 <small>PLEOS CONNECT · 샘플 경로 시연</small></span><button onClick={()=>setTheme(theme==="night"?"day":"night")}>{theme==="night"?"주간으로 보기":"야간으로 보기"}</button></header><div className="intro"><span className="eyebrow">내가 고른 출처, 남은 시간에 맞게</span><h2>남은 시간만큼,<br/>필요한 소식부터.</h2></div><nav className="scene-controls" aria-label="시연 장면">{([['opening','01 18분'],['saved','02 저장'],['priority','03 4분'],['arrived','04 도착'],['settings','출처 설정'],['restricted','주행 제한'],['unknown','상태 미확인']] as const).map(([frame,label])=><button key={frame} aria-pressed={manual===frame} onClick={()=>setManual(frame)}>{label}</button>)}<button onClick={()=>{setManual(null);setReplay(replay+1);}}>자동 시연 다시 보기</button></nav>{error&&<p className="storage-error" role="alert">{error}</p>}<Stage key={`${manual}-${replay}`} width={1440} height={680} className="ba-scene" theme={theme==="night"?"dark":"light"} play="once" initial={{frame:manual||"opening"} as Scene} poster={{frame:manual||"arrived"} as Scene} script={manual?undefined:sequence}>{render}</Stage><footer className="evidence-note">경로·차량 상태·재생은 샘플 · 소식마다 실제/예시와 확인 시각을 표시<br/>출처·저장은 이 브라우저에만 보존 · Android 앱/다른 기기와 동기화 안 됨</footer></div></main></RefreshFeedbackContext.Provider>;
+ return <RefreshFeedbackContext.Provider value={feedback}><SavedUndoContext.Provider value={{pending:pendingUndo,notice:undoNotice,focusKey:undoFocusKey,remove:removeSaved,restore:restoreSaved,focusDone:()=>setUndoFocusKey(null)}}><main className="ba-page" data-theme={theme}><div className="page-inner"><header className="masthead"><span>도착 전에 <small>PLEOS CONNECT · 샘플 경로 시연</small></span><button onClick={()=>setTheme(theme==="night"?"day":"night")}>{theme==="night"?"주간으로 보기":"야간으로 보기"}</button></header><div className="intro"><span className="eyebrow">내가 고른 출처, 남은 시간에 맞게</span><h2>남은 시간만큼,<br/>필요한 소식부터.</h2></div><nav className="scene-controls" aria-label="시연 장면">{([['opening','01 18분'],['saved','02 저장'],['priority','03 4분'],['arrived','04 도착'],['settings','출처 설정'],['restricted','주행 제한'],['unknown','상태 미확인']] as const).map(([frame,label])=><button key={frame} aria-pressed={manual===frame} onClick={()=>setManual(frame)}>{label}</button>)}<button onClick={()=>{setManual(null);setReplay(replay+1);}}>자동 시연 다시 보기</button></nav>{error&&<p className="storage-error" role="alert">{error}</p>}<Stage key={`${manual}-${replay}`} width={1440} height={680} className="ba-scene" theme={theme==="night"?"dark":"light"} play="once" initial={{frame:manual||"opening"} as Scene} poster={{frame:manual||"arrived"} as Scene} script={manual?undefined:sequence}>{render}</Stage><footer className="evidence-note">경로·차량 상태·재생은 샘플 · 소식마다 실제/예시와 확인 시각을 표시<br/>출처·저장은 이 브라우저에만 보존 · Android 앱/다른 기기와 동기화 안 됨</footer></div></main></SavedUndoContext.Provider></RefreshFeedbackContext.Provider>;
 }

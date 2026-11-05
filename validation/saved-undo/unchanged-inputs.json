@@ -1,0 +1,19 @@
+{
+  "reviewBase": "20cd1aad8cb30fc211d74b89743d66ec79e09fb8",
+  "apkBuiltFromSource": "27d297b2981826be52ee360c21c999379c82f776",
+  "signedArtifactCommit": "9bef7b49a0b88154d1f57fea8d8de47eb0df8554",
+  "apkInputsChecked": 41,
+  "allApkInputsByteIdentical": true,
+  "unchangedServerAndCatalog": [
+    {
+      "path": "showcase/app_server.py",
+      "sha256": "7bdd9b97b59664a5505e1c63c8d0dfc047a0ed611c9846fe44d4ef953210513c"
+    },
+    {
+      "path": "showcase/examples/before-arrival/catalog.ts",
+      "sha256": "9a7562590bfd11822af8446b954e740b95b405c4ea58de3ae8c3b172860ef398"
+    }
+  ],
+  "persistedSchemaOrRegistryKeyChanges": false,
+  "scope": "One browser-only saved deletion undo round. Only latest successful deletion is held in React session state; restore merges one item into current savedItems. No new provider, actual upstream request, Android or shared asset changes."
+}
