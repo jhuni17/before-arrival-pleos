@@ -1,0 +1,208 @@
+{
+  "schemaVersion": 1,
+  "providers": [
+    {
+      "id": "steam",
+      "label": "Steam 게임 공식 소식",
+      "kind": "game",
+      "suggestedUrl": "https://store.steampowered.com/news/app/570",
+      "urlPattern": "^https://store\\.steampowered\\.com/(?:news/app/[0-9]+|app/[0-9]+)(?:/[^?#]*)?/?$"
+    },
+    {
+      "id": "lol",
+      "label": "리그 오브 레전드 패치",
+      "kind": "game",
+      "suggestedUrl": "https://www.leagueoflegends.com/ko-kr/news/game-updates/",
+      "urlPattern": "^https://www\\.leagueoflegends\\.com/ko-kr/news/game-updates(?:/[a-z0-9-]+)?/?$"
+    },
+    {
+      "id": "valorant",
+      "label": "발로란트 패치",
+      "kind": "game",
+      "suggestedUrl": "https://playvalorant.com/ko-kr/news/game-updates/",
+      "urlPattern": "^https://playvalorant\\.com/ko-kr/news/game-updates(?:/[a-z0-9-]+)?/?$"
+    },
+    {
+      "id": "maple",
+      "label": "메이플스토리 업데이트",
+      "kind": "game",
+      "suggestedUrl": "https://maplestory.nexon.com/news/update",
+      "urlPattern": "^https://maplestory\\.nexon\\.com/(?:news/update|News/Update)(?:/[0-9]+)?/?$"
+    },
+    {
+      "id": "youtube",
+      "label": "YouTube 채널",
+      "kind": "channel",
+      "suggestedUrl": "",
+      "urlPattern": "^https://www\\.youtube\\.com/(?:@[A-Za-z0-9_.-]{1,80}|channel/UC[A-Za-z0-9_-]{22})/?$"
+    },
+    {
+      "id": "chzzk",
+      "label": "치지직 스트리머",
+      "kind": "channel",
+      "suggestedUrl": "",
+      "urlPattern": "^https://chzzk\\.naver\\.com/[a-f0-9]{32}/?$"
+    },
+    {
+      "id": "soop",
+      "label": "SOOP 스트리머",
+      "kind": "channel",
+      "suggestedUrl": "",
+      "urlPattern": "^https://ch\\.sooplive\\.co\\.kr/[A-Za-z0-9_]{1,30}/?$"
+    },
+    {
+      "id": "navercafe",
+      "label": "네이버 카페",
+      "kind": "board",
+      "suggestedUrl": "",
+      "urlPattern": "^https://cafe\\.naver\\.com/(?:[A-Za-z0-9_]{1,80}|f-e/cafes/[0-9]+/menus/[0-9]+)/?$"
+    },
+    {
+      "id": "dcinside",
+      "label": "디시인사이드 갤러리",
+      "kind": "board",
+      "suggestedUrl": "",
+      "urlPattern": "^https://gall\\.dcinside\\.com/(?:mgallery/|mini/)?board/lists/\\?id=[A-Za-z0-9_]{1,80}$"
+    },
+    {
+      "id": "fmkorea",
+      "label": "에펨코리아 게시판",
+      "kind": "board",
+      "suggestedUrl": "",
+      "urlPattern": "^https://www\\.fmkorea\\.com/[A-Za-z][A-Za-z0-9_]{0,79}/?$"
+    }
+  ],
+  "sources": [
+    {
+      "id": "sample-game",
+      "name": "게임 패치 예시",
+      "provider": "sample",
+      "kind": "game",
+      "registrationUrl": null,
+      "status": "demo_sample",
+      "enabled": true,
+      "items": [
+        {
+          "id": "sample-game-item",
+          "sourceId": "sample-game",
+          "title": "이번 주말, 협동 모드가 열려요",
+          "publishedAt": null,
+          "publishedPrecision": "unknown",
+          "originalUrl": null,
+          "summary": "즐겨 하는 게임의 새 협동 모드가 이번 주말 열려요. 업데이트 소식은 저장해 두고 도착 후 확인할 수 있어요.",
+          "estimatedSeconds": 11,
+          "deadlineAt": null,
+          "provenance": "demo_sample",
+          "fetchedAt": null
+        }
+      ]
+    },
+    {
+      "id": "sample-schedule",
+      "name": "일정 변경 예시",
+      "provider": "sample",
+      "kind": "schedule",
+      "registrationUrl": null,
+      "status": "demo_sample",
+      "enabled": true,
+      "items": [
+        {
+          "id": "sample-schedule-item",
+          "sourceId": "sample-schedule",
+          "title": "9시 팀 회의가 3층으로 바뀌었어요",
+          "publishedAt": null,
+          "publishedPrecision": "unknown",
+          "originalUrl": null,
+          "summary": "오늘 아홉 시 팀 회의는 삼층 라운지예요. 여덟 시 오십팔 분까지 장소를 확인해 주세요.",
+          "estimatedSeconds": 8,
+          "deadlineAt": "2026-11-04T23:58:00Z",
+          "provenance": "demo_sample",
+          "fetchedAt": null
+        }
+      ]
+    },
+    {
+      "id": "sample-community",
+      "name": "커뮤니티 예시",
+      "provider": "sample",
+      "kind": "community",
+      "registrationUrl": null,
+      "status": "demo_sample",
+      "enabled": true,
+      "items": [
+        {
+          "id": "sample-community-item",
+          "sourceId": "sample-community",
+          "title": "출근길에 듣기 좋은 10분짜리 팟캐스트",
+          "publishedAt": null,
+          "publishedPrecision": "unknown",
+          "originalUrl": null,
+          "summary": "오늘의 인기글은 출근길에 듣기 좋은 십 분짜리 팟캐스트 추천이에요. 짧은 에피소드 세 편을 소개하는 글이에요.",
+          "estimatedSeconds": 13,
+          "deadlineAt": null,
+          "provenance": "demo_sample",
+          "fetchedAt": null
+        }
+      ]
+    }
+  ],
+  "snapshots": [
+    {
+      "provider": "lol",
+      "registrationUrl": "https://www.leagueoflegends.com/ko-kr/news/game-updates/",
+      "items": [
+        {
+          "id": "official-lol-2026-11-03",
+          "sourceId": "",
+          "title": "리그 오브 레전드 26.22 패치 노트",
+          "publishedAt": "2026-11-03T19:00:00.000Z",
+          "publishedPrecision": "instant",
+          "originalUrl": "https://www.leagueoflegends.com/ko-kr/news/game-updates/league-of-legends-patch-26-22-notes/",
+          "summary": "멜의 능력과 여러 챔피언의 밸런스가 조정됐어요. 자세한 변경은 공식 패치 노트에서 확인하세요.",
+          "estimatedSeconds": 9,
+          "deadlineAt": null,
+          "provenance": "official_snapshot",
+          "fetchedAt": "2026-11-05T12:12:22Z"
+        }
+      ]
+    },
+    {
+      "provider": "valorant",
+      "registrationUrl": "https://playvalorant.com/ko-kr/news/game-updates/",
+      "items": [
+        {
+          "id": "official-valorant-2026-10-27",
+          "sourceId": "",
+          "title": "발로란트 13.09 패치 노트",
+          "publishedAt": "2026-10-27T13:00:00.000Z",
+          "publishedPrecision": "instant",
+          "originalUrl": "https://playvalorant.com/ko-kr/news/game-updates/valorant-patch-notes-1309/",
+          "summary": "새 요원 허시가 추가됐고 워든 조정과 버그 수정이 포함됐어요. 전체 변경은 공식 공지를 확인하세요.",
+          "estimatedSeconds": 10,
+          "deadlineAt": null,
+          "provenance": "official_snapshot",
+          "fetchedAt": "2026-11-05T12:12:22Z"
+        }
+      ]
+    },
+    {
+      "provider": "maple",
+      "registrationUrl": "https://maplestory.nexon.com/news/update",
+      "items": [
+        {
+          "id": "official-maple-2026-10-22",
+          "sourceId": "",
+          "title": "수정2 클라이언트 1.2.420 업데이트 안내",
+          "publishedAt": "2026-10-22",
+          "publishedPrecision": "date",
+          "originalUrl": "https://maplestory.nexon.com/news/update/815",
+          "summary": "가을 이벤트와 메이플 톡, 보스 신규 난이도 및 오류 수정 내용을 안내해요.",
+          "estimatedSeconds": 8,
+          "deadlineAt": null,
+          "provenance": "official_snapshot",
+          "fetchedAt": "2026-11-05T12:12:22Z"
+        }
+      ]
+    }
+  ]
+}

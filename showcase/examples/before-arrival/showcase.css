@@ -583,3 +583,20 @@ select:focus-visible {
     scroll-behavior: auto !important;
   }
 }
+/* User-selected sources are real local settings, including the phone-shaped panel. */
+.local-only{padding:12px;border:1px solid var(--line);border-radius:10px;line-height:1.6}
+.source-list{list-style:none;padding:0;margin:0;display:grid;gap:14px}
+.registered-source{padding:12px 0;border-bottom:1px solid var(--line)}
+.source-status,.item-provenance{font-size:14px;line-height:1.6;overflow-wrap:anywhere;display:block}
+.source-actions{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.source-actions button,.source-form button,.saved-article button{min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text)}
+.source-form{display:grid;gap:14px;margin-top:24px}
+.source-form label{display:grid;gap:8px;font-size:15px}
+.source-form input,.source-form select{width:100%;min-width:0;min-height:44px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.original-link{display:block;margin-top:12px;line-height:1.5}
+.saved-article{padding:18px 0;border-bottom:1px solid var(--line)}
+.saved-article a,.registered-source a{overflow-wrap:anywhere;line-height:1.7}
+.saved-article button{margin-top:12px}
+.source-actions button:disabled{opacity:.65}
+.source-form,.source-form label{min-width:0;grid-template-columns:minmax(0,1fr)}
+.source-form input,.source-form select{box-sizing:border-box}

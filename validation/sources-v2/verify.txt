@@ -1,0 +1,5 @@
+
+> verify
+> node verify.mjs
+
+PASS: shared catalog, legacy migration, add/order/enable→ETA plan,3 official snapshots provenance,date precision,local saved dedup,official URL allowlist,runtime Steam fixture dedup/failure/empty/size bounds. Fixtures do not establish live connection.

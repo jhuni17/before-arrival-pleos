@@ -1,0 +1,54 @@
+{
+  "checkedDate": "2026-11-05",
+  "researchMethod": "connected web research; only official sources used for technical claims",
+  "providers": [
+    {
+      "provider": "steam",
+      "docs": "https://partner.steamgames.com/doc/webapi/ISteamNews",
+      "confirmed": "Public GetNewsForApp/v2 requires appid; supports count,maxlength,feeds. Publisher-key Authed variant must stay server-only.",
+      "notVerified": "Live response, literal feed names and CORS in this environment; proxy403."
+    },
+    {
+      "provider": "youtube",
+      "docs": "https://developers.google.com/youtube/data/guides/implementation/videos",
+      "confirmed": "Read channel contentDetails.relatedPlaylists.uploads, then playlistItems.list. Public reads require configured project/API access; private/mine uses OAuth.",
+      "notVerified": "No developer credential or live uploads response. Not watch history."
+    },
+    {
+      "provider": "chzzk",
+      "docs": [
+        "https://chzzk.gitbook.io/chzzk/chzzk-api/channel",
+        "https://chzzk.gitbook.io/chzzk/chzzk-api/live"
+      ],
+      "confirmed": "Registered Client authentication for public channel lookup and global live list. Live list is viewer-count order, with openDate. Protected management scopes require user Access Token.",
+      "notVerified": "No client credentials, no selected-streamer news/history feed response."
+    },
+    {
+      "provider": "soop",
+      "docs": [
+        "https://developers.sooplive.co.kr/",
+        "https://sotong.sooplive.com/?b_no=9999&board_type=servicenotice&check_content=true&check_title=true&page=1&search_word=%EC%A0%84%EC%9E%90&work=view"
+      ],
+      "confirmed": "Official 2026-08-18 notice describes Docs consolidation and registration scope model: Public without separate approval, Consent with prior approval.",
+      "notVerified": "Developer site has no readable body in available research tool; exact streamer-news endpoints and scopes remain unconfirmed."
+    },
+    {
+      "provider": "navercafe",
+      "docs": "https://developers.naver.com/docs/serviceapi/search/cafearticle/cafearticle.md",
+      "confirmed": "Public cafe article SEARCH; clientID and clientSecret headers. sort sim means relevance, date means chronological. No popularity option. Item fields title/link/description/cafename/cafeurl; lastBuildDate is search response generation, not article publication.",
+      "notVerified": "No credentials or live results. No selected-board popular-post API established."
+    },
+    {
+      "provider": "dcinside",
+      "docs": "https://www.dcinside.com/",
+      "confirmed": "Official public homepage inspected; gallery URL registration can be retained.",
+      "notVerified": "No published official automatic popular-post API established by official-site/doc search; do not infer absence universally."
+    },
+    {
+      "provider": "fmkorea",
+      "docs": "https://www.fmkorea.com/",
+      "confirmed": "Official homepage access attempted.",
+      "notVerified": "Research fetch429; no official automatic popular-board API established. No login/cookie workaround attempted."
+    }
+  ]
+}

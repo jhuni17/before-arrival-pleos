@@ -3,6 +3,19 @@ package com.beforearrival.briefing;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.SharedPreferences;
+import android.content.Intent;
+import android.net.Uri;
+import android.widget.EditText;
+import android.widget.Spinner;
+import android.widget.ArrayAdapter;
+import android.widget.AdapterView;
+import java.io.ByteArrayOutputStream;
+import org.json.JSONException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
@@ -24,13 +37,11 @@ import android.widget.TextView;
 
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-import com.beforearrival.briefing.Briefing.Item;
+import com.beforearrival.briefing.ContentCatalog.Item;
+import com.beforearrival.briefing.ContentCatalog.Source;
+import com.beforearrival.briefing.ContentCatalog.Provider;
 import com.beforearrival.briefing.AccessPolicy.State;
 
 public final class MainActivity extends Activity {
@@ -43,12 +54,15 @@ public final class MainActivity extends Activity {
     private final NavigationRouteInput navigationRoute = new NavigationRouteInput(this::onNavigationChanged);
     private RouteInput routeInput = sampleRoute;
     private RouteConnection liveConnection;
-    private final EnumSet<Item> enabled = EnumSet.noneOf(Item.class);
-    private final EnumSet<Item> saved = EnumSet.noneOf(Item.class);
+    private ContentCatalog catalog;
+    private LinearLayout sourceRows;
+    private final Map<String, Integer> refreshGenerations = new HashMap<>();
+    private int lifecycleGeneration;
+    interface FeedLoader { String load(String registration) throws Exception; }
+    private FeedLoader feedLoader = ContentFeedClient::fetch;
     private SharedPreferences preferences;
     private AlertDialog activeDialog;
-    private Item priority = Item.GAME;
-    private Briefing.Plan plan;
+    private ContentCatalog.Plan plan;
     private SpeechPlayback speech;
     private CarRestrictions restrictions;
     private State restrictionState = State.UNKNOWN;
@@ -85,10 +99,13 @@ public final class MainActivity extends Activity {
         routeInput = liveMode ? navigationRoute : sampleRoute;
         if (state != null) sampleRoute.select(state.getInt("sample_eta", 18));
         preferences = getSharedPreferences("briefing", MODE_PRIVATE);
-        for (Item item : Item.values()) {
-            if (preferences.getBoolean("enabled_" + item.name(), true)) enabled.add(item);
-            if (preferences.getStringSet("saved", Collections.emptySet()).contains(item.name())) saved.add(item);
-            if (item.name().equals(preferences.getString("priority", ""))) priority = item;
+        try (InputStream input = getAssets().open("catalog.json")) {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            byte[] chunk = new byte[4096]; int count;
+            while ((count = input.read(chunk)) != -1) bytes.write(chunk, 0, count);
+            catalog = new ContentCatalog(new String(bytes.toByteArray(), StandardCharsets.UTF_8), preferences);
+        } catch (Exception error) {
+            throw new IllegalStateException("공유 소식 목록을 읽지 못했어요", error);
         }
         buildScreen();
         speech = new SpeechPlayback(this, this::canInteract, this::renderSpeechStatus);
@@ -123,6 +140,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onPause() {
         resumed = false;
+        lifecycleGeneration++;
         dismissDialog();
         speech.stop();
         renderSpeechStatus("");
@@ -186,7 +204,7 @@ public final class MainActivity extends Activity {
         restrictionNotice.setPadding(dp(24), dp(24), dp(24), dp(24));
         frame.addView(restrictionNotice, new FrameLayout.LayoutParams(-1, -1));
 
-        add(content, label("정차용 브리핑 · 예시 콘텐츠", 18, MUTED, true), 0);
+        add(content, label("정차용 브리핑 · 출처를 확인하는 소식", 18, MUTED, true), 0);
         add(content, heading("도착 전에", 34), 4);
         accessLabel = label("", 18, MUTED, false);
         add(content, accessLabel, 4);
@@ -241,25 +259,11 @@ public final class MainActivity extends Activity {
         add(settings, button("실제 경로 다시 연결", false, () -> {
             if (canInteract() && liveMode) connectLive();
         }), 8);
-        for (Item item : Item.values()) {
-            CheckBox check = new CheckBox(this);
-            check.setText(item.label);
-            check.setTextColor(TEXT);
-            check.setMinHeight(dp(56));
-            check.setTextSize(20);
-            check.setTypeface(getResources().getFont(R.font.asta_sans));
-            check.setChecked(enabled.contains(item));
-            check.setOnCheckedChangeListener((view, checked) -> {
-                if (!canInteract()) return;
-                if (checked) enabled.add(item);
-                else enabled.remove(item);
-                preferences.edit().putBoolean("enabled_" + item.name(), checked).apply();
-                refreshPlan();
-            });
-            add(settings, check, 0);
-        }
-        priorityButton = button("", false, this::choosePriority);
-        add(settings, priorityButton, 4);
+        add(settings, label(ContentCatalog.LOCAL_NOTICE, 13, MUTED, false), 8);
+        sourceRows = column();
+        add(settings, sourceRows, 8);
+        priorityButton = button("출처 추가", false, this::showAddSource);
+        add(settings, priorityButton, 8);
 
         LinearLayout savedPanel = panel();
         add(content, savedPanel, 12);
@@ -267,7 +271,8 @@ public final class MainActivity extends Activity {
         add(savedPanel, savedHeading, 0);
         savedRows = column();
         add(savedPanel, savedRows, 4);
-        add(content, label("예시 콘텐츠 · 선택한 출처와 저장 목록은 이 기기에 보관돼요.", 13, MUTED, false), 14);
+        add(savedPanel, label(ContentCatalog.LOCAL_NOTICE, 13, MUTED, false), 8);
+        add(content, label("샘플과 가져온 공식 소식은 각 출처에서 구분해 표시해요.", 13, MUTED, false), 14);
 
         setContentView(root);
     }
@@ -287,7 +292,7 @@ public final class MainActivity extends Activity {
 
     private void onNavigationChanged(RouteInput.Snapshot snapshot) {
         if (!liveMode || speech == null) return;
-        Briefing.Plan updated = Briefing.plan(snapshot, enabled, priority);
+        ContentCatalog.Plan updated = catalog.plan(snapshot);
         if (plan == null || updated.budgetSeconds != plan.budgetSeconds || !updated.selected.equals(plan.selected)) {
             refreshPlan();
         } else {
@@ -301,20 +306,95 @@ public final class MainActivity extends Activity {
         liveConnection.start();
     }
 
-    private void choosePriority() {
-        Item[] items = Item.values();
-        String[] labels = new String[items.length];
-        for (Item item : items) labels[item.ordinal()] = item.label;
-        showDialog(new AlertDialog.Builder(this)
-                .setTitle("먼저 듣고 싶은 소식")
-                .setSingleChoiceItems(labels, priority.ordinal(), (dialog, index) -> {
-                    dialog.dismiss();
-                    if (!canInteract()) return;
-                    priority = items[index];
-                    preferences.edit().putString("priority", priority.name()).apply();
-                    refreshPlan();
-                })
-                .setNegativeButton("닫기", null));
+    private void showAddSource() {
+        if (!canInteract()) return;
+        LinearLayout form = column();
+        form.setPadding(dp(18), dp(8), dp(18), dp(8));
+        EditText name = new EditText(this); name.setHint("출처 이름 (최대 80자)"); name.setSingleLine(true);
+        EditText url = new EditText(this); url.setHint("공식 HTTPS 주소"); url.setSingleLine(true);
+        Spinner provider = new Spinner(this);
+        List<Provider> options = new ArrayList<>();
+        for (Provider entry : catalog.providers) if (!"sample".equals(entry.id)) options.add(entry);
+        provider.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, options));
+        provider.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (!canInteract()) return;
+                Provider selected = options.get(position);
+                url.setText(selected.suggestedUrl);
+                if (name.getText().toString().isEmpty()) name.setText(selected.label);
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent) { }
+        });
+        add(form, name, 0); add(form, provider, 8); add(form, url, 8);
+        TextView error = label("", 14, ACCENT, false); add(form, error, 4);
+        add(form, label(ContentCatalog.LOCAL_NOTICE, 13, MUTED, false), 8);
+        showDialog(new AlertDialog.Builder(this).setTitle("소식 출처 추가").setView(form)
+                .setPositiveButton("추가", null).setNegativeButton("닫기", null));
+        AlertDialog dialog = activeDialog;
+        if (dialog == null) return;
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
+            if (!canInteract()) return;
+            try {
+                Provider selected = (Provider) provider.getSelectedItem();
+                if (selected == null) return;
+                catalog.add(name.getText().toString(), selected.id, url.getText().toString());
+                catalog.persist(preferences); dialog.dismiss(); refreshPlan();
+            } catch (IllegalArgumentException | JSONException invalid) { error.setText(invalid.getMessage()); }
+        });
+    }
+
+    private void renderSources() {
+        sourceRows.removeAllViews();
+        for (Source source : catalog.sources) {
+            CheckBox check = new CheckBox(this);
+            check.setText(source.name); check.setTextColor(TEXT); check.setTextSize(20); check.setMinHeight(dp(56));
+            check.setTypeface(getResources().getFont(R.font.asta_sans)); check.setChecked(source.enabled);
+            check.setTag("enabled:" + source.id);
+            check.setOnCheckedChangeListener((view, checked) -> {
+                if (!canInteract()) { check.setChecked(source.enabled); return; }
+                source.enabled = checked; catalog.persist(preferences); refreshPlan();
+            });
+            add(sourceRows, check, 8);
+            add(sourceRows, label(source.statusLabel(), 13, MUTED, false), 0);
+            if (source.registrationUrl != null) add(sourceRows, label(source.registrationUrl, 13, MUTED, false), 2);
+            if (source.lastAttemptAt != null) add(sourceRows, label("가져오기 확인 " + source.lastAttemptAt, 13, MUTED, false), 2);
+            if (source.lastSuccessAt != null) add(sourceRows, label("마지막 성공 " + source.lastSuccessAt, 13, MUTED, false), 2);
+            Button up = button("위로", false, () -> moveSource(source, -1)); up.setTag("up:" + source.id);
+            Button down = button("아래로", false, () -> moveSource(source, 1)); down.setTag("down:" + source.id);
+            enableButton(up, catalog.sources.indexOf(source) > 0);
+            enableButton(down, catalog.sources.indexOf(source) < catalog.sources.size() - 1);
+            add(sourceRows, buttonRow(up, down), 4);
+            if ("steam".equals(source.provider)) {
+                Button refresh = button("공식 소식 가져오기", false, () -> refreshSource(source));
+                refresh.setTag("refresh:" + source.id); add(sourceRows, refresh, 4);
+            }
+        }
+    }
+
+    private void moveSource(Source source, int direction) {
+        if (!canInteract()) return;
+        catalog.move(source.id, direction); catalog.persist(preferences); refreshPlan();
+    }
+
+    private Thread refreshSource(Source source) {
+        if (!canInteract()) return null;
+        int generation = refreshGenerations.getOrDefault(source.id, 0) + 1;
+        int lifecycle = lifecycleGeneration;
+        refreshGenerations.put(source.id, generation);
+        Thread worker = new Thread(() -> {
+            String result = null;
+            try { result = feedLoader.load(source.registrationUrl); } catch (Exception failed) { /* Recorded below. */ }
+            String snapshot = result;
+            runOnUiThread(() -> {
+                if (!canInteract() || lifecycle != lifecycleGeneration
+                        || refreshGenerations.getOrDefault(source.id, 0) != generation) return;
+                Instant now = Instant.now();
+                if (snapshot == null) catalog.markFailure(source.id, now);
+                else catalog.importSnapshot(source.id, snapshot, now);
+                catalog.persist(preferences); refreshPlan();
+            });
+        }, "official-news");
+        worker.start(); return worker;
     }
 
     private void showDialog(AlertDialog.Builder builder) {
@@ -358,10 +438,10 @@ public final class MainActivity extends Activity {
                 : getString(R.string.route_observation, route.sourceLabel, CLOCK.format(route.observedAt)));
         setRouteButton(etaLong, minutes == 18);
         setRouteButton(etaShort, minutes == 4);
-        priorityButton.setText(getString(R.string.priority_label, priority.label));
-        plan = Briefing.plan(route, enabled, priority);
+        plan = catalog.plan(route);
+        renderSources();
         nextItem.setText(plan.selected.isEmpty() ? "브리핑을 기다리고 있어요" : plan.selected.get(0).title);
-        if (enabled.isEmpty()) {
+        if (catalog.sources.stream().noneMatch(source -> source.enabled)) {
             summary.setText("브리핑에 넣을 소식 출처를 선택해 주세요.");
         } else if (minutes < 0) {
             summary.setText("남은 시간을 확인하면 브리핑을 준비할 수 있어요.");
@@ -382,6 +462,7 @@ public final class MainActivity extends Activity {
         content.setVisibility(allowed ? View.VISIBLE : View.GONE);
         restrictionNotice.setVisibility(allowed ? View.GONE : View.VISIBLE);
         if (!allowed) {
+            lifecycleGeneration++;
             dismissDialog();
             transcriptVisible = false;
             renderTranscript();
@@ -404,14 +485,14 @@ public final class MainActivity extends Activity {
     private void renderRows(RouteInput.Snapshot route) {
         briefingRows.removeAllViews();
         for (Item item : plan.selected) {
-            String detail = item.detail;
-            if (item.isUrgent(route.observedAt)) detail += " · 마감 임박으로 먼저 듣기";
+            String detail = item.summary;
+            if (item.urgent(route.observedAt)) detail += " · 마감 임박으로 먼저 듣기";
             add(briefingRows, itemRow(item, detail), 8);
         }
         List<Item> deferred = plan.deferred;
         if (!deferred.isEmpty()) {
             add(briefingRows, heading("나중에 듣기 · " + deferred.size() + "건", 16), 12);
-            for (Item item : deferred) add(briefingRows, itemRow(item, item.detail), 8);
+            for (Item item : deferred) add(briefingRows, itemRow(item, item.summary), 8);
         }
     }
 
@@ -421,12 +502,20 @@ public final class MainActivity extends Activity {
         row.setPadding(0, dp(6), 0, dp(6));
         LinearLayout text = column();
         row.addView(text, new LinearLayout.LayoutParams(0, -2, 1));
-        add(text, label(item.label + " · 약 " + item.estimatedSeconds + "초", 13, ACCENT, true), 0);
+        Source source = catalog.source(item.sourceId);
+        add(text, label((source == null ? item.sourceId : source.name) + " · 약 " + item.estimatedSeconds + "초", 13, ACCENT, true), 0);
         add(text, label(item.title, 16, TEXT, true), 2);
-        add(text, label(detail, 13, MUTED, false), 2);
+        add(text, label(source != null && "steam".equals(source.provider) ? "원문 발췌 · " + detail : detail, 13, MUTED, false), 2);
+        add(text, label("게시 " + (item.publishedAt == null ? "시각 미제공" : item.publishedAt.toString()), 13, MUTED, false), 2);
+        add(text, label(source == null ? "출처 확인 필요" : source.statusLabel(), 13, MUTED, false), 2);
+        if (item.fetchedAt != null) add(text, label("가져온 시각 " + item.fetchedAt, 13, MUTED, false), 2);
+        if (item.originalUrl != null) {
+            add(text, label(item.originalUrl, 13, MUTED, false), 2);
+            if (catalog.canOpen(item)) add(text, button("공식 원문 열기", false, () -> openOriginal(item)), 4);
+        }
         Button save = button("", false, () -> toggleSaved(item));
         updateSaveButton(save, item);
-        save.setTag(item);
+        save.setTag(item.key());
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-2, -2);
         params.leftMargin = dp(8);
         row.addView(save, params);
@@ -435,35 +524,38 @@ public final class MainActivity extends Activity {
 
     private void toggleSaved(Item item) {
         if (!canInteract()) return;
-        if (!saved.add(item)) saved.remove(item);
-        Set<String> ids = new HashSet<>();
-        for (Item entry : saved) ids.add(entry.name());
-        preferences.edit().putStringSet("saved", ids).apply();
-        Button save = briefingRows.findViewWithTag(item);
+        catalog.toggleSaved(item); catalog.persist(preferences);
+        Button save = briefingRows.findViewWithTag(item.key());
         if (save != null) updateSaveButton(save, item);
         renderSaved();
     }
 
     private void updateSaveButton(Button button, Item item) {
-        boolean selected = saved.contains(item);
+        boolean selected = catalog.isSaved(item);
         button.setText(selected ? "저장됨" : "저장");
         button.setContentDescription(item.title + (selected ? " 저장 취소" : " 저장"));
     }
 
     private void renderSaved() {
-        savedHeading.setText(getString(R.string.saved_heading, saved.size()));
+        savedHeading.setText(getString(R.string.saved_heading, catalog.savedItems.size()));
         savedRows.removeAllViews();
-        if (saved.isEmpty()) {
+        if (catalog.savedItems.isEmpty()) {
             add(savedRows, label("저장한 소식이 없어요.", 14, MUTED, false), 4);
         }
-        for (Item item : saved) {
+        for (Item item : catalog.savedItems) {
             Button entry = button(item.title, false, () -> showDialog(new AlertDialog.Builder(this)
                     .setTitle(item.title)
-                    .setMessage(item.narration)
+                    .setMessage(item.summary + "\n\n" + (item.originalUrl == null ? "예시 콘텐츠" : item.originalUrl) + "\n\n" + ContentCatalog.LOCAL_NOTICE)
                     .setPositiveButton("닫기", null)
                     .setNeutralButton("저장 취소", (dialog, which) -> toggleSaved(item))));
             add(savedRows, entry, 6);
         }
+    }
+
+    private void openOriginal(Item item) {
+        if (!canInteract() || !catalog.canOpen(item)) return;
+        try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(item.originalUrl))); }
+        catch (android.content.ActivityNotFoundException unavailable) { renderSpeechStatus("원문을 열 앱이 없어요."); }
     }
 
     private void renderSpeechStatus(String message) {

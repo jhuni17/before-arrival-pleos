@@ -7,6 +7,12 @@ import android.os.Looper;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.Spinner;
+import android.view.ViewGroup;
+import java.util.ArrayList;
+import java.util.List;
 import android.widget.TextView;
 
 import org.junit.After;
@@ -58,16 +64,22 @@ public class MainActivityTest {
         TextView summary = field("summary");
         TextView next = field("nextItem");
         assertEquals("듣기 예산 45초 · 3건 약 32초", summary.getText().toString());
-        assertEquals(Briefing.Item.GAME.title, next.getText().toString());
+        assertEquals("이번 주말, 협동 모드가 열려요", next.getText().toString());
         Button shortTrip = field("etaShort");
         shortTrip.performClick();
         assertEquals("듣기 예산 12초 · 1건 약 8초", summary.getText().toString());
-        assertEquals(Briefing.Item.SCHEDULE.title, next.getText().toString());
-        Button priority = field("priorityButton");
-        priority.performClick();
-        AlertDialog dialog = field("activeDialog");
-        dialog.getListView().performItemClick(null, Briefing.Item.COMMUNITY.ordinal(), 0);
-        assertEquals("COMMUNITY", activity.getSharedPreferences("briefing", 0).getString("priority", ""));
+        assertEquals("9시 팀 회의가 3층으로 바뀌었어요", next.getText().toString());
+        ContentCatalog catalog = field("catalog");
+        catalog.move("sample-community", -1); catalog.move("sample-community", -1);
+        catalog.persist(activity.getSharedPreferences("briefing", 0));
+        ((Button) field("etaLong")).performClick();
+        assertEquals("출근길에 듣기 좋은 10분짜리 팟캐스트", next.getText().toString());
+        TextView transcript = field("transcript");
+        assertTrue(transcript.getText().toString().startsWith(catalog.source("sample-community").items.get(0).summary));
+        controller.recreate(); activity = controller.get();
+        ContentCatalog restored = field("catalog");
+        assertEquals("sample-community", restored.sources.get(0).id);
+
     }
 
     @Test public void switchingToUnavailableLiveModeNeverFallsBackToSample() {
@@ -86,11 +98,11 @@ public class MainActivityTest {
     @Test public void savedItemSurvivesActivityRecreation() {
         setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
         LinearLayout rows = field("briefingRows");
-        Button save = rows.findViewWithTag(Briefing.Item.GAME);
+        Button save = rows.findViewWithTag("sample-game:sample-game-item");
         save.performClick();
         assertEquals("저장됨", save.getText().toString());
         assertTrue(activity.getSharedPreferences("briefing", 0)
-                .getStringSet("saved", java.util.Set.of()).contains("GAME"));
+                .getString(ContentCatalog.STORAGE_KEY, "").contains("sample-game-item"));
         controller.recreate();
         activity = controller.get();
         setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
@@ -100,6 +112,83 @@ public class MainActivityTest {
         ((Button) savedRows.getChildAt(0)).performClick();
         AlertDialog dialog = field("activeDialog");
         assertTrue(dialog.isShowing());
+    }
+
+    @Test public void addOfficialSourceThroughFormReordersIntoActualBriefingAndPersists() {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ((Button) field("priorityButton")).performClick();
+        AlertDialog dialog = field("activeDialog");
+        Spinner spinner = descendants(dialog.getWindow().getDecorView(), Spinner.class).get(0);
+        spinner.setSelection(1); Shadows.shadowOf(Looper.getMainLooper()).idle();
+        List<EditText> inputs = descendants(dialog.getWindow().getDecorView(), EditText.class);
+        inputs.get(0).setText("내 LoL 패치");
+        inputs.get(1).setText("https://www.leagueoflegends.com/ko-kr/news/game-updates/");
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        ContentCatalog catalog = field("catalog");
+        ContentCatalog.Source added = catalog.sources.get(3);
+        assertEquals("connected_snapshot", added.status);
+        LinearLayout sources = field("sourceRows");
+        for (int i = 0; i < 3; i++) ((Button) sources.findViewWithTag("up:" + added.id)).performClick();
+        TextView next = field("nextItem");
+        assertEquals(added.items.get(0).title, next.getText().toString());
+        ContentCatalog.Plan plan = field("plan");
+        assertTrue(plan.narration().startsWith(added.items.get(0).summary));
+        ((Button) field("etaShort")).performClick();
+        plan = field("plan");
+        assertEquals("sample-schedule", plan.selected.get(0).sourceId);
+        assertFalse(plan.narration().contains(added.items.get(0).summary));
+        controller.recreate(); activity = controller.get();
+        catalog = field("catalog"); assertEquals(added.id, catalog.sources.get(0).id);
+    }
+
+    @Test public void restrictedHiddenActionsCannotChangeSourceOrSave() {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        LinearLayout sources = field("sourceRows"), rows = field("briefingRows");
+        CheckBox enabled = sources.findViewWithTag("enabled:sample-game");
+        Button up = sources.findViewWithTag("up:sample-schedule");
+        Button save = rows.findViewWithTag("sample-game:sample-game-item");
+        setAccess(AccessPolicy.State.RESTRICTED);
+        enabled.setChecked(false); up.performClick(); save.performClick();
+        ((Button) field("priorityButton")).performClick();
+        ContentCatalog catalog = field("catalog");
+        assertTrue(catalog.source("sample-game").enabled);
+        assertTrue(enabled.isChecked());
+        assertEquals("sample-game", catalog.sources.get(0).id);
+        assertTrue(catalog.savedItems.isEmpty());
+        assertNull(field("activeDialog"));
+    }
+
+    @Test public void injectedRefreshUpdatesCatalogAndRestrictionCancelsLateCallback() throws Exception {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ContentCatalog catalog = field("catalog");
+        ContentCatalog.Source source = catalog.add("Steam", "steam", "https://store.steampowered.com/news/app/570");
+        String snapshot = "{\"items\":[{\"id\":\"test-official\",\"title\":\"공식 업데이트\","
+                + "\"summary\":\"실제 가져온 응답 테스트\",\"estimatedSeconds\":8,"
+                + "\"originalUrl\":\"https://store.steampowered.com/news/app/570/view/123\"}]}";
+        ReflectionHelpers.setField(activity, "feedLoader", (MainActivity.FeedLoader) ignored -> snapshot);
+        Thread worker = ReflectionHelpers.callInstanceMethod(activity, "refreshSource",
+                ReflectionHelpers.ClassParameter.from(ContentCatalog.Source.class, source));
+        worker.join(2000); assertFalse(worker.isAlive()); Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertEquals("connected", source.status); assertEquals(1, source.items.size());
+        java.util.concurrent.CountDownLatch started = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch finish = new java.util.concurrent.CountDownLatch(1);
+        ReflectionHelpers.setField(activity, "feedLoader", (MainActivity.FeedLoader) ignored -> {
+            started.countDown(); finish.await(2, java.util.concurrent.TimeUnit.SECONDS); return "{\"items\":[]}";
+        });
+        worker = ReflectionHelpers.callInstanceMethod(activity, "refreshSource",
+                ReflectionHelpers.ClassParameter.from(ContentCatalog.Source.class, source));
+        assertTrue(started.await(2, java.util.concurrent.TimeUnit.SECONDS));
+        setAccess(AccessPolicy.State.RESTRICTED); finish.countDown();
+        worker.join(2000); Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertEquals(1, source.items.size()); assertEquals("connected", source.status);
+    }
+
+    private static <T> List<T> descendants(View view, Class<T> type) {
+        List<T> result = new ArrayList<>();
+        if (type.isInstance(view)) result.add(type.cast(view));
+        if (view instanceof ViewGroup) for (int i = 0; i < ((ViewGroup) view).getChildCount(); i++)
+            result.addAll(descendants(((ViewGroup) view).getChildAt(i), type));
+        return result;
     }
 
     private void setAccess(AccessPolicy.State state) {

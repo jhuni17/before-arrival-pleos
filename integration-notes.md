@@ -1,4 +1,6 @@
-# 통합 검증 기록
+# 통합 검증 기록 · de8cc10 기준 과거 통합
+
+> 이후 사용자 출처 관리 기능이 추가됐다. 이 문서는 이전 통합 결과의 기록이며 최신 기능·검증·APK 상태는 [출처 기능 기록](sources-notes.md)을 따른다.
 
 통합 입력은 차량 PR [#2](https://github.com/jhuni17/before-arrival-pleos/pull/2)의 `479db2bc4e55bd58e9cda1f9408ea294e1c8ebf3`와 시연 PR [#1](https://github.com/jhuni17/before-arrival-pleos/pull/1)의 `3ff697d261e417fa6a2ff18ddcb91ebd83c32a6a`다. 공통 기준은 `94fa9ca1324029c07a8cee25b7771bb4f007e215`, 기계적 통합 커밋은 `bad7d4adc20e288a017c0545b03428181a408005`다. 검토 브랜치는 `codex/cloud-integration-20261105`이며 main 병합·공모전 제출은 수행하지 않았다.
 

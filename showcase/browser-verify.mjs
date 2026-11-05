@@ -33,7 +33,7 @@ const report = {
     workingTreeDirtyAtRun: Boolean(execFileSync("git", ["status", "--porcelain"], {encoding:"utf8"}).trim()),
     htmlSha256: createHash("sha256").update(html).digest("hex"),
     sourceSha256: Object.fromEntries(await Promise.all([
-      "examples/before-arrival/index.tsx", "examples/before-arrival/planner.ts",
+      "examples/before-arrival/index.tsx", "examples/before-arrival/catalog.ts", "../shared/catalog.json",
       "examples/before-arrival/showcase.css", "browser-verify.mjs", "build.mjs",
     ].map(async (path) => [path, createHash("sha256").update(await readFile(path)).digest("hex")]))),
     originalInputs: ["479db2bc4e55bd58e9cda1f9408ea294e1c8ebf3", "3ff697d261e417fa6a2ff18ddcb91ebd83c32a6a"],
@@ -199,114 +199,98 @@ try {
   report.checks.push(
     "200% text enlargement: all computed fonts doubled at 1440px and 390px in both themes, with long Korean title; no clipping or horizontal scrolling.",
   );
-  await page.setViewportSize({ width: 1440, height: 1080 });
+  await page.setViewportSize({width:1440,height:1080});
   await open("state=opening");
   await page.locator(".secondary").click();
-  assert.match(
-    await page.locator(".secondary").innerText(),
-    /이 브라우저에 저장됨/,
-  );
   await page.reload();
-  assert.match(
-    await page.locator(".secondary").innerText(),
-    /이 브라우저에 저장됨/,
-  );
-  await page.getByRole("button", { name: "04 도착", exact: true }).click();
-  assert.match(await page.locator(".phone h3").innerText(), /협동 모드/);
-  const other = await browser.newContext();
-  const otherPage = await other.newPage();
-  await otherPage.goto(`${base}?state=opening`);
-  assert.match(
-    await otherPage.locator(".secondary").innerText(),
-    /도착해서 볼 항목에 저장/,
-  );
-  await other.close();
-  report.checks.push(
-    "Save persists on reload; separate browser context has no shared data or synchronization.",
-  );
-  await page.getByRole("button", { name: "관심사 설정", exact: true }).click();
-  await page.getByLabel("게임 패치", { exact: true }).uncheck();
-  assert.match(await page.locator("h1").innerText(), /9시 팀 회의/);
-  await page.reload();
-  await page.getByRole("button", { name: "관심사 설정", exact: true }).click();
-  assert.equal(
-    await page.getByLabel("게임 패치", { exact: true }).isChecked(),
-    false,
-  );
-  await page.getByLabel("일정 변경", { exact: true }).uncheck();
-  await page.getByLabel("커뮤니티", { exact: true }).uncheck();
-  assert(await page.locator(".primary").isDisabled());
-  await page.getByLabel("커뮤니티", { exact: true }).check();
-  assert.match(await page.locator("h1").innerText(), /팟캐스트/);
-  await page.getByRole("button", { name: "03 4분", exact: true }).click();
-  assert(await page.locator(".primary").isDisabled());
-  assert(await page.locator(".secondary").isDisabled());
-  assert.match(await page.locator("h1").innerText(), /도착해서 확인/);
-  assert.match(await page.locator(".brief-meta").innerText(), /예상 0초 · 예산 12초/);
-  await page.getByRole("button", { name: "01 18분", exact: true }).click();
-  await page.getByRole("button", { name: "관심사 설정", exact: true }).click();
-  await page.getByLabel("먼저 들을 소식").selectOption("community");
-  assert.match(await page.locator("h1").innerText(), /팟캐스트/);
-  report.checks.push("Community-only at 4 minutes exceeds the 12-second budget; play/save disabled. Community priority is supported at 18 minutes.");
-  await page.getByLabel("게임 패치", { exact: true }).check();
-  await page.getByLabel("일정 변경", { exact: true }).check();
-  await page.getByLabel("먼저 들을 소식").selectOption("meeting");
-  assert.match(await page.locator("h1").innerText(), /9시 팀 회의/);
-  await page.getByLabel("먼저 들을 소식").selectOption("game");
-  assert.match(await page.locator("h1").innerText(), /협동 모드/);
-  await page.getByRole("button", { name: "03 4분", exact: true }).click();
-  assert.match(await page.locator("h1").innerText(), /9시 팀 회의/);
-  assert.match(await page.locator(".brief-meta").innerText(), /예상 8초 · 예산 12초/);
+  assert.match(await page.locator(".secondary").innerText(),/이 브라우저에 저장됨/);
+  await page.getByRole("button",{name:"04 도착",exact:true}).click();
+  assert.match(await page.locator(".saved-article h3").innerText(),/협동 모드/);
+  assert.equal(await page.locator(".saved-article a").count(),0);
+  const other=await browser.newContext();const otherPage=await other.newPage();
+  await otherPage.goto(`${base}?state=arrived`);
+  assert.equal(await otherPage.locator(".saved-article").count(),0);await other.close();
+  report.checks.push("Multiple-item browser save persists; sample items never receive fabricated original links; separate contexts are not synchronized.");
+  await page.getByRole("button",{name:"출처 설정",exact:true}).click();
+  await page.getByLabel("출처 이름",{exact:true}).fill("내 롤 패치");
+  await page.getByRole("button",{name:"출처 추가",exact:true}).click();
+  const lol=page.locator('.registered-source').filter({hasText:"내 롤 패치"});
+  assert.match(await lol.innerText(),/가져온 공식 소식 · 자동 갱신 아님/);
+  for(let i=0;i<3;i++) await page.getByRole("button",{name:"내 롤 패치 위로",exact:true}).click();
+  assert.match(await page.locator("h1").innerText(),/리그 오브 레전드 26.22/);
+  assert.match(await page.locator(".lead-card").innerText(),/2026-11-03T19:00:00.000Z/);
   await page.locator(".secondary").click();
-  await page.getByRole("button", { name: "04 도착", exact: true }).click();
-  assert(await page.locator(".primary").isDisabled());
-  assert(await page.locator(".secondary").isDisabled());
-  assert.match(await page.locator(".phone h3").innerText(), /9시 팀 회의/);
-  assert.equal(await page.locator(".phone a").count(), 0);
-  report.checks.push(
-    "Saving a meeting preserves its own title in arrival review and does not attach an unrelated game link.",
-  );
-  report.checks.push(
-    "Enabled sources and selected order persist; no source disables playback; community-only selection renders community; 4 minutes promotes enabled meeting.",
-  );
-  await page.getByRole("button", { name: "01 18분", exact: true }).click();
-  await page.locator(".primary").click();
-  assert.equal(
-    await page.locator(".primary").getAttribute("aria-pressed"),
-    "true",
-  );
-  await page.getByRole("button", { name: "주행 제한", exact: true }).click();
-  assert(await page.locator(".primary").isDisabled());
-  assert.equal(
-    await page.locator(".primary").getAttribute("aria-pressed"),
-    "false",
-  );
-  report.checks.push(
-    "Transition from sample playback to restriction cancels playback state and disables both application actions.",
-  );
-  await page.getByRole("button", { name: "상태 미확인", exact: true }).click();
-  assert(await page.locator(".primary").isDisabled());
-  await page.getByRole("button", { name: "01 18분", exact: true }).click();
-  assert.equal(await page.locator(".primary").getAttribute("aria-pressed"), "false");
-  report.checks.push("Unknown vehicle state disables actions; return to allowed sample state never resumes playback automatically. Arrival poster has no playable route.");
-  await page.evaluate(() => localStorage.setItem("before-arrival-showcase-v1", "{broken"));
-  await open("state=settings");
-  for (const name of ["게임 패치", "일정 변경", "커뮤니티"]) assert(await page.getByLabel(name, {exact:true}).isChecked());
-  assert.match(await page.locator(".brief-meta").innerText(), /예상 32초 · 예산 45초/);
-  report.checks.push("Malformed saved settings recover to all three Android source defaults without page errors.");
-  await page.evaluate(() => localStorage.clear());
-  await open("state=opening");
-  await page.evaluate(() => {
-    Storage.prototype.setItem = () => {
-      throw new DOMException("Denied", "SecurityError");
-    };
+  await page.reload();
+  assert.match(await page.locator("h1").innerText(),/리그 오브 레전드 26.22/);
+  await page.getByRole("button",{name:"출처 설정",exact:true}).click();
+  assert.equal(await page.locator(".registered-source").first().getAttribute("data-source-id"),"url:https://www.leagueoflegends.com/ko-kr/news/game-updates");
+  await page.getByLabel("내 롤 패치 사용",{exact:true}).uncheck();
+  assert.match(await page.locator("h1").innerText(),/협동 모드/);
+  await page.getByLabel("내 롤 패치 사용",{exact:true}).check();
+  await page.getByRole("button",{name:"03 4분",exact:true}).click();
+  assert.match(await page.locator("h1").innerText(),/9시 팀 회의/);
+  assert.match(await page.locator(".brief-meta").innerText(),/예산 12초/);
+  await page.getByRole("button",{name:"04 도착",exact:true}).click();
+  assert.equal(await page.locator(".saved-article").count(),2);
+  assert.equal(await page.locator(".saved-article a").getAttribute("href"),"https://www.leagueoflegends.com/ko-kr/news/game-updates/league-of-legends-patch-26-22-notes/");
+  report.checks.push("Real add official LoL snapshot → move first → actual briefing → save/reload; 4-minute schedule deadline still wins. Publication URL/date preserved and imported-snapshot label explicit.");
+  await page.getByRole("button",{name:"출처 설정",exact:true}).click();
+  await page.getByLabel("출처 서비스",{exact:true}).selectOption("youtube");
+  await page.getByLabel("출처 이름",{exact:true}).fill("검증 채널");
+  await page.getByLabel("출처 공식 주소",{exact:true}).fill("https://www.youtube.com/@OfficialChannel");
+  await page.getByRole("button",{name:"출처 추가",exact:true}).click();
+  assert.match(await page.locator('.registered-source').filter({hasText:"검증 채널"}).innerText(),/설정 필요/);
+  await page.getByRole("button",{name:"출처 추가",exact:true}).click();
+  assert.match(await page.getByRole("alert").innerText(),/이미 등록/);
+  await page.getByLabel("출처 공식 주소",{exact:true}).fill("https://www.youtube.com.evil.test/@Channel");
+  await page.getByRole("button",{name:"출처 추가",exact:true}).click();
+  assert.match(await page.getByRole("alert").innerText(),/공식/);
+  report.checks.push("Unsupported channel registers with setup-needed/no-content; duplicate and lookalike-host URLs are rejected.");
+  await page.getByLabel("출처 서비스",{exact:true}).selectOption("steam");
+  await page.getByLabel("출처 이름",{exact:true}).fill("검증 Steam");
+  await page.getByRole("button",{name:"출처 추가",exact:true}).click();
+  let phase="valid",releasePending;
+  const fixture={gid:"123",title:"Fixture official update",url:"https://steamcommunity.com/games/dota2/announcements/detail/123",contents:"<p>Fixture test only, not retrieved public news.</p>",date:1793870400,feedname:"steam_community_announcements"};
+  await page.route("https://api.steampowered.com/**",async route=>{
+    if(phase==="fail")return route.fulfill({status:403,body:"Denied fixture"});
+    if(phase==="late")await new Promise(resolve=>releasePending=resolve);
+    await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({appnews:{appid:570,newsitems:phase==="empty"?[]:[fixture,fixture]}})}).catch(()=>{});
   });
-  await page.locator(".secondary").click();
-  assert.match(await page.getByRole("alert").innerText(), /저장하지 못했어요/);
-  assert.doesNotMatch(await page.locator(".secondary").innerText(), /저장됨/);
-  report.checks.push(
-    "Storage denial displays failure without reporting a successful save.",
-  );
+  const steam=page.locator('.registered-source').filter({hasText:"검증 Steam"});
+  await page.getByRole("button",{name:"검증 Steam 새 소식 확인",exact:true}).click();
+  await page.waitForFunction(()=>JSON.parse(localStorage.getItem("before-arrival-sources-v2")).sources.some(s=>s.provider==="steam"&&s.items.length===1));
+  const firstSuccess=await page.evaluate(()=>JSON.parse(localStorage.getItem("before-arrival-sources-v2")).sources.find(s=>s.provider==="steam").lastSuccessAt);
+  phase="fail";await page.getByRole("button",{name:"검증 Steam 새 소식 확인",exact:true}).click();
+  await page.waitForFunction(()=>Boolean(JSON.parse(localStorage.getItem("before-arrival-sources-v2")).sources.find(s=>s.provider==="steam").refreshError));
+  assert.match(await steam.innerText(),/갱신 실패/);
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem("before-arrival-sources-v2")).sources.find(s=>s.provider==="steam").lastSuccessAt),firstSuccess);
+  phase="empty";await page.getByRole("button",{name:"검증 Steam 새 소식 확인",exact:true}).click();
+  await page.waitForFunction(()=>JSON.parse(localStorage.getItem("before-arrival-sources-v2")).sources.find(s=>s.provider==="steam").items.length===0);
+  assert.match(await steam.innerText(),/새 소식 없음/);
+  phase="late";await page.getByRole("button",{name:"검증 Steam 새 소식 확인",exact:true}).click();
+  await page.waitForTimeout(100);
+  await page.getByLabel("검증 Steam 사용",{exact:true}).uncheck();
+  releasePending?.();await page.waitForTimeout(150);
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem("before-arrival-sources-v2")).sources.find(s=>s.provider==="steam").items.length),0);
+  await page.unroute("https://api.steampowered.com/**");
+  report.checks.push("Intercepted Steam fixtures only: official-schema items deduped, failed refresh preserves lastSuccess/items, empty success clears content, disabled-source late response discarded. This is NOT a real public fetch.");
+  await page.evaluate(()=>localStorage.clear());await open("state=opening");
+  await page.locator(".primary").click();await page.getByRole("button",{name:"주행 제한",exact:true}).click();
+  assert(await page.locator(".primary").isDisabled());assert.equal(await page.locator(".primary").getAttribute("aria-pressed"),"false");
+  await page.getByRole("button",{name:"상태 미확인",exact:true}).click();assert(await page.locator(".primary").isDisabled());
+  await page.getByRole("button",{name:"01 18분",exact:true}).click();assert.equal(await page.locator(".primary").getAttribute("aria-pressed"),"false");
+  report.checks.push("Restriction/unknown transition stops playback state; returning never automatically resumes; source settings unavailable during restrictions.");
+  await page.evaluate(()=>localStorage.setItem("before-arrival-showcase-v1",JSON.stringify({game:false,meeting:true,community:true,first:"community",saved:true,savedTitle:"9시 팀 회의가 3층으로 바뀌었어요"})));
+  await open("state=settings");
+  assert.equal(await page.locator(".registered-source").first().getAttribute("data-source-id"),"sample-community");
+  assert.equal(await page.getByLabel("게임 패치 예시 사용",{exact:true}).isChecked(),false);
+  await page.getByLabel("커뮤니티 예시 사용",{exact:true}).uncheck();await page.reload();
+  await page.getByRole("button",{name:"출처 설정",exact:true}).click();assert.equal(await page.getByLabel("게임 패치 예시 사용",{exact:true}).isChecked(),false);
+  report.checks.push("Legacy booleans/priority/saved title migrate into generic registry; first v2 write and reload preserve them.");
+  await page.evaluate(()=>localStorage.clear());await open("state=opening");
+  await page.evaluate(()=>{Storage.prototype.setItem=()=>{throw new DOMException("Denied","SecurityError");};});
+  await page.locator(".secondary").click();assert.match(await page.getByRole("alert").innerText(),/저장하지 못했어요/);assert.doesNotMatch(await page.locator(".secondary").innerText(),/저장됨/);
+  report.checks.push("Storage denial never reports a successful settings/save write.");
   await page.emulateMedia({ reducedMotion: "reduce" });
   await open("theme=night");
   assert.equal(await page.locator(".phone").count(), 1);
@@ -330,7 +314,7 @@ try {
   );
   assert.equal(
     await page.evaluate(() =>
-      localStorage.getItem("before-arrival-showcase-v1"),
+      localStorage.getItem("before-arrival-sources-v2"),
     ),
     null,
   );
@@ -355,9 +339,9 @@ try {
     "Actual Stage timeline: 18-minute game → simulated save without localStorage mutation → 4-minute meeting → arrival phone.",
   );
   assert.deepEqual(errors, []);
-  assert.deepEqual(externalRequests, []);
+  assert(externalRequests.every(url=>url.startsWith("https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/")), "Only the explicit official Steam fetch is permitted");
   report.checks.push(
-    "No browser page errors. Offline font and all code embedded in HTML.",
+    "No browser page errors. Offline font/code embedded. External requests are only explicit Steam runtime-path fixtures; no cookies/credentials or unrelated requests.",
   );
   await writeFile(
     `${evidenceDir}/browser-report.json`,
