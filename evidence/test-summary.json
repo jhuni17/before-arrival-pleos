@@ -1,0 +1,53 @@
+[
+  {
+    "name": "com.beforearrival.briefing.CatalogTest",
+    "tests": "7",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "3.926",
+    "cases": [
+      "catalogDeduplicatesAcrossSourcesAndUnknownRouteNeverSelectsSample",
+      "migrationRunsOnceAndRetainsEnabledPriorityAndEverySavedEnum",
+      "officialSnapshotRegistrationPlansAndPersistsWithoutFabrication",
+      "officialRuntimeDedupFailureAndEmptyLifecycleKeepsLastSuccess",
+      "dateOnlyOfficialPublicationDoesNotInventTime",
+      "unsupportedRegistrationRemainsEmptyAndUrlAliasesCannotDuplicate",
+      "parserRejectsOtherAppsUnofficialUrlsAndIgnoresExternalFeeds"
+    ]
+  },
+  {
+    "name": "com.beforearrival.briefing.MainActivityTest",
+    "tests": "7",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "47.754",
+    "cases": [
+      "sampleSelectionRefreshesBudgetAndDeadlineOrderAndPersistsPriority",
+      "restrictedHiddenActionsCannotChangeSourceOrSave",
+      "unknownAndRestrictedHideControlsAndCloseDialog",
+      "injectedRefreshUpdatesCatalogAndRestrictionCancelsLateCallback",
+      "savedItemSurvivesActivityRecreation",
+      "switchingToUnavailableLiveModeNeverFallsBackToSample",
+      "addOfficialSourceThroughFormReordersIntoActualBriefingAndPersists"
+    ]
+  },
+  {
+    "name": "com.beforearrival.briefing.SpeechPlaybackTest",
+    "tests": "7",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.14",
+    "cases": [
+      "focusLossStopsAndNeverRestartsOnGain",
+      "speakFailureAndPrerollErrorReleaseFocus",
+      "focusGrantedThenDoneReleasesTheSameRequest",
+      "oldTtsAndFocusCallbacksCannotStopNewPlayback",
+      "unknownOrRestrictedUseDoesNotRequestFocus",
+      "realTimeBudgetStopsLongSpeech",
+      "deniedFocusDoesNotSpeak"
+    ]
+  }
+]
