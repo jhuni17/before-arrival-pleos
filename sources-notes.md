@@ -16,6 +16,8 @@
 
 Android 보관함의 공식 항목 상세에 ‘공식 원문 열기’를 추가했다. 버튼을 누르는 시점에도 주차 사용 허용과 공식 URL을 다시 검사한다. 제한 전환으로 대화상자가 닫힌 뒤 오래된 버튼을 눌러도 외부 앱을 열지 않도록 검사하는 UI 테스트를 추가했다. 이 UI 테스트의 실행은 승인된 SDK 작업 환경의 결과를 기다린다.
 
+등록한 공식 소식의390px 주야간 화면도 실제 캡처·대비 검사에 추가했다. 샘플에는 없던 공식 원문 링크의 야간 기본 파란색을 본문 색으로 수정해 읽을 수 있도록 했다. 이 추가 수정은 브라우저 CSS·검증·근거만 바꾸며 Android/공통 입력은 `f24ebd278902117bdc077fba276923f3a1323044`와 동일하다.
+
 재검토에서 확인한 Android 출처 비활성→재활성 사이 늦은 갱신 응답을 세대 토큰으로 폐기한다. 비활성 출처의 갱신 버튼도 막는다. 브라우저의 공식 응답이 손상된 경우 정상 빈 목록으로 오인해 마지막 내용을 지우지 않도록 수정했고, 해당 공개 게임과 다른 원문 URL도 거절한다. 명시적 정상 빈 목록만 캐시를 비운다. 피드는 최대50건 검사·20건 보관한다.
 
 ## 콘텐츠의 실제 범위
@@ -28,7 +30,7 @@ YouTube 채널·치지직 스트리머·카페는 연결 설정 필요, SOOP·�
 
 ## 현재 검증과 남은 작업
 
-- 브라우저 build 및 모델/정적 검사 [통과](validation/sources-v2/verify.txt): 등록→순서→ETA, 출처 제외, 마이그레이션,3스냅샷 원문/날짜, 중복·실패·빈 목록·용량 제한 fixture. 실제 Chromium155 브라우저도 [33캡처·12동작 검사](validation/sources-v2/browser.txt)를 통과했다. 실제 출처 추가·위아래 이동·사용 여부·공식 원문/게시일·ETA 재편성·다중 저장·새로고침·구형 마이그레이션·중복/위장 URL 거절·늦은 refresh 응답 폐기를 검사했다. 캡처의 최소 대비는5.95:1이고 가로 넘침·글자 잘림·page error가 없었다. [상세 보고서](showcase/evidence/browser-report.json)의 HTML·소스 해시가 검사 바이트를 고정한다. Steam 성공/실패/빈 목록 응답은 브라우저에서 차단해 넣은 fixture이며 실제 갱신 성공이 아니다.
+- 브라우저 build 및 모델/정적 검사 [통과](validation/sources-v2/verify.txt): 등록→순서→ETA, 출처 제외, 마이그레이션,3스냅샷 원문/날짜, 중복·실패·빈 목록·용량 제한 fixture. 실제 Chromium155 브라우저도 [35캡처·13동작 검사](validation/sources-v2/browser.txt)를 통과했다. 실제 출처 추가·위아래 이동·사용 여부·공식 원문/게시일·ETA 재편성·다중 저장·새로고침·구형 마이그레이션·중복/위장 URL 거절·늦은 refresh 응답 폐기를 검사했다. 캡처의 최소 대비는5.95:1이고 가로 넘침·글자 잘림·page error가 없었다. [상세 보고서](showcase/evidence/browser-report.json)의 HTML·소스 해시가 검사 바이트를 고정한다. Steam 성공/실패/빈 목록 응답은 브라우저에서 차단해 넣은 fixture이며 실제 갱신 성공이 아니다.
 - 실제 API35 공개 클래스와 JDK17로 main/sample Java13파일 [컴파일 통과](validation/sources-v2/android-java-compile.txt). 현재 XML에서 생성한 compile-only R을 사용했으며 리소스 패키징·DEX·APK 빌드가 아니다.
 - API35 클래스에서 실행한 공통 모델 JVM [39개 assertion 통과](validation/sources-v2/catalog-jvm.txt), [실행 harness](validation/sources-v2/CatalogHarness.java). 등록한 공식 LoL→순서→낭독 Plan→저장, 날짜 정밀도, 미지원 빈 내용, Steam URI/중복/실패/빈 응답, 구형 설정·저장 이전, 손상 URL 검사를 포함한다.
 - Android Robolectric UI/오디오 테스트는 추가했으나 이 후보에서 아직 실행하지 않았다. 실제 제한 콜백·한국어 음성·Pleos ETA·에뮬레이터/실차도 미검증이다.

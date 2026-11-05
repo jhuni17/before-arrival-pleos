@@ -219,6 +219,12 @@ try {
   for(let i=0;i<3;i++) await page.getByRole("button",{name:"내 롤 패치 위로",exact:true}).click();
   assert.match(await page.locator("h1").innerText(),/리그 오브 레전드 26.22/);
   assert.match(await page.locator(".lead-card").innerText(),/2026-11-03T19:00:00.000Z/);
+  await page.setViewportSize({width:390,height:1080});
+  await audit("night-official-selected-390");
+  await page.getByRole("button",{name:"주간으로 보기",exact:true}).click();
+  await audit("day-official-selected-390");
+  await page.setViewportSize({width:1440,height:1080});
+  report.checks.push("Registered official-source briefing at390px in both themes: publication/provenance/original link visible; link and text contrast, clipping and horizontal overflow audited.");
   await page.locator(".secondary").click();
   await page.reload();
   assert.match(await page.locator("h1").innerText(),/리그 오브 레전드 26.22/);
