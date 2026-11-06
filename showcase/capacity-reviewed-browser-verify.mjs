@@ -6,10 +6,12 @@ import {resolve} from 'node:path';
 import {createHash} from 'node:crypto';
 import {createServer} from 'node:http';
 import {chromium} from 'playwright-core';
-const out='validation/capacity-reviewed';await mkdir(out,{recursive:true});
+const out=process.env.EVIDENCE_DIR?resolve(process.env.EVIDENCE_DIR,'capacity-reviewed'):'validation/capacity-reviewed';
+const candidate=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
+if(process.env.CANDIDATE_SHA!==undefined)assert.equal(process.env.CANDIDATE_SHA,candidate,'CANDIDATE_SHA must match checkout HEAD');
+await mkdir(out,{recursive:true});
 const load=async options=>{const r=await build({...options,bundle:true,write:false,platform:'node',format:'esm'});return import('data:text/javascript;base64,'+Buffer.from(r.outputFiles[0].text).toString('base64'));};
 const c=await load({entryPoints:['examples/before-arrival/catalog.ts']}),u=await load({entryPoints:['examples/before-arrival/saved-undo.ts']});
-const candidate=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
 const seed=c.defaults(),item=seed.sources[0].items[0];seed.savedItems=Array.from({length:200},(_,i)=>({...seed.sources[i%3===0?1:0].items[0],id:'capacity-'+i,title:'보관 소식 '+i,originalUrl:null,reviewed:i%2===0}));
 const html=await readFile('before-arrival-showcase.html'),server=createServer((req,res)=>res.end(html));await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH,headless:true,args:['--no-sandbox']});const base=`http://127.0.0.1:${server.address().port}`,key=c.registryKey;
@@ -31,4 +33,11 @@ const lum=v=>{const a=v.match(/[\d.]+/g).slice(0,3).map(Number).map(x=>{x/=255;r
 }
 assert.deepEqual(errors,[]);report.checks.push('199/full-zero visibility; total count; hidden source/search/unread reset via keyboard; canonical order/status/URLs unchanged; delete failure/retry/undo; explicit save after deletion; restricted/unknown stale callbacks and stopped playback; day/night first title, 16px/44px and contrast >=4.5. Browser sample only; full regression deferred to GitHub CI.');
 }finally{await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}
-for(const path of ['examples/before-arrival/catalog.ts','examples/before-arrival/saved-undo.ts','examples/before-arrival/index.tsx','capacity-reviewed-browser-verify.mjs','examples/before-arrival/showcase.css','before-arrival-showcase.html',...report.captures])report.hashes[path]=createHash('sha256').update(await readFile(path)).digest('hex');await writeFile(out+'/report.json',JSON.stringify(report,null,2)+'\n');await writeFile(out+'/report.sha256',createHash('sha256').update(await readFile(out+'/report.json')).digest('hex')+'  report.json\n');console.log('PASS focused capacity reviewed checks');
+for(const path of ['package.json','examples/before-arrival/catalog.ts','examples/before-arrival/saved-undo.ts','examples/before-arrival/index.tsx','capacity-reviewed-browser-verify.mjs','examples/before-arrival/showcase.css','before-arrival-showcase.html',...report.captures])report.hashes[path]=createHash('sha256').update(await readFile(path)).digest('hex');await writeFile(out+'/report.json',JSON.stringify(report,null,2)+'\n');await writeFile(out+'/report.sha256',createHash('sha256').update(await readFile(out+'/report.json')).digest('hex')+'  report.json\n');
+// Re-read the written evidence so a missing or altered file fails the CI step.
+const digest=async path=>createHash('sha256').update(await readFile(path)).digest('hex');
+const recorded=JSON.parse(await readFile(out+'/report.json','utf8'));
+assert.equal(recorded.candidate,candidate);assert.equal(recorded.captures.length,4);
+for(const [path,hash] of Object.entries(recorded.hashes))assert.equal(await digest(path),hash,path);
+assert.equal(await readFile(out+'/report.sha256','utf8'),await digest(out+'/report.json')+'  report.json\n');
+console.log('PASS focused capacity reviewed checks and evidence hashes');

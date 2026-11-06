@@ -1,25 +1,26 @@
 {
-  "candidate": "0b3f344c2b94484300ae0f80e7449fc3ac123d0e",
+  "candidate": "7a0f51e78d6f38f115ba1b23b2568f97523e7362",
   "checks": [
     "199/full-zero visibility; total count; hidden source/search/unread reset via keyboard; canonical order/status/URLs unchanged; delete failure/retry/undo; explicit save after deletion; restricted/unknown stale callbacks and stopped playback; day/night first title, 16px/44px and contrast >=4.5. Browser sample only; full regression deferred to GitHub CI."
   ],
   "captures": [
-    "validation/capacity-reviewed/day-320.png",
-    "validation/capacity-reviewed/day-390.png",
-    "validation/capacity-reviewed/night-320.png",
-    "validation/capacity-reviewed/night-390.png"
+    "/tmp/before-arrival-loop-4fs9i9wa/repo/showcase/validation/capacity-reviewed/day-320.png",
+    "/tmp/before-arrival-loop-4fs9i9wa/repo/showcase/validation/capacity-reviewed/day-390.png",
+    "/tmp/before-arrival-loop-4fs9i9wa/repo/showcase/validation/capacity-reviewed/night-320.png",
+    "/tmp/before-arrival-loop-4fs9i9wa/repo/showcase/validation/capacity-reviewed/night-390.png"
   ],
   "hashes": {
+    "package.json": "0838542a0bf4c71374cda15a38310f074b49c8a9397edd9d4b985b776aa3c96b",
     "examples/before-arrival/catalog.ts": "8aa4de498e138271ef0bb03dbf1431defd8a23c9374467c71c1ad1d1ace09273",
     "examples/before-arrival/saved-undo.ts": "490487beec45fd64f3ca05f302670060bb876054413995f7a4fee9dfc2805afc",
     "examples/before-arrival/index.tsx": "43a93f9092767504e7290b4f3a762c7c6641bd8b9806ccaf6ef0ac7ffde07b13",
-    "capacity-reviewed-browser-verify.mjs": "60eb467f1bd0cde6ff33c1dce24e740a0a74aa0157f085b21eecbec469bbaa33",
+    "capacity-reviewed-browser-verify.mjs": "30d901390429819236d1e2bb6b45c8dce9a1464c2e30f8ff495a9ece4cc0fb1c",
     "examples/before-arrival/showcase.css": "f4dadb77c11ff0514258633842e97875d16d76e70c93437812df4a57f236e5ba",
     "before-arrival-showcase.html": "2f4d1385019721dcaa6228182d927d80af126aab3798468f5924d8d17bbe65e7",
-    "validation/capacity-reviewed/day-320.png": "3387b5b83a249d132265a6cb42c73fddb6b95520fa36e4a00b4e786e700b20de",
-    "validation/capacity-reviewed/day-390.png": "ac5ffdf69c40eecaf62febf93e8b590bfdcc9b4029b2798df9d4fd45e529117f",
-    "validation/capacity-reviewed/night-320.png": "c1f5d1c78b224b995334b268dee82a43394584653f58a5a56fa6cd5b3dddc03f",
-    "validation/capacity-reviewed/night-390.png": "eb16bc655c93fd4cfd09550708849a8d4d2e0afed50358cb1966cbf5510d7fd0"
+    "/tmp/before-arrival-loop-4fs9i9wa/repo/showcase/validation/capacity-reviewed/day-320.png": "3387b5b83a249d132265a6cb42c73fddb6b95520fa36e4a00b4e786e700b20de",
+    "/tmp/before-arrival-loop-4fs9i9wa/repo/showcase/validation/capacity-reviewed/day-390.png": "ac5ffdf69c40eecaf62febf93e8b590bfdcc9b4029b2798df9d4fd45e529117f",
+    "/tmp/before-arrival-loop-4fs9i9wa/repo/showcase/validation/capacity-reviewed/night-320.png": "c1f5d1c78b224b995334b268dee82a43394584653f58a5a56fa6cd5b3dddc03f",
+    "/tmp/before-arrival-loop-4fs9i9wa/repo/showcase/validation/capacity-reviewed/night-390.png": "eb16bc655c93fd4cfd09550708849a8d4d2e0afed50358cb1966cbf5510d7fd0"
   },
   "readability": [
     {
