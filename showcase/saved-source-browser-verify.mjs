@@ -15,7 +15,7 @@ async function tabTo(page,target){for(let i=0;i<90;i++){if(await target.evaluate
 async function saveDeferred(page,title){await page.getByRole('button',{name:'03 4분',exact:true}).click();await page.getByRole('button',{name:title+' 나중에 보기 저장',exact:true}).click();await page.getByRole('button',{name:'04 도착',exact:true}).click();}
 async function failWrites(page,value){await page.evaluate(value=>window.__undoFailWrites=value,value);}
 try{
- const page=await browser.newPage({viewport:{width:390,height:1080}});
+ const page=await browser.newPage({viewport:{width:390,height:1080}});page.setDefaultNavigationTimeout(60000);
  await page.goto(base+'/?state=settings');
  for(const [provider,name] of [['lol','롤'],['valorant','발로란트'],['maple','메이플']]){await page.getByLabel('출처 서비스',{exact:true}).selectOption(provider);await page.getByLabel('출처 이름',{exact:true}).fill(name);await page.getByRole('button',{name:'출처 추가',exact:true}).click();}
  for(const title of [A,B,C])await saveDeferred(page,title);
@@ -32,6 +32,42 @@ try{
  const name='아주 긴 출처 이름으로 좁은 화면에서도 선택할 수 있는 저장 소식 출처';seed.sources.filter(s=>ids.slice(0,2).includes(s.id)).forEach(s=>s.name=name);seed.savedItems.forEach((item,index)=>item.reviewed=index===2);
  await page.evaluate(({key,seed})=>localStorage.setItem(key,JSON.stringify(seed)),{key,seed});await page.reload();
  const source=page.getByLabel('저장한 출처',{exact:true}),search=page.getByRole('searchbox'),unread=page.getByRole('button',{name:'미확인만',exact:true}),all=page.getByRole('button',{name:'전체',exact:true});
+ const next=page.getByRole('button',{name:'다음 미확인 소식',exact:true});
+ let popups=0;page.on('popup',()=>popups++);
+ for(const sourceId of ['',...ids])for(const query of ['', ' PATCH ', '없음'])for(const onlyUnread of [false,true]){
+  await source.selectOption(sourceId);await search.fill(query);await (onlyUnread?unread:all).click();
+  const expected=seed.savedItems.filter(i=>(!sourceId||i.sourceId===sourceId)&&i.title.toLowerCase().includes(query.trim().toLowerCase())&&!i.reviewed);
+  assert.equal(await next.isDisabled(),expected.length===0);
+  if(!expected.length)assert.match(await page.locator('#saved-next-help').innerText(),/없어 이동할 수 없어요/);
+  for(let index=0;index<expected.length+1&&expected.length;index++){
+   await next.focus();await page.keyboard.press(index%2?'Space':'Enter');
+   assert.equal(await page.evaluate(()=>document.activeElement.textContent),expected[index%expected.length].title);
+  }
+  assert.equal(await source.inputValue(),sourceId);assert.equal(await search.inputValue(),query);
+  assert.equal(await unread.getAttribute('aria-pressed'),String(onlyUnread));assert.deepEqual(await read(page),seed);
+ }
+ await source.selectOption('');await search.fill('');await all.click();
+ await page.locator('.saved-article h3').nth(2).focus();
+ await next.evaluate(el=>el[Object.keys(el).find(k=>k.startsWith('__reactProps$'))].onClick());
+ assert.equal(await page.evaluate(()=>document.activeElement.textContent),seed.savedItems[3].title);
+ for(const blocked of ['주행 제한','상태 미확인']){
+  const stale=await next.evaluateHandle(el=>el[Object.keys(el).find(k=>k.startsWith('__reactProps$'))].onClick);
+  await page.getByRole('button',{name:'01 18분',exact:true}).click();await page.getByRole('button',{name:'듣기 시연',exact:true}).click();
+  await page.getByRole('button',{name:blocked,exact:true}).click();await stale.evaluate(fn=>fn());
+  assert.equal(await next.count(),0);assert(await page.locator('.primary').isDisabled());assert.equal(await page.locator('.primary').getAttribute('aria-pressed'),'false');
+  await page.getByRole('button',{name:'04 도착',exact:true}).click();
+  const beforeFocus=await page.evaluate(()=>document.activeElement.textContent);await stale.evaluate(fn=>fn());
+  assert.equal(await page.evaluate(()=>document.activeElement.textContent),beforeFocus);assert.deepEqual(await read(page),seed);
+  assert.equal(await page.locator('.primary').getAttribute('aria-pressed'),'false');
+ }
+ // Fixed long-list fixture: navigation changes neither canonical order nor URLs.
+ const longSeed={...seed,savedItems:Array.from({length:32},(_,index)=>({...lolItem,id:`next-${index}`,title:`긴 보관함 소식 ${index}`,originalUrl:`https://www.leagueoflegends.com/ko-kr/news/game-updates/next-${index}/`,reviewed:index!==31}))};
+ await page.evaluate(({key,seed})=>localStorage.setItem(key,JSON.stringify(seed)),{key,seed:longSeed});await page.reload();
+ await next.click();assert.equal(await page.evaluate(()=>document.activeElement.textContent),'긴 보관함 소식 31');
+ await next.focus();await page.keyboard.press('Space');assert.equal(await page.evaluate(()=>document.activeElement.textContent),'긴 보관함 소식 31');assert.deepEqual(await read(page),longSeed);
+ await page.evaluate(({key,seed})=>localStorage.setItem(key,JSON.stringify(seed)),{key,seed});await page.reload();
+ assert.equal(popups,0);
+ report.checks.push('Next unread: zero/one/multiple intersections, Enter/Space, wrap, manually focused reviewed title, unchanged filters/order/URLs/storage, stale handlers during restriction and after return, no popup or automatic playback.');
  async function expectItems(items){assert.deepEqual(await titles(page),items.map(i=>i.title));assert.match(await page.locator('.saved-filters').innerText(),new RegExp(`표시 ${items.length}건`));}
  assert.equal(await source.inputValue(),'');assert.equal(new Set(await source.locator('option').allTextContents()).size,4);
  for(const id of ids){await source.selectOption(id);await expectItems(seed.savedItems.filter(i=>i.sourceId===id));}
@@ -53,6 +89,15 @@ try{
  for(const theme of ['day','night'])for(const width of [320,390]){
  await page.setViewportSize({width,height:1080});await page.goto(base+'/?state=arrived&theme='+theme);await tabTo(page,source);await page.keyboard.press('Home');await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');assert.equal(await source.inputValue(),ids[0]);await page.evaluate(()=>document.fonts.ready);
  const audit=await reset.evaluate(el=>{const c=getComputedStyle(el),rgb=s=>s.match(/[\d.]+/g).map(Number).slice(0,3),lum=c=>c.map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((n,v,i)=>n+v*[.2126,.7152,.0722][i],0),a=lum(rgb(c.color)),b=lum(rgb(c.backgroundColor));return {contrast:(Math.max(a,b)+.05)/(Math.min(a,b)+.05),fontSize:parseFloat(c.fontSize),pageOverflow:document.documentElement.scrollWidth>innerWidth+1};});assert(audit.contrast>=4.5);assert(audit.fontSize>=16);assert.equal(audit.pageOverflow,false);report.readability.push({theme,width,...audit});
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await page.evaluate(()=>{window.__scrollCalls=[];const scroll=Element.prototype.scrollIntoView;Element.prototype.scrollIntoView=function(options){window.__scrollCalls.push(options);return scroll.call(this,options);};});
+ await next.focus();await page.keyboard.press(width===320?'Enter':'Space');
+ assert.equal(await page.evaluate(()=>window.__scrollCalls.at(-1).behavior),'instant');
+ const titleAudit=await page.locator('.saved-article h3:focus').evaluate(el=>{const c=getComputedStyle(el),r=el.getBoundingClientRect();return {outline:c.outlineStyle,outlineWidth:parseFloat(c.outlineWidth),fontSize:parseFloat(c.fontSize),visible:r.top>=0&&r.bottom<=innerHeight,pageOverflow:document.documentElement.scrollWidth>innerWidth+1};});
+ assert.equal(titleAudit.outline,'solid');assert(titleAudit.outlineWidth>=2);assert(titleAudit.fontSize>=16);assert(titleAudit.visible);assert.equal(titleAudit.pageOverflow,false);
+ const targetPath=`${theme}-${width}-next-title.png`;await page.screenshot({path:out+'/'+targetPath,fullPage:true});report.captures.push({path:targetPath,sha256:createHash('sha256').update(await readFile(out+'/'+targetPath)).digest('hex')});report.readability.push({theme,width,target:titleAudit});
+ await next.focus();
+ const nextAudit=await next.evaluate(el=>{const c=getComputedStyle(el);return {fontSize:parseFloat(c.fontSize),overflow:el.scrollWidth>el.clientWidth+1};});assert(nextAudit.fontSize>=16);assert.equal(nextAudit.overflow,false);report.readability.push({theme,width,next:nextAudit});
  for(const empty of [false,true]){await search.fill(empty?'없는 제목':'');const path=`${theme}-${width}-${empty?'empty':'source'}.png`;await page.screenshot({path:out+'/'+path,fullPage:true});report.captures.push({path,sha256:createHash('sha256').update(await readFile(out+'/'+path)).digest('hex')});}
  await tabTo(page,reset);await page.keyboard.press(width===320?'Enter':'Space');assert.equal(await search.evaluate(el=>el===document.activeElement),true);await expectItems(seed.savedItems);assert.deepEqual(await read(page),seed);
  }

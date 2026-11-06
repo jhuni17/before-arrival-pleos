@@ -687,3 +687,8 @@ select:focus-visible {
 .ba-scene .saved-source-reset{font-family:"Asta Sans",sans-serif}
 
 .ba-scene .saved-reset{font:inherit;font-size:16px}
+
+.saved-filters .saved-next{min-height:48px;max-width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--button);color:var(--on-button);font:inherit;white-space:normal}
+.saved-filters .saved-next:disabled{background:var(--surface);color:var(--text)}
+#saved-next-help{overflow-wrap:anywhere}
+.saved-next:focus-visible,.saved-article h3:focus{outline:2px solid var(--text);outline-offset:4px}
