@@ -1,11 +1,12 @@
 {
-  "baseCandidateSha": "93ccb1c245da4258383fd0eef41fc36903e1f308",
+  "baseCandidateSha": "b50db99a46135e99a86cdcb78733d9eeca2c891b",
   "candidate": "Uncommitted working tree; no new commit SHA created.",
   "sha256": {
     "examples/before-arrival/index.tsx": "cb13e1e5d73950f0670b595d6664f3a64d6b653bc694bd895bbfc3e7bc983cb0",
     "examples/before-arrival/showcase.css": "3cb6e2dc71f41062f943c5051b246b3594e60a1e6f8d386772b4e0d4be916a73",
-    "saved-search-browser-verify.mjs": "99464ae8dd503544ec1a3ae877f6c97dbf9e16460253065a1249f488ff658f1d",
-    "before-arrival-showcase.html": "84e3d8a24e163e5ef4996fe7d3e092a78732c312e6aa1cd58deed7b179acfcf3"
+    "saved-search-browser-verify.mjs": "fd78ca1498a0d68affd73beeb606c45fc8e3a9325b52ed02ed3959955b3fd9cf",
+    "before-arrival-showcase.html": "84e3d8a24e163e5ef4996fe7d3e092a78732c312e6aa1cd58deed7b179acfcf3",
+    "package.json": "b1b34808ce9ebd785cea105e2588872d0b0023eed7319340c93e01bec3129a40"
   },
   "checks": {
     "build": "PASS",
@@ -17,8 +18,9 @@
     "verify:saved-undo": "BLOCKED: listen EPERM",
     "saved-search-browser-verify.mjs": "BLOCKED: listen EPERM",
     "node --check saved-search-browser-verify.mjs": "PASS",
-    "git diff --check": "PASS"
+    "git diff --check": "PASS",
+    "package command sequencing": "PASS: stubbed scripts verify success order and failure propagation for either script; not browser execution"
   },
-  "captures": "Not produced: sandbox denies local server sockets. Browser accessibility, Korean composition, keyboard/focus and day/night 320x960/390x1080 checks remain unverified.",
-  "rerun": "From showcase/: node saved-search-browser-verify.mjs (default evidence: validation/saved-search). Synthetic composition events do not establish physical Korean IME behavior."
+  "captures": "Not produced: local sockets denied (EPERM); /usr/bin/chromium also absent. Browser assertions and captures remain unverified.",
+  "rerun": "From showcase/: npm run verify:saved-undo. Existing CI EVIDENCE_DIR receives search-report.json and four search PNGs alongside undo evidence. Report includes candidate SHA, dirty flag, HTML/source hashes and capture hashes. Synthetic composition/insertText do not establish physical Korean IME behavior."
 }
