@@ -700,3 +700,8 @@ select:focus-visible {
 .phone .saved-position p:empty{display:none}
 .ba-scene .saved-position button,.ba-scene .saved-position-save{font:inherit;min-height:44px;max-width:100%;white-space:normal}
 .phone .saved-position .saved-count{font-size:15px}
+
+.ba-scene .saved-source-notice{overflow-wrap:anywhere}
+.ba-scene .saved-source-notice button{font:inherit;font-size:16px;min-height:44px;max-width:100%;white-space:normal}
+
+.saved-article .category{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

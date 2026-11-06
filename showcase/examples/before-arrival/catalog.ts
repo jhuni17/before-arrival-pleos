@@ -100,7 +100,17 @@ export function readRegistry(storage:Pick<Storage,"getItem">):Registry {
     const value=JSON.parse(storage.getItem(registryKey)||"null");
     if(value?.schemaVersion===2&&Array.isArray(value.sources)&&value.sources.length<=100&&Array.isArray(value.savedItems)) {
       const valid=value.sources.every((s:any)=>typeof s?.id==="string"&&typeof s.name==="string"&&s.name.length<=80&&typeof s.enabled==="boolean"&&Array.isArray(s.items)&&s.items.length<=50&&(s.provider==="sample"?seed.sources.some(v=>v.id===s.id):providers.some(p=>p.id===s.provider&&typeof s.registrationUrl==="string"&&new RegExp(p.urlPattern).test(s.registrationUrl)))&&s.items.every((item:any)=>validItem(item,s)));
-      if(valid) return {...value,savedItems:value.savedItems.filter((i:any)=>value.sources.some((s:RegisteredSource)=>s.id===i.sourceId&&validItem(i,s))).slice(0,200)};
+      if(valid) return {...value,savedItems:value.savedItems.filter((i:any)=>{
+        let source=value.sources.find((s:RegisteredSource)=>s.id===i?.sourceId);
+        if(!source&&typeof i?.sourceId==="string"){
+          // Deleted registrations still have a canonical source ID; validate their saved URLs.
+          source=seed.sources.find(s=>s.id===i.sourceId);
+          const registrationUrl=i.sourceId.startsWith("url:")?i.sourceId.slice(4):"";
+          const provider=providers.find(p=>new RegExp(p.urlPattern).test(registrationUrl));
+          if(!source&&provider)source={id:i.sourceId,provider:provider.id,registrationUrl};
+        }
+        return source&&validItem(i,source);
+      }).slice(0,200)};
     }
   } catch {}
   const state=defaults();

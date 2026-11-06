@@ -23,7 +23,7 @@ try{
  const fixture={...seed,savedItems:Array.from({length:32},(_,i)=>({...seed.savedItems[i%3],id:`item-next-${i}`,title:`긴 보관함 ${i%2?'홀수':'짝수'} 소식 ${i}`,originalUrl:i%3===2?`https://maplestory.nexon.com/news/update/${9000+i}`:seed.savedItems[i%3].originalUrl.replace(/[^/]+\/$/,'')+`item-next-${i}/`,reviewed:true}))};
  const button=i=>page.getByRole('button',{name:fixture.savedItems[i].title+' 다음 미확인 소식',exact:true});
  const search=page.getByRole('searchbox',{name:'저장한 제목 검색',exact:true});
- async function load(unread){fixture.savedItems.forEach((item,i)=>item.reviewed=!unread.includes(i));await page.evaluate(({key,seed})=>localStorage.setItem(key,JSON.stringify(seed)),{key,seed:fixture});await page.goto(base+'/?state=arrived');await page.getByRole('button',{name:'전체',exact:true}).click();await button(31).waitFor();}
+ async function load(unread){fixture.savedItems.forEach((item,i)=>item.reviewed=!unread.includes(i));await page.evaluate(({key,seed})=>localStorage.setItem(key,JSON.stringify(seed)),{key,seed:fixture});await page.goto(base+'/?state=arrived');await page.getByLabel('저장한 출처',{exact:true}).selectOption('');await page.getByRole('button',{name:'전체',exact:true}).click();await button(31).waitFor();}
  const mark=i=>page.getByRole('button',{name:fixture.savedItems[i].title+' 여기까지 봤어요',exact:true});
  const resume=()=>page.getByRole('button',{name:'지난 위치로 이동',exact:true});
  let popups=0;page.on('popup',()=>popups++);

@@ -27,6 +27,10 @@ state=toggleSource(state,lol.id,false);assert.equal(plan().selected[0].sourceId,
 state=toggleSource(state,lol.id,true);state=saveItem(state,lol.items[0]);state=saveItem(state,lol.items[0]);assert.equal(state.savedItems.length,1);
 const storage={getItem:(key:string)=>key===registryKey?JSON.stringify(state):null};
 assert.deepEqual(readRegistry(storage),state);
+const orphanRegistry={...state,sources:state.sources.filter(s=>s.id!==lol.id)};
+assert.deepEqual(readRegistry({getItem:key=>key===registryKey?JSON.stringify(orphanRegistry):null}),orphanRegistry);
+const unsafeOrphan={...orphanRegistry,savedItems:[{...state.savedItems[0],originalUrl:"https://evil.test/article"}]};
+assert.equal(readRegistry({getItem:key=>key===registryKey?JSON.stringify(unsafeOrphan):null}).savedItems.length,0);
 const migrated=readRegistry({getItem:key=>key===oldKey?JSON.stringify({game:false,meeting:true,community:true,first:"community",saved:true,savedTitle:"9시 팀 회의가 3층으로 바뀌었어요"}):null});
 assert.equal(migrated.sources[0].id,"sample-community");assert.equal(migrated.sources.find(s=>s.id==="sample-game")!.enabled,false);assert.equal(migrated.savedItems.length,1);
 const legacyLong=readRegistry({getItem:key=>key===oldKey?JSON.stringify({game:true,meeting:true,community:true,first:"game",saved:true,savedTitle:"길게 바꾼 회의 제목"}):null});assert.equal(legacyLong.savedItems[0].title,"길게 바꾼 회의 제목");
