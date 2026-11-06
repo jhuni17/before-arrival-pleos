@@ -1,0 +1,9 @@
+(node:10) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> verify:local-app
+> node local-app-browser-verify.mjs
+
+(node:23) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS: actual loopback app server → same-origin browser refresh →5 captured records →save/reload/ETA; repeat/error/empty and standalone guidance. Upstream is replay, NOT live network.
