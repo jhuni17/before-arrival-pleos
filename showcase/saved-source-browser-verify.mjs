@@ -4,7 +4,7 @@ import {chromium} from 'playwright-core';
 import {createServer} from 'node:http';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
-const out=process.env.EVIDENCE_DIR||'validation/saved-source';await mkdir(out,{recursive:true});
+const out=process.env.EVIDENCE_DIR||'validation/saved-source-counts';await mkdir(out,{recursive:true});
 const html=await readFile('before-arrival-showcase.html');const server=createServer((req,res)=>{res.writeHead(200,{'Content-Type':'text/html;charset=utf-8'});res.end(html);});await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox']});const base=`http://127.0.0.1:${server.address().port}`;
 const A='리그 오브 레전드 26.22 패치 노트',B='발로란트 13.09 패치 노트',C='수정2 클라이언트 1.2.420 업데이트 안내',D='이번 주말, 협동 모드가 열려요';
@@ -33,11 +33,17 @@ try{
  await page.evaluate(({key,seed})=>localStorage.setItem(key,JSON.stringify(seed)),{key,seed});await page.reload();
  const source=page.getByLabel('저장한 출처',{exact:true}),search=page.getByRole('searchbox'),unread=page.getByRole('button',{name:'미확인만',exact:true}),all=page.getByRole('button',{name:'전체',exact:true});
  const next=page.getByRole('button',{name:'다음 미확인 소식',exact:true});
+ async function expectCounts(){
+  const stored=await read(page),options=await source.locator('option').evaluateAll(nodes=>nodes.map(el=>({id:el.value,label:el.textContent})));
+  for(const option of options){const count=stored.savedItems.filter(item=>(!option.id||item.sourceId===option.id)&&item.reviewed!==true).length;assert(option.label.endsWith(` · 미확인 ${count}건`),JSON.stringify(option));}
+  assert.match(await page.locator('#saved-source-count-help').innerText(),/전체 저장 기준.*검색\/필터 무관/);
+ }
+ await expectCounts();
  let popups=0;page.on('popup',()=>popups++);
  for(const sourceId of ['',...ids])for(const query of ['', ' PATCH ', '없음'])for(const onlyUnread of [false,true]){
   await source.selectOption(sourceId);await search.fill(query);await (onlyUnread?unread:all).click();
   const expected=seed.savedItems.filter(i=>(!sourceId||i.sourceId===sourceId)&&i.title.toLowerCase().includes(query.trim().toLowerCase())&&!i.reviewed);
-  assert.equal(await next.isDisabled(),expected.length===0);
+  await expectCounts();assert.equal(await next.isDisabled(),expected.length===0);
   if(!expected.length)assert.match(await page.locator('#saved-next-help').innerText(),/없어 이동할 수 없어요/);
   for(let index=0;index<expected.length+1&&expected.length;index++){
    await next.focus();await page.keyboard.press(index%2?'Space':'Enter');
@@ -68,7 +74,7 @@ try{
  await page.evaluate(({key,seed})=>localStorage.setItem(key,JSON.stringify(seed)),{key,seed});await page.reload();
  assert.equal(popups,0);
  report.checks.push('Next unread: zero/one/multiple intersections, Enter/Space, wrap, manually focused reviewed title, unchanged filters/order/URLs/storage, stale handlers during restriction and after return, no popup or automatic playback.');
- async function expectItems(items){assert.deepEqual(await titles(page),items.map(i=>i.title));assert.match(await page.locator('.saved-filters').innerText(),new RegExp(`표시 ${items.length}건`));}
+ async function expectItems(items){await expectCounts();assert.deepEqual(await titles(page),items.map(i=>i.title));assert.match(await page.locator('.saved-filters').innerText(),new RegExp(`표시 ${items.length}건`));}
  assert.equal(await source.inputValue(),'');assert.equal(new Set(await source.locator('option').allTextContents()).size,4);
  for(const id of ids){await source.selectOption(id);await expectItems(seed.savedItems.filter(i=>i.sourceId===id));}
  const reset=page.getByRole('button',{name:'조건 모두 지우기',exact:true});
@@ -97,9 +103,19 @@ try{
  await expectItems(fixed.savedItems.filter(i=>i.sourceId===ids[0]&&!i.reviewed));
  assert(await page.getByRole('button',{name:'지난 위치로 이동',exact:true}).isDisabled());assert.match(await page.locator('#saved-position-help').innerText(),/필터가 저장한 위치를 숨겨/);
  assert.equal(await page.evaluate(k=>localStorage.getItem(k),positionKey),positionBefore);assert.deepEqual(await read(page),fixed);
+ // Fixed 32-item counts: both review directions, removal and undo.
+ await reset.click();await expectCounts();
+ for(const item of [fixed.savedItems[1],fixed.savedItems[0]]){
+  await page.getByRole('button',{name:item.title+(item.reviewed?' 미확인으로 되돌리기':' 확인 완료'),exact:true}).click();await expectCounts();
+  if(!item.reviewed){await page.getByRole('button',{name:'확인 실행 취소',exact:true}).click();await expectCounts();}
+  else {await page.getByRole('button',{name:item.title+' 확인 완료',exact:true}).click();await expectCounts();}
+  await remove(page,item.title).click();await expectCounts();await undo(page).click();await expectCounts();
+ }
+ assert.deepEqual(await read(page),fixed);await source.selectOption(ids[0]);await page.reload();await expectCounts();
+ report.checks.push('Unread counts: all saved items independent of filters; 32-item review/unreview/delete/undo and reload preserve canonical data.');
  // A source removed from registration remains selectable through its saved articles.
  const orphan={...fixed,sources:fixed.sources.filter(s=>s.id!==ids[0])};
- await page.evaluate(({key,orphan})=>localStorage.setItem(key,JSON.stringify(orphan)),{key,orphan});await page.reload();assert.equal(await source.inputValue(),ids[0]);assert.deepEqual(await read(page),orphan);
+ await page.evaluate(({key,orphan})=>localStorage.setItem(key,JSON.stringify(orphan)),{key,orphan});await page.reload();await expectCounts();assert.equal(await source.inputValue(),ids[0]);assert.deepEqual(await read(page),orphan);
  await page.evaluate(k=>localStorage.setItem(k,JSON.stringify('missing-source')),sourceKey);await page.reload();assert.equal(await source.inputValue(),'');assert.match(await page.locator('.saved-source-notice').innerText(),/등록 목록과 보관함에 없어/);
  for(const raw of ['{bad','true','null','32','{}']){await page.evaluate(({sourceKey,raw})=>localStorage.setItem(sourceKey,raw),{sourceKey,raw});await page.reload();assert.equal(await source.inputValue(),'');assert.match(await page.locator('.saved-source-notice').innerText(),/읽지 못했거나/);}
  await page.addInitScript(k=>{const get=Storage.prototype.getItem;Storage.prototype.getItem=function(key){if(key===k&&sessionStorage.getItem('deny-source-read')==='yes')throw Error('read denied');return get.call(this,key);};},sourceKey);
@@ -120,6 +136,7 @@ try{
  for(const theme of ['day','night'])for(const width of [320,390]){
  await page.setViewportSize({width,height:width===320?960:1080});await page.goto(base+'/?state=arrived&theme='+theme);await page.evaluate(()=>document.fonts.ready);
  const firstTitle=await page.locator('.saved-article h3').first().boundingBox();assert(firstTitle.y>=0&&firstTitle.y+firstTitle.height<=(width===320?960:1080));assert.equal(await page.evaluate(()=>scrollY),0);
+ await expectCounts();const arrivalPath=`${theme}-${width}-arrival-counts.png`;await page.screenshot({path:out+'/'+arrivalPath});report.captures.push({path:arrivalPath,sha256:createHash('sha256').update(await readFile(out+'/'+arrivalPath)).digest('hex')});
  await tabTo(page,source);await page.keyboard.press('Home');await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');assert.equal(await source.inputValue(),ids[0]);await page.evaluate(()=>document.fonts.ready);
  const audit=await reset.evaluate(el=>{const c=getComputedStyle(el),rgb=s=>s.match(/[\d.]+/g).map(Number).slice(0,3),lum=c=>c.map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((n,v,i)=>n+v*[.2126,.7152,.0722][i],0),a=lum(rgb(c.color)),b=lum(rgb(c.backgroundColor));return {contrast:(Math.max(a,b)+.05)/(Math.min(a,b)+.05),fontSize:parseFloat(c.fontSize),pageOverflow:document.documentElement.scrollWidth>innerWidth+1};});assert(audit.contrast>=4.5);assert(audit.fontSize>=16);assert.equal(audit.pageOverflow,false);report.readability.push({theme,width,...audit});
  await page.emulateMedia({reducedMotion:'reduce'});

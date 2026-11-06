@@ -681,7 +681,7 @@ select:focus-visible {
 .saved-review-undo p{margin:0;line-height:1.6}
 .ba-scene .saved-review,.ba-scene .saved-review-undo button{font-family:"Asta Sans",sans-serif}
 
-.saved-source{display:grid;gap:8px;margin:12px 0;color:var(--text)}
+.saved-source{display:grid;gap:4px;margin:4px 0;color:var(--text)}
 .saved-source select{width:100%;min-width:0;min-height:44px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
 
 .ba-scene .saved-source-reset{font-family:"Asta Sans",sans-serif}
