@@ -671,3 +671,8 @@ select:focus-visible {
 .saved-filters{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0;color:var(--text)}
 .saved-filters button,.empty-saved button{min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text)}
 .saved-filters button[aria-pressed="true"]{background:var(--button);color:var(--on-button);font-weight:700}
+
+.saved-search{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
+.saved-search label{width:100%;color:var(--text)}
+.saved-search input{flex:1;min-width:0;width:100%;min-height:44px;box-sizing:border-box;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.saved-search button{min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}

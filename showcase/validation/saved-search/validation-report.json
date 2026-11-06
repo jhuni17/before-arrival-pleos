@@ -1,0 +1,24 @@
+{
+  "baseCandidateSha": "93ccb1c245da4258383fd0eef41fc36903e1f308",
+  "candidate": "Uncommitted working tree; no new commit SHA created.",
+  "sha256": {
+    "examples/before-arrival/index.tsx": "cb13e1e5d73950f0670b595d6664f3a64d6b653bc694bd895bbfc3e7bc983cb0",
+    "examples/before-arrival/showcase.css": "3cb6e2dc71f41062f943c5051b246b3594e60a1e6f8d386772b4e0d4be916a73",
+    "saved-search-browser-verify.mjs": "99464ae8dd503544ec1a3ae877f6c97dbf9e16460253065a1249f488ff658f1d",
+    "before-arrival-showcase.html": "84e3d8a24e163e5ef4996fe7d3e092a78732c312e6aa1cd58deed7b179acfcf3"
+  },
+  "checks": {
+    "build": "PASS",
+    "verify": "PASS",
+    "verify:server": "16 tests passed; LocalServerTests setup blocked by socket PermissionError",
+    "verify:local-app": "BLOCKED: socket PermissionError",
+    "verify:arrival": "BLOCKED: listen EPERM",
+    "verify:refresh-feedback": "BLOCKED: listen EPERM",
+    "verify:saved-undo": "BLOCKED: listen EPERM",
+    "saved-search-browser-verify.mjs": "BLOCKED: listen EPERM",
+    "node --check saved-search-browser-verify.mjs": "PASS",
+    "git diff --check": "PASS"
+  },
+  "captures": "Not produced: sandbox denies local server sockets. Browser accessibility, Korean composition, keyboard/focus and day/night 320x960/390x1080 checks remain unverified.",
+  "rerun": "From showcase/: node saved-search-browser-verify.mjs (default evidence: validation/saved-search). Synthetic composition events do not establish physical Korean IME behavior."
+}
