@@ -1,54 +1,54 @@
 {
-  "candidateSha": "fc07a89df9d629a1265365fdc627c7e510f82522",
+  "candidateSha": "90a29c159daecaef6296d550ecbbdcf196c30dbc",
   "workingTreeDirty": true,
   "ime": "Synthetic composition events only; physical Korean IME remains a manual check.",
   "scope": "Browser sample only; no APK installation, emulator or actual Pleos SDK evidence.",
   "captures": [
     {
       "path": "day-320-source.png",
-      "sha256": "126088b4062459ef18fd2d3ed7e1ea61080315da8e3d2bf5f4b933bf812d4743"
+      "sha256": "5836ffba5a97f33bd15c96eabe2ecd42799b0e9407643d254bd4442029759ec3"
     },
     {
       "path": "day-320-empty.png",
-      "sha256": "aefcf4f4e6c633b50ae33313a94e84059603c8e05777338be96d132da70c45d0"
+      "sha256": "af05d5df8090553b2ca5569022c187dfcec30ac02332d2eb31a73b8567e49697"
     },
     {
       "path": "day-390-source.png",
-      "sha256": "4cee0e3ae6c41b9c31a293bd9637951c723d17eb27c32d8622c51db2c9d15866"
+      "sha256": "a9f3388992b97600ba6c8a19e5eb26080fa47ee277034bc7e03b9ad700cce2e1"
     },
     {
       "path": "day-390-empty.png",
-      "sha256": "2a5e1ab57ec88ad34633a28eb5e486abbb45b7bdba0076e4eaa1ae32d182cd95"
+      "sha256": "e91d72b0dba0f27ccfe2dbf8434c2588475b3019ce7c2fd8bf9dc4acc82b1f68"
     },
     {
       "path": "night-320-source.png",
-      "sha256": "aecb41cf502040b4de528da9423ceebdedf5e351ed6fed69690c19ca821366ce"
+      "sha256": "4a3784bf8059db375e0fc0b46cbdaf153148cbd1122156962d170d896453b496"
     },
     {
       "path": "night-320-empty.png",
-      "sha256": "a8a550848285acb63649e4038aeaf005e36af2fa250ed72707535ed933830394"
+      "sha256": "2cd57b73efad24b338bb2942222a628f08fdcd707d104f0907d71f2ecb3f256e"
     },
     {
       "path": "night-390-source.png",
-      "sha256": "3fbedc46ff4173692d26cd5794ddc419d2e3bbb05caefe2db194ace60e4d32ef"
+      "sha256": "f21c0913d6bf4d7aca7513c4693aa9bec38e720b5b24555a01228af534a63da2"
     },
     {
       "path": "night-390-empty.png",
-      "sha256": "264de2056767aab42ed3d8f3c68b1ddef2d40144eb9fe3674d9318564af1aa4d"
+      "sha256": "e8073feb34cc59059ac5e9044d8dbc816c6a4051d0910a64bb82351ef8ee11c2"
     }
   ],
-  "checkedAt": "2026-11-06T05:36:50.419Z",
-  "htmlSha256": "dadd520e1709673dc3e1072ec1c4ab8fce29c3fef78f2831fed084a78afbac02",
+  "checkedAt": "2026-11-06T05:50:12.962Z",
+  "htmlSha256": "504e376a19c6a3068bce127a230b0786cd2cad8ce52d2bfe00ede69cbe33d058",
   "sourceSha256": {
-    "examples/before-arrival/index.tsx": "bb14ce1f7843ca67d41f9e951a626da8c9448748c677dcd4cc409a7c54f39cb4",
+    "examples/before-arrival/index.tsx": "2fb7667ff4989ccbb297409dad1e9d02cef3c16e46ced6633b704d83358e964d",
     "examples/before-arrival/saved-undo.ts": "35dc0a2985755d5e31e489bd741906e1b93691021c0e7392044734aa252c026e",
-    "examples/before-arrival/showcase.css": "149444fc8cca7895d747e66c0d8d596101d50c35d385c93bdbe5b5900efdab7a",
-    "saved-source-browser-verify.mjs": "ae31d697544c59acb02b31c8196f0d27efaa35c5ed2b2c6c47610aa81694b2bc",
+    "examples/before-arrival/showcase.css": "51c09b3d0246681086cf8c0795d7b020163d39764c005eafd1622b064f967357",
+    "saved-source-browser-verify.mjs": "14ba7515a682692388ea8764fd2b5ac04b1385c8537b06d6f910299a502e1b45",
     "package.json": "d837067a79339c6e2fc91d5399e95ff8cbd970909ac320be579c0caff6cbbd75"
   },
   "upstream": "official snapshots registered through UI; no external network",
   "checks": [
-    "Three source IDs; duplicate long names; exact counts/order; source/search/unread intersection; unchanged storage; empty reset; last deletion/undo; review undo; session reset; stale blocked handlers; stopped playback; keyboard, contrast and overflow at 320/390 day/night."
+    "Reset all filter combinations including whitespace/empty results; Enter/Space and search focus; stale reset closures blocked; Three source IDs; duplicate long names; exact counts/order; source/search/unread intersection; unchanged storage; empty reset; last deletion/undo; review undo; session reset; stale blocked handlers; stopped playback; keyboard, contrast and overflow at 320/390 day/night."
   ],
   "readability": [
     {

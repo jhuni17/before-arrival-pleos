@@ -685,3 +685,5 @@ select:focus-visible {
 .saved-source select{width:100%;min-width:0;min-height:44px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
 
 .ba-scene .saved-source-reset{font-family:"Asta Sans",sans-serif}
+
+.ba-scene .saved-reset{font:inherit;font-size:16px}
