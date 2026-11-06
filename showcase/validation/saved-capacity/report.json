@@ -1,0 +1,25 @@
+{
+  "candidate": "3e46755f8a0bd136dd003354ab49b17913a8ddbf",
+  "checks": [
+    "Candidate 201→200 reload loss reproduced; model capacity, duplicate, restore, 199→200 persistence",
+    "Browser no-write refusal, keyboard delete/save/reload, duplicate no-write, full restore retry after space, failed writes preserve data/focus, restricted/unknown stale handlers and stopped playback",
+    "Day/night 320×960, 390×1080 error/focus/overflow/arrival first title"
+  ],
+  "captures": [
+    "validation/saved-capacity/day-320.png",
+    "validation/saved-capacity/day-390.png",
+    "validation/saved-capacity/night-320.png",
+    "validation/saved-capacity/night-390.png"
+  ],
+  "hashes": {
+    "examples/before-arrival/catalog.ts": "8aa4de498e138271ef0bb03dbf1431defd8a23c9374467c71c1ad1d1ace09273",
+    "examples/before-arrival/saved-undo.ts": "490487beec45fd64f3ca05f302670060bb876054413995f7a4fee9dfc2805afc",
+    "examples/before-arrival/index.tsx": "98d89869774116903f1cff8dcd0fa660bc3b27a00ef01a4b39a0abaf4c7bd109",
+    "saved-capacity-browser-verify.mjs": "a2614932dae1d074fc8b620d78488ed57450c7fa54f1d8f22857cdbb9f7e0c52",
+    "before-arrival-showcase.html": "3416ae3dea1d58300ffedc6c1eaa27fa41d2c47a3ac973e6db0857b4ff8f1306",
+    "validation/saved-capacity/day-320.png": "cc47ee2d4497c9c6c736b661a57c4148a0e97ff90d04d77fc4994be02efe46cf",
+    "validation/saved-capacity/day-390.png": "4888925172ff020f41914b4a0492936c25f3009529fc8e71787af8684024bdf1",
+    "validation/saved-capacity/night-320.png": "89f08a6b9da1205aee4e4d123ab75c2fb0d996565f36a2d8e28eec807ea1b624",
+    "validation/saved-capacity/night-390.png": "d8dbd6745b4c53881b02bfd222febac9eb2ae4ce03070ab6a37c050fb74fa231"
+  }
+}

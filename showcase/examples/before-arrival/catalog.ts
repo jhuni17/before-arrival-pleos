@@ -74,8 +74,16 @@ export function planRegistry(remainingSeconds:number|null,observedAt:string,sour
   }
   return {selected,deferred,budget,seconds};
 }
+export const savedItemLimit=200;
+export const savedCapacityMessage="보관함은 최대 200건까지 저장할 수 있어요. 항목 하나를 직접 삭제한 뒤 다시 시도해 주세요.";
+export function requireSavedSpace(state:Registry) {
+  if(state.savedItems.length>=savedItemLimit)throw new Error(savedCapacityMessage);
+}
 export function saveItem(state:Registry,item:ContentItem):Registry {
-  return {...state,savedItems:deduplicate([...state.savedItems,item])};
+  const savedItems=deduplicate([...state.savedItems,item]);
+  if(savedItems.length===state.savedItems.length)return state;
+  requireSavedSpace(state);
+  return {...state,savedItems};
 }
 export function localSteamConnectionAvailable():boolean {
   return typeof document!=="undefined"&&typeof location!=="undefined"&&location.protocol==="http:"
@@ -110,7 +118,7 @@ export function readRegistry(storage:Pick<Storage,"getItem">):Registry {
           if(!source&&provider)source={id:i.sourceId,provider:provider.id,registrationUrl};
         }
         return source&&validItem(i,source);
-      }).slice(0,200)};
+      }).slice(0,savedItemLimit)};
     }
   } catch {}
   const state=defaults();

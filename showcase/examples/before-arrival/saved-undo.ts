@@ -1,3 +1,4 @@
+import {requireSavedSpace} from "./catalog";
 import type {ContentItem,SavedItem,Registry} from "./catalog";
 export type SavedRemoval={item:SavedItem;index:number;before:string|null;after:string|null};
 export function savedIdentity(item:ContentItem):string {
@@ -13,6 +14,7 @@ export function prepareSavedRemoval(state:Registry,target:ContentItem):{next:Reg
 export function prepareSavedRestore(state:Registry,removal:SavedRemoval):{next:Registry;alreadyPresent:boolean} {
  const key=savedIdentity(removal.item);
  if(state.savedItems.some(item=>savedIdentity(item)===key))return {next:state,alreadyPresent:true};
+ requireSavedSpace(state);
  const before=removal.before===null?-1:state.savedItems.findIndex(item=>savedIdentity(item)===removal.before);
  const after=removal.after===null?-1:state.savedItems.findIndex(item=>savedIdentity(item)===removal.after);
  const position=before>=0?before+1:after>=0?after:Math.min(removal.index,state.savedItems.length);
