@@ -663,6 +663,8 @@ select:focus-visible {
  .primary { min-height: 56px; padding: 12px; }
  .play-status { margin-top: 8px; }
  .secondary { min-height: 48px; margin-top: 4px; }
+ /* Keep the first saved title in the arrival viewport without shrinking controls. */
+ .scene-composition[data-arrived="true"] .phone-app { padding-top: 4px; }
 }
 
 .saved-review{margin-right:8px;max-width:100%;white-space:normal}

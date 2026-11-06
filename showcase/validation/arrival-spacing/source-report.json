@@ -1,0 +1,196 @@
+{
+  "candidateSha": "ee95a0b6ea5926ff1ab1b5b2cbd9b49749483303",
+  "workingTreeDirty": true,
+  "ime": "Synthetic composition events only; physical Korean IME remains a manual check.",
+  "scope": "Browser sample only; no APK installation, emulator or actual Pleos SDK evidence.",
+  "captures": [
+    {
+      "path": "day-320-arrival-counts.png",
+      "sha256": "b2582012d27cdc2dfb363aea28157b706ba761fa628aeb9078fd27b4818734d1"
+    },
+    {
+      "path": "day-320-next-title.png",
+      "sha256": "5625780d67b2b7eb1092685f1f3f85818ee2f9fbe0ca5bd0bf58e385f3753d25"
+    },
+    {
+      "path": "day-320-source.png",
+      "sha256": "3960ccb092a5c06b6d44df124a27c85748f6911b23a79fced9c62e66ee9874ca"
+    },
+    {
+      "path": "day-320-empty.png",
+      "sha256": "bea4abfd33bd7e57449f6efc4f839692ac6fc54302fa8f27b80bed4c8ff65d1e"
+    },
+    {
+      "path": "day-390-arrival-counts.png",
+      "sha256": "38daa456be84d850a893cbbcc236fa5e8ff422e193df9c86d3874af41d04d5e3"
+    },
+    {
+      "path": "day-390-next-title.png",
+      "sha256": "d0ad80dc2ee7cc51037695f299c73d56fa11d366a7d568151431899f9addcea2"
+    },
+    {
+      "path": "day-390-source.png",
+      "sha256": "64fb87d89db3cccf9e238a29b9355368ec7d71d65e4b8dc0064ffce0ffab6f79"
+    },
+    {
+      "path": "day-390-empty.png",
+      "sha256": "770f16e41b935f23ce8993f3a1db3015a997012cd666fdf57b392ff5cac2e13d"
+    },
+    {
+      "path": "night-320-arrival-counts.png",
+      "sha256": "33dfe18ea9738b849a6e6ad785349058b2b793f1f2add1c5521068214178ef41"
+    },
+    {
+      "path": "night-320-next-title.png",
+      "sha256": "2b35ac81408a03117207fea655f3c4304b0dc58d61a4651fe68efa51940dae7b"
+    },
+    {
+      "path": "night-320-source.png",
+      "sha256": "c5ca5d5dfeb3be114a0877eb4c41427edabb9f4a6a38e34d924924353b19e9ce"
+    },
+    {
+      "path": "night-320-empty.png",
+      "sha256": "b05a7dd13a907475d2a93485775387bcd8eeec45d33a8adf75a46fe011cc785a"
+    },
+    {
+      "path": "night-390-arrival-counts.png",
+      "sha256": "322e11ed33f8e2d2c7153ee096a836cbf0ec0a9814b8fc8078ec8665b13ba297"
+    },
+    {
+      "path": "night-390-next-title.png",
+      "sha256": "d1859dd739c4edf1f46e543def5e5caaa82745e21e1d710893e468207188f903"
+    },
+    {
+      "path": "night-390-source.png",
+      "sha256": "da859ee785cb56bd953223d48a9a188c7d6300c7f60a71a3c0680b54e7ae1d6e"
+    },
+    {
+      "path": "night-390-empty.png",
+      "sha256": "4aca06a8b172bd60312a41903095a85fa8f6b89814774d46f8a31231915e8ecf"
+    }
+  ],
+  "checkedAt": "2026-11-06T08:33:07.188Z",
+  "htmlSha256": "1555a62e32c7513d3616c8712e4253a3d0a037084cc69770585393db4cc9e917",
+  "sourceSha256": {
+    "examples/before-arrival/index.tsx": "07162e7648ff5f185329506fbf8d6330dea8c23ae90668ca7f4134edf898160e",
+    "examples/before-arrival/catalog.ts": "57aefceacc87c3a67dfa3965ca4a01cf641504d6a6059a6e370caf757f704ca6",
+    "examples/before-arrival/saved-undo.ts": "35dc0a2985755d5e31e489bd741906e1b93691021c0e7392044734aa252c026e",
+    "examples/before-arrival/showcase.css": "698072d67a3269d8820b2232b306045021902c96933ab9a58974a94d238534f9",
+    "examples/before-arrival/verify.tsx": "0bdc4913398f97b1138493f38a6435de3d554b819cf801c6f33dd265754fb71c",
+    "saved-source-browser-verify.mjs": "56c8d2272d9bfbb59bf2efd38d23ccf9c7946040c7c44e640eafd6e474bd0763",
+    "package.json": "5532ad9f1cc27eed70c5e65408e978b2f17368d2323c2c4eb2623a66da4450fa"
+  },
+  "upstream": "official snapshots registered through UI; no external network",
+  "checks": [
+    "Next unread: zero/one/multiple intersections, Enter/Space, wrap, manually focused reviewed title, unchanged filters/order/URLs/storage, stale handlers during restriction and after return, no popup or automatic playback.",
+    "Unread counts: all saved items independent of filters; 32-item review/unreview/delete/undo and reload preserve canonical data.",
+    "32 fixed saved articles: persisted source/unread intersection, session-only search, orphan source retention, missing source fallback, malformed values, read denial, write failure and retry, all/reset persistence, unchanged canonical registry/position, hidden position reason, stale source handlers blocked during restriction and after parking.",
+    "Reset all filter combinations including whitespace/empty results; Enter/Space and search focus; stale reset closures blocked; Three source IDs; duplicate long names; exact counts/order; source/search/unread intersection; unchanged storage; empty reset; last deletion/undo; review undo; persisted source; stale blocked handlers; stopped playback; keyboard, contrast and overflow at 320/390 day/night."
+  ],
+  "readability": [
+    {
+      "theme": "day",
+      "width": 320,
+      "contrast": 17.442218774298816,
+      "fontSize": 16,
+      "pageOverflow": false
+    },
+    {
+      "theme": "day",
+      "width": 320,
+      "target": {
+        "outline": "solid",
+        "outlineWidth": 2,
+        "fontSize": 23,
+        "visible": true,
+        "pageOverflow": false
+      }
+    },
+    {
+      "theme": "day",
+      "width": 320,
+      "next": {
+        "fontSize": 16,
+        "overflow": false
+      }
+    },
+    {
+      "theme": "day",
+      "width": 390,
+      "contrast": 17.442218774298816,
+      "fontSize": 16,
+      "pageOverflow": false
+    },
+    {
+      "theme": "day",
+      "width": 390,
+      "target": {
+        "outline": "solid",
+        "outlineWidth": 2,
+        "fontSize": 23,
+        "visible": true,
+        "pageOverflow": false
+      }
+    },
+    {
+      "theme": "day",
+      "width": 390,
+      "next": {
+        "fontSize": 16,
+        "overflow": false
+      }
+    },
+    {
+      "theme": "night",
+      "width": 320,
+      "contrast": 15.251694958229084,
+      "fontSize": 16,
+      "pageOverflow": false
+    },
+    {
+      "theme": "night",
+      "width": 320,
+      "target": {
+        "outline": "solid",
+        "outlineWidth": 2,
+        "fontSize": 23,
+        "visible": true,
+        "pageOverflow": false
+      }
+    },
+    {
+      "theme": "night",
+      "width": 320,
+      "next": {
+        "fontSize": 16,
+        "overflow": false
+      }
+    },
+    {
+      "theme": "night",
+      "width": 390,
+      "contrast": 15.251694958229084,
+      "fontSize": 16,
+      "pageOverflow": false
+    },
+    {
+      "theme": "night",
+      "width": 390,
+      "target": {
+        "outline": "solid",
+        "outlineWidth": 2,
+        "fontSize": 23,
+        "visible": true,
+        "pageOverflow": false
+      }
+    },
+    {
+      "theme": "night",
+      "width": 390,
+      "next": {
+        "fontSize": 16,
+        "overflow": false
+      }
+    }
+  ]
+}
