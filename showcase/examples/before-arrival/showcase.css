@@ -687,6 +687,9 @@ select:focus-visible {
 .ba-scene .saved-review,.ba-scene .saved-review-undo button{font-family:"Asta Sans",sans-serif}
 
 .saved-source{display:grid;gap:4px;margin:4px 0;color:var(--text)}
+.saved-source small{display:block;font-weight:400}
+.saved-search-heading{width:100%}
+.saved-search-heading [role="status"]{font-size:12px}
 .saved-source select{width:100%;min-width:0;min-height:44px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
 
 .ba-scene .saved-source-reset{font-family:"Asta Sans",sans-serif}
@@ -724,13 +727,15 @@ select:focus-visible {
 @media (max-width:760px){
  /* Fit the explicit filtered-position action above the first saved title. */
  .scene-composition[data-arrived="true"] .local-only{padding:4px 8px;margin:4px 0}
- .phone .saved-source{grid-template-columns:auto minmax(0,1fr);align-items:center;font-size:14px}
+ .phone .saved-source{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;font-size:14px}
  .phone .saved-search,.phone .saved-filters{margin:2px 0}
  .phone .saved-filters{gap:4px;font-size:14px}
  .phone .saved-filters [role="status"]{order:1;width:100%}
  .phone .saved-filters button,.phone .saved-position button{font-size:16px;padding:8px 6px}
  .phone .saved-search{gap:4px;font-size:14px}
  .phone .saved-search button{font-size:16px;padding-inline:6px}
+ .phone .saved-filters .saved-next{min-height:44px}
+ .phone .saved-position{row-gap:2px}
 }
 
 .phone .saved-capacity-reviewed{display:block;min-height:44px;max-width:100%;padding:8px 6px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font:inherit;font-size:16px;white-space:normal}

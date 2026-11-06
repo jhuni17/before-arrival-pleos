@@ -129,7 +129,8 @@ try{
  }
  for(const theme of ['day','night'])for(const width of [320,390]){
   const height=width===320?960:1080;await load([2,17,31]);await page.setViewportSize({width,height});await page.goto(base+'/?state=arrived&theme='+theme);await mark(17).click();await page.evaluate(()=>{scrollTo(0,0);return document.fonts.ready;});
-  const heading=await page.locator('.saved-article h3').first().boundingBox();assert(heading&&heading.y>=0&&heading.y+heading.height<=height,JSON.stringify({theme,width,heading}));
+  assert.equal(await page.evaluate(()=>scrollY),0);
+  for(const title of [page.locator('.phone h2'),page.locator('.saved-article h3').first()]){const heading=await title.boundingBox();assert(heading&&heading.y>=0&&heading.y+heading.height<=height,JSON.stringify({theme,width,heading}));}
   const metrics=await onward().evaluate(el=>{
    const rgb=s=>s.match(/[\d.]+/g).slice(0,3).map(Number);
    const lum=s=>rgb(s).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;}).reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0);
@@ -145,7 +146,9 @@ try{
  await page.emulateMedia({reducedMotion:'reduce'});
  for(const theme of ['day','night'])for(const width of [320,390]){
   await load([2,17,31]);const height=width===320?960:1080;await page.setViewportSize({width,height});await page.goto(base+'/?state=arrived&theme='+theme);await page.evaluate(()=>document.fonts.ready);
-  await mark(17).click();await search.fill('짝수');await page.evaluate(()=>scrollTo(0,0));
+  await mark(17).click();await search.fill('짝수');await page.evaluate(async()=>{await document.fonts.ready;scrollTo(0,0);});
+  assert.equal(await page.evaluate(()=>scrollY),0);
+  for(const control of await page.locator('.saved-search button,.saved-filters button,.saved-position button').all()){const size=await control.evaluate(el=>({font:parseFloat(getComputedStyle(el).fontSize),height:el.getBoundingClientRect().height}));assert(size.font>=16&&size.height>=44,JSON.stringify(size));}
   for(const heading of [page.locator('.phone h2'),page.locator('.saved-article h3').first()]){const box=await heading.boundingBox();assert(box&&box.y>=0&&box.y+box.height<=height, 'Full arrival and first item headings in first viewport '+JSON.stringify({theme,width,box}));}
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
   const initial=`${theme}-${width}-initial.png`;await page.screenshot({path:out+'/'+initial});report.captures.push({path:initial,sha256:createHash('sha256').update(await readFile(out+'/'+initial)).digest('hex')});

@@ -1,0 +1,157 @@
+{
+  "candidateSha": "2a62ee3d663842c45f032d6ec402bd436b25b571",
+  "workingTreeDirty": true,
+  "scope": "Browser sample only; no APK installation, emulator or actual Pleos SDK evidence.",
+  "captures": [
+    {
+      "path": "continue-day-320.png",
+      "sha256": "60e46b904249543ec7a01fae9ad3352601c679ce5177880972e28ab3b1eeeb10"
+    },
+    {
+      "path": "continue-day-390.png",
+      "sha256": "d9ea42ce94a96ef7e220c2f154ab2dcd45b78d34398c4149b7d59020dbfa1fd5"
+    },
+    {
+      "path": "continue-night-320.png",
+      "sha256": "2e1a6f1470f7c68cc4cb3d79cf221de980209a84bb4cddcdbc72120ce8b7c2d3"
+    },
+    {
+      "path": "continue-night-390.png",
+      "sha256": "66ae945cba456e44026803a4b7d460de47fc629e01838c7e978d72144bd554c0"
+    },
+    {
+      "path": "day-320-initial.png",
+      "sha256": "56e9fc5c0b00c20fef18e079420acb066e39eda4b940af1a06dee98e0b913c81"
+    },
+    {
+      "path": "day-320-saved.png",
+      "sha256": "2086f34c28968052f96eee6dd6206e52f3107bb7a6fa4793c631d633cde02393"
+    },
+    {
+      "path": "day-320-control.png",
+      "sha256": "6540d0f397e91ee0e53d3b8982fb13366b94fde662d3c178d464947e79bf95c1"
+    },
+    {
+      "path": "day-320-target.png",
+      "sha256": "2086f34c28968052f96eee6dd6206e52f3107bb7a6fa4793c631d633cde02393"
+    },
+    {
+      "path": "day-390-initial.png",
+      "sha256": "4d98812fc721f5289d8f03d1791d8debabbf24ef0ad185297caa7a029a6eed79"
+    },
+    {
+      "path": "day-390-saved.png",
+      "sha256": "48afdee9ee735ce51298d5d134a42379c6c541392af32c61c6a62c72875549c3"
+    },
+    {
+      "path": "day-390-control.png",
+      "sha256": "4d660c00a3feaef3aa38f2a9d58fbac3b549f0c06a24377e261548ec4a3e5892"
+    },
+    {
+      "path": "day-390-target.png",
+      "sha256": "48afdee9ee735ce51298d5d134a42379c6c541392af32c61c6a62c72875549c3"
+    },
+    {
+      "path": "night-320-initial.png",
+      "sha256": "11753e13763c4733d0a31ab66dedeaa5b94c23b7c08d6fea26411dc8f98084d4"
+    },
+    {
+      "path": "night-320-saved.png",
+      "sha256": "746713ff5608001238affb5b60f159c94420a14767188ba573bd8cefc85810ef"
+    },
+    {
+      "path": "night-320-control.png",
+      "sha256": "badf154c30d1fa6b5a122340f904ab4fe7685f0eb0975ee630df3fb7d343a111"
+    },
+    {
+      "path": "night-320-target.png",
+      "sha256": "746713ff5608001238affb5b60f159c94420a14767188ba573bd8cefc85810ef"
+    },
+    {
+      "path": "night-390-initial.png",
+      "sha256": "4b01fb6661c472bf590ca99cfc5b0ffaaaa6ee1df6d4bc144dc3589c893381f0"
+    },
+    {
+      "path": "night-390-saved.png",
+      "sha256": "ae3f0ed5d8f708c8aba50520c72f2e25b11395abdd9366f6c1a02cb123abc082"
+    },
+    {
+      "path": "night-390-control.png",
+      "sha256": "017977fd4974c8e1c5920d671f6dbeb0ca400f24e9e295810cd06635e961dbe3"
+    },
+    {
+      "path": "night-390-target.png",
+      "sha256": "ae3f0ed5d8f708c8aba50520c72f2e25b11395abdd9366f6c1a02cb123abc082"
+    }
+  ],
+  "checkedAt": "2026-11-06T23:22:03.173Z",
+  "htmlSha256": "6494883588a565ef6f25308e499983d2cbf4508e16c7e9d7b9613b60827f7bea",
+  "sourceSha256": {
+    "examples/before-arrival/index.tsx": "e93c4cd51addc1baf473aa53e4c1c7fdd294037f73ae258383f76f18da6eba2a",
+    "examples/before-arrival/saved-undo.ts": "490487beec45fd64f3ca05f302670060bb876054413995f7a4fee9dfc2805afc",
+    "examples/before-arrival/showcase.css": "59d80e2c8ab08744c06110a4818e0faedcfdd841e0252859ab5324198e505467",
+    "saved-position-browser-verify.mjs": "6507c482c0e669a0aeaaec4ddef80e2705e5b19a127d42fc02e96bdbf158f933",
+    "package.json": "0838542a0bf4c71374cda15a38310f074b49c8a9397edd9d4b985b776aa3c96b"
+  },
+  "upstream": "official snapshots registered through UI; no external network",
+  "checks": [
+    "Continuation: full-order wrap excluding anchor, hidden anchor, search/source/review filters, no position/deleted/no other unread, reload without auto-jump, unchanged complete storage, no playback/popups, stale handlers across both safety transitions.",
+    "Reveal: each filter and all combinations, reset storage failures, reload without auto-jump, keyboard, reduced motion, batched safety transition and stale callbacks; hidden control layout captures.",
+    "Clear normal/hidden/deleted positions, remove failure/retry, other localStorage unchanged, reload, keyboard focus and stale clear callbacks; first-viewport headings at 320x960/390x1080 day/night. ",
+    "32 fixed items: position replacement, reload without auto-jump, write failure/retry, source/search/unread combinations, deleted target/undo, stale save/jump callbacks before/after restricted/unknown, unchanged registry/URLs/order/review, day/night 320/390 Tab/Enter/Space and reduced-motion immediate title focus."
+  ],
+  "readability": [
+    {
+      "theme": "day",
+      "width": 320,
+      "height": 44,
+      "button": {
+        "font": 16,
+        "contrast": 18.263144269082044
+      },
+      "reason": {
+        "font": 16,
+        "contrast": 17.442218774298816
+      }
+    },
+    {
+      "theme": "day",
+      "width": 390,
+      "height": 44,
+      "button": {
+        "font": 16,
+        "contrast": 18.263144269082044
+      },
+      "reason": {
+        "font": 16,
+        "contrast": 17.442218774298816
+      }
+    },
+    {
+      "theme": "night",
+      "width": 320,
+      "height": 44,
+      "button": {
+        "font": 16,
+        "contrast": 5.32921162976606
+      },
+      "reason": {
+        "font": 16,
+        "contrast": 15.251694958229084
+      }
+    },
+    {
+      "theme": "night",
+      "width": 390,
+      "height": 44,
+      "button": {
+        "font": 16,
+        "contrast": 5.32921162976606
+      },
+      "reason": {
+        "font": 16,
+        "contrast": 15.251694958229084
+      }
+    }
+  ]
+}
