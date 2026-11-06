@@ -1,0 +1,25 @@
+
+> verify:local-app
+> node local-app-browser-verify.mjs
+
+file:///tmp/before-arrival-loop-odcywa3f/repo/showcase/local-app-browser-verify.mjs:11
+const port=await new Promise((resolve,reject)=>{let text='';const timeout=setTimeout(()=>reject(new Error('Local test server startup timeout')),5000);child.stdout.on('data',data=>{text+=data;if(text.includes('\n')){clearTimeout(timeout);resolve(Number(text.trim().split('\n')[0]));}});child.on('exit',code=>{clearTimeout(timeout);reject(new Error(`Local server exited ${code}: ${childError}`));});});
+                                                                                                                                                                                                                                                                                                                                                 ^
+
+Error: Local server exited 1: Traceback (most recent call last):
+  File "<string>", line 11, in <module>
+  File "/tmp/before-arrival-loop-odcywa3f/repo/showcase/app_server.py", line 221, in make_server
+    server = ThreadingHTTPServer(("127.0.0.1", port), LocalAppHandler)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/socketserver.py", line 453, in __init__
+    self.socket = socket.socket(self.address_family,
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/socket.py", line 233, in __init__
+    _socket.socket.__init__(self, family, type, proto, fileno)
+PermissionError: [Errno 1] Operation not permitted
+
+    at ChildProcess.<anonymous> (file:///tmp/before-arrival-loop-odcywa3f/repo/showcase/local-app-browser-verify.mjs:11:338)
+    at ChildProcess.emit (node:events:519:28)
+    at ChildProcess._handle.onexit (node:internal/child_process:293:12)
+
+Node.js v22.23.4

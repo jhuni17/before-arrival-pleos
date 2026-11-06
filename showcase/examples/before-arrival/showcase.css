@@ -667,3 +667,7 @@ select:focus-visible {
 
 .saved-review{margin-right:8px;max-width:100%;white-space:normal}
 .phone .saved-count,.phone .saved-review-status{color:var(--text);font-weight:600}
+
+.saved-filters{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0;color:var(--text)}
+.saved-filters button,.empty-saved button{min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text)}
+.saved-filters button[aria-pressed="true"]{background:var(--button);color:var(--on-button);font-weight:700}

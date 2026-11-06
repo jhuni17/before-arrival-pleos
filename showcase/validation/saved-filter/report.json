@@ -1,0 +1,23 @@
+{
+  "checkedAt": "2026-11-06T02:38:57.755045+00:00",
+  "baseCandidateSha": "23544b71fc4fce3813a92afcb67420d2127c6b51",
+  "workingTree": "uncommitted; no new candidate commit created",
+  "sha256": {
+    "examples/before-arrival/index.tsx": "449bccbf203272f95e4878d086603b466b01c33b1547a0a2a4ad596eb36d533e",
+    "examples/before-arrival/showcase.css": "9fe452265339f5373205593dd098f89ed6097d6a671426703dd8d13d1976dfff",
+    "saved-undo-browser-verify.mjs": "3be3628797bb7a3ed2a268fece906027b1fb6c6cc2b558d47f5a2dc8b78285ed",
+    "before-arrival-showcase.html": "d2cf5c726962c9441ae01379cbeb20e4384d5ee5a4f0ccdeb6e83eb5809f5e3d",
+    "assets/fonts/OFL.txt": "2448ea782a6364d571a4848c34db8a042311f44c78cf00265888db19ea10d5a4"
+  },
+  "passed": [
+    "npm run build",
+    "npm run verify",
+    "git diff --check"
+  ],
+  "blocked": {
+    "npm run verify:server": "16 tests ran; socket server setup denied with PermissionError: Operation not permitted",
+    "fourExistingBrowserChecks": "verify:local-app, verify:arrival, verify:refresh-feedback, verify:saved-undo attempted; localhost listen denied (EPERM). Browser assertions and captures not reached."
+  },
+  "captures": [],
+  "scope": "showcase browser prototype only; no APK, emulator or real Pleos SDK validation"
+}
