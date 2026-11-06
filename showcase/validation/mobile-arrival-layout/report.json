@@ -1,0 +1,50 @@
+{
+  "baseSha": "c72c3a5f4286cbdbb2fc6ea7287fd85eb8cd69ac",
+  "workingTreeDirty": true,
+  "scope": "Browser sample CSS layout only; no Android, emulator, actual Pleos SDK or submission-readiness evidence. Full showcase regression and candidate SHA linkage remain for GitHub CI.",
+  "sha256": {
+    "showcase/examples/before-arrival/showcase.css": "09896a44cd9f710576d6fe2e3bd9cde4fcb7b3ef2d66159a424f86480f8cac42",
+    "showcase/before-arrival-showcase.html": "0d1b98208af66f6830889aa195edd81b49e90367fcfe688f97b88041b683805c",
+    "showcase/saved-position-browser-verify.mjs": "b2ac24c84cab405808b7cc24eb235834dbd388089627dc53646b112285d10dc5",
+    "showcase/arrival-browser-verify.mjs": "43f3e3ab731e092d48b7eedac9749bae91a0151b8f56bf36e9bd0b29badcf2ba",
+    "showcase/package.json": "fe40d207eb1e32741d7d8497e961940c0543588fea38a2b4447b4dfd51dec6e1"
+  },
+  "checks": {
+    "npm run build": "PASS",
+    "git diff --check": "PASS",
+    "node saved-position-browser-verify.mjs": "BLOCKED: page.goto timed out at load(), before final layout checks; no assertion changed.",
+    "npm run verify:saved-undo": "BLOCKED: saved-delete undo passed; saved-search page.reload timed out, so subsequent chain did not run.",
+    "npm run verify:arrival": "BLOCKED: opening page.goto timed out.",
+    "node review-next-browser-verify.mjs": "BLOCKED: settings page.goto timed out.",
+    "node reviewed-filter-browser-verify.mjs": "BLOCKED: settings page.goto timed out.",
+    "focused hidden-position layout": "PASS: existing 32-item fixture, save position 17 then search 짝수, scrollY=0; full arrival and first saved headings, >=16px search/filter/position control fonts, >=44px control heights, no horizontal overflow; day/night 320x960 and 390x1080."
+  },
+  "browser": "Existing CHROMIUM_PATH, explicitly falling back to ~/.local/share/before-arrival-runner/bin/chromium when absent.",
+  "notes": [
+    "Focused harness extracted setup and 32-item fixture from unchanged saved-position-browser-verify.mjs; limited to the changed layout. Existing complete checks remain blocked by navigation timeouts.",
+    "Colors, functionality, text, touch-height rules, licenses and verification criteria unchanged."
+  ],
+  "focusedHarnessSha256": "c0d7c13a35b2e7bb281cac4288dbbcf52f0f94654bee62a1d4f44c5fb40d2354",
+  "firstTitleBottomPx": {
+    "320x960": 955.921875,
+    "390x1080": 905.921875
+  },
+  "captures": [
+    {
+      "path": "day-320.png",
+      "sha256": "a6e838b6df34b043016b19a6bf38ae783fee4f504caded9195ff61b591ecf2ce"
+    },
+    {
+      "path": "day-390.png",
+      "sha256": "21349b9eb13cd91e05d401294d0149292334898fd89e01ea7670540bd5733456"
+    },
+    {
+      "path": "night-320.png",
+      "sha256": "337e5d790c12f5acfd2342457d2a4331668b852e8d23f9f7d9ce2c6c70640c86"
+    },
+    {
+      "path": "night-390.png",
+      "sha256": "0ac0ced74c3fa3644dee8efb482ba10306da7bf82c3abe2ec17f76b518b4a8d8"
+    }
+  ]
+}

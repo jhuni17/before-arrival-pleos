@@ -665,7 +665,7 @@ select:focus-visible {
  .secondary { min-height: 48px; margin-top: 4px; }
  /* Keep the first saved title in the arrival viewport without shrinking controls. */
  .ba-page:has(.scene-composition[data-arrived="true"]) .intro { padding: 0; }
- .scene-composition[data-arrived="true"] .phone-app { padding-top: 4px; }
+ .scene-composition[data-arrived="true"] .phone-app { padding: 4px 4px 20px; }
  .scene-composition[data-arrived="true"] .phone h2 { margin: 4px 0; }
  .scene-composition[data-arrived="true"] .local-only { padding: 8px; font-size: 12px; }
 }
@@ -723,9 +723,12 @@ select:focus-visible {
 
 @media (max-width:760px){
  /* Fit the explicit filtered-position action above the first saved title. */
- .scene-composition[data-arrived="true"] .local-only{padding:4px 8px}
+ .scene-composition[data-arrived="true"] .local-only{padding:4px 8px;margin:4px 0}
  .phone .saved-source{grid-template-columns:auto minmax(0,1fr);align-items:center;font-size:14px}
- .phone .saved-filters{gap:4px}
+ .phone .saved-search,.phone .saved-filters{margin:2px 0}
+ .phone .saved-filters{gap:4px;font-size:14px}
+ .phone .saved-filters [role="status"]{order:1;width:100%}
  .phone .saved-filters button,.phone .saved-position button{font-size:16px;padding:8px 6px}
  .phone .saved-search{gap:4px;font-size:14px}
+ .phone .saved-search button{font-size:16px;padding-inline:6px}
 }
