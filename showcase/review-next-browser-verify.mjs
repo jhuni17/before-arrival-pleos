@@ -26,7 +26,7 @@ try{
  async function advance(i,to,method='Enter'){
   const before=await read(page);await button(i).focus();await page.keyboard.press(method);
   assert.deepEqual(await read(page),{...before,savedItems:before.savedItems.map((item,j)=>j===i?{...item,reviewed:true}:item)});
-  assert.equal(await page.evaluate(()=>document.activeElement.textContent),to===null?'현재 조건에 맞는 미확인 소식이 없어요. 모두 확인했어요.':fixture.savedItems[to].title);
+  assert.equal(await page.evaluate(()=>document.activeElement.textContent),to===null?((await read(page)).savedItems.some(item=>item.reviewed!==true)?`현재 조건에 맞는 미확인 소식이 없어요. 전체 미확인 ${(await read(page)).savedItems.filter(item=>item.reviewed!==true).length}건 · 조건 모두 지우기로 확인해 주세요.`:'현재 조건에 맞는 미확인 소식이 없어요. 모두 확인했어요.'):fixture.savedItems[to].title);
   assert.equal(await page.evaluate(()=>localStorage.getItem('before-arrival-saved-position-v1')),'unchanged');
  }
  for(const source of ['',fixture.savedItems[17].sourceId])for(const query of ['','홀수'])for(const unread of [false,true]){
@@ -34,6 +34,23 @@ try{
   const indices=data.savedItems.map((item,i)=>({item,i})).filter(({item})=>(!source||item.sourceId===source)&&item.title.includes(query)&&!item.reviewed).map(x=>x.i);
   if(indices.length)await advance(indices.at(-1),indices.length>1?indices[0]:null,'Space');
  }
+ // A reviewed source/title must not hide unread items behind an all-done notice.
+ for(const kind of ['source','search']){
+  const data=await load([1],2),beforePosition=await page.evaluate(()=>localStorage.getItem('before-arrival-saved-position-v1'));
+  if(kind==='source')await page.getByLabel('저장한 출처',{exact:true}).selectOption(data.savedItems[0].sourceId);
+  else await page.getByRole('searchbox').fill(data.savedItems[0].title);
+  assert.equal(await page.locator('.saved-article').count(),1);
+  assert.match(await page.locator('#saved-next-help').innerText(),/현재 조건에 맞는 미확인 소식이 없어요.*전체 미확인 1건/);
+  assert.doesNotMatch(await page.locator('#saved-next-help').innerText(),/모두 확인했어요/);
+  assert.deepEqual(await read(page),data);
+  await page.getByRole('button',{name:'조건 모두 지우기',exact:true}).click();
+  assert.equal(await page.locator('.saved-article').count(),2);assert.equal(await page.locator('#saved-next-help').count(),0);
+  assert.deepEqual(await read(page),data);assert.equal(await page.evaluate(()=>localStorage.getItem('before-arrival-saved-position-v1')),beforePosition);
+  assert.equal(await page.locator('.primary').getAttribute('aria-pressed'),'false');
+ }
+ await load([],0);assert.equal(await page.locator('#saved-next-help').innerText(),'저장한 소식이 없어요.');
+ await load([],2);assert.match(await page.locator('#saved-next-help').innerText(),/모두 확인했어요/);
+ await page.getByRole('button',{name:'확인 완료만',exact:true}).click();assert.match(await page.locator('#saved-next-help').innerText(),/확인 완료만에서는/);
  await load([],0);assert.equal(await page.locator('.saved-review-next').count(),0);
  await load([0],1);await advance(0,null);await page.getByRole('button',{name:'확인 실행 취소',exact:true}).click();assert.equal((await read(page)).savedItems[0].reviewed,false);await advance(0,null);await page.reload();assert.equal((await read(page)).savedItems[0].reviewed,true);
  await load([2,17,31]);await button(2).focus();const before=await read(page);
@@ -47,11 +64,16 @@ try{
  }
  await page.emulateMedia({reducedMotion:'reduce'});
  for(const theme of ['day','night'])for(const [width,height] of [[320,960],[390,1080]]){
-  await load([2,17,31]);await page.setViewportSize({width,height});await page.goto(base+'/?state=arrived&theme='+theme);await button(2).scrollIntoViewIfNeeded();await tabTo(page,button(2));await page.evaluate(()=>document.fonts.ready);
+  await load([2,17,31]);await page.setViewportSize({width,height});await page.goto(base+'/?state=arrived&theme='+theme);await page.evaluate(()=>document.fonts.ready);
+  const firstTitle=await page.locator('.saved-article h3').first().boundingBox();assert(firstTitle&&firstTitle.y>=0&&firstTitle.y+firstTitle.height<=height);
+  const controls=await page.locator('.saved-filters button,.saved-search button,.saved-search input,.saved-position button').evaluateAll(els=>els.filter(el=>el.getBoundingClientRect().height).map(el=>({font:parseFloat(getComputedStyle(el).fontSize),height:el.getBoundingClientRect().height})));
+  assert(controls.every(control=>control.font>=16&&control.height>=44));
+  const arrival=theme+'-'+width+'-arrival.png';await page.screenshot({path:out+'/'+arrival});report.captures.push({path:arrival,sha256:createHash('sha256').update(await readFile(out+'/'+arrival)).digest('hex')});
+  await button(2).scrollIntoViewIfNeeded();await tabTo(page,button(2));await page.evaluate(()=>document.fonts.ready);
   assert.notEqual(await button(2).evaluate(el=>getComputedStyle(el).outlineStyle),'none');await advance(2,17);
   const box=await page.locator('.saved-article h3:focus').boundingBox();assert(box&&box.y>=0&&box.y+box.height<=height);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
   const path=theme+'-'+width+'-review-next.png';await page.screenshot({path:out+'/'+path});report.captures.push({path,sha256:createHash('sha256').update(await readFile(out+'/'+path)).digest('hex')});
  }
- report.checks.push('0/1/32; source/search/unread combinations; wrap; exact single-item persistence; keyboard; failure/retry; reload/undo; unchanged position; restricted/unknown stale handlers; day/night 320x960 and 390x1080 focus/overflow.');
+ report.checks.push('Hidden unread source/search guidance and total; reset reveals unread without registry/position changes; empty/all-reviewed/reviewed-only guidance; 0/1/32; source/search/unread combinations; wrap; exact single-item persistence; keyboard; failure/retry; reload/undo; unchanged position; restricted/unknown stale handlers; day/night 320x960 and 390x1080 focus/overflow.');
  await writeFile(out+'/review-next-report.json',JSON.stringify(report,null,2)+'\n');console.log('PASS: review and next unread');
 }finally{await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}
