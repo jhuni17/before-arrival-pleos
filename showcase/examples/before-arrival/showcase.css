@@ -732,3 +732,5 @@ select:focus-visible {
  .phone .saved-search{gap:4px;font-size:14px}
  .phone .saved-search button{font-size:16px;padding-inline:6px}
 }
+
+.phone .saved-capacity-reviewed{display:block;min-height:44px;max-width:100%;padding:8px 6px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font:inherit;font-size:16px;white-space:normal}
