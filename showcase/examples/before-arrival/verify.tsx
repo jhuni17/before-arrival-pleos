@@ -118,3 +118,21 @@ const reviewRemoval=prepareSavedRemoval(reviewReload,reviewA)!;
 assert.deepEqual(prepareSavedRestore(reviewRemoval.next,reviewRemoval.removal).next,reviewReload);
 assert.equal(toggleSavedReview(reviewReload,undoD),reviewReload);
 console.log("PASS: existing saved items unread; explicit review 2→1, reload, revert, unchanged content/order, duplicate save, delete undo preserves review and missing target no-op.");
+
+// Mixed pre-removal records must never reset unaffected user data.
+const retiredExamples=[['soop','https://ch.sooplive.co.kr/official'],['dcinside','https://gall.dcinside.com/board/lists/?id=game'],['fmkorea','https://www.fmkorea.com/game']];
+let mixed=toggleSource(state,'sample-game',false);
+const retiredSources=retiredExamples.map(([provider,url])=>({id:'url:'+url,name:'과거 출처',provider,kind:'board',registrationUrl:url,status:'link_saved',enabled:true,items:[]}));
+const retiredSaved=retiredSources.map((s,i)=>({...lol.items[0],id:'historical-'+i,sourceId:s.id,originalUrl:s.registrationUrl,provenance:'link_saved'}));
+const mixedRecord={...mixed,sources:[retiredSources[0],...mixed.sources,retiredSources[1],retiredSources[2]],savedItems:[...mixed.savedItems,...retiredSaved]};
+const reload=(value:unknown)=>readRegistry({getItem:key=>key===registryKey?JSON.stringify(value):null});
+const cleaned=reload(mixedRecord);
+assert.deepEqual(cleaned.sources,mixed.sources);
+assert.deepEqual(cleaned.savedItems.slice(0,mixed.savedItems.length),mixed.savedItems);
+assert.equal(cleaned.savedItems.length,mixedRecord.savedItems.length);
+assert(cleaned.savedItems.slice(-3).every(i=>i.provenance==='historical_saved'));
+assert.deepEqual(reload(cleaned),cleaned);
+for(const [provider,url] of retiredExamples)assert.throws(()=>addSource(defaults(),provider,'removed',url));
+assert.equal(reload({...mixedRecord,sources:[null,...mixedRecord.sources,{id:'broken'}]}).sources.length,mixed.sources.length);
+assert.equal(reload({...cleaned,savedItems:[{...retiredSaved[0],originalUrl:'https://evil.test/'}]}).savedItems.length,0);
+console.log('PASS: retired provider rejection, mixed-record migration, unaffected order/enabled/saved preservation, historical saved reload and unsafe URL rejection.');

@@ -30,7 +30,8 @@
         "https://sotong.sooplive.com/?b_no=9999&board_type=servicenotice&check_content=true&check_title=true&page=1&search_word=%EC%A0%84%EC%9E%90&work=view"
       ],
       "confirmed": "Official 2026-08-18 notice describes Docs consolidation and registration scope model: Public without separate approval, Consent with prior approval.",
-      "notVerified": "Developer site has no readable body in available research tool; exact streamer-news endpoints and scopes remain unconfirmed."
+      "notVerified": "Developer site has no readable body in available research tool; exact streamer-news endpoints and scopes remain unconfirmed.",
+      "status": "historical_removed_not_supported"
     },
     {
       "provider": "navercafe",
@@ -42,13 +43,16 @@
       "provider": "dcinside",
       "docs": "https://www.dcinside.com/",
       "confirmed": "Official public homepage inspected; gallery URL registration can be retained.",
-      "notVerified": "No published official automatic popular-post API established by official-site/doc search; do not infer absence universally."
+      "notVerified": "No published official automatic popular-post API established by official-site/doc search; do not infer absence universally.",
+      "status": "historical_removed_not_supported"
     },
     {
       "provider": "fmkorea",
       "docs": "https://www.fmkorea.com/",
       "confirmed": "Official homepage access attempted.",
-      "notVerified": "Research fetch429; no official automatic popular-board API established. No login/cookie workaround attempted."
+      "notVerified": "Research fetch429; no official automatic popular-board API established. No login/cookie workaround attempted.",
+      "status": "historical_removed_not_supported"
     }
-  ]
+  ],
+  "scopeNote": "Historical research dated 2026-11-05, not current supported-provider list. Retired services are not offered; credentials and source terms have not been newly verified."
 }

@@ -36,6 +36,21 @@ public class CatalogTest {
         catalog = new ContentCatalog(defaults, preferences);
     }
 
+    @Test public void sharedPickerRetainsOfficialProvidersAndRejectsRetiredRegistrations() throws Exception {
+        assertEquals(7, catalog.providers.size());
+        for (String id : new String[]{"steam", "lol", "valorant", "maple", "youtube", "chzzk", "navercafe"})
+            assertNotNull(catalog.provider(id));
+        String[][] retired = {{"soop", "https://ch.sooplive.co.kr/official"},
+                {"dcinside", "https://gall.dcinside.com/board/lists/?id=game"},
+                {"fmkorea", "https://www.fmkorea.com/game"}};
+        for (String[] entry : retired) {
+            assertNull(catalog.provider(entry[0]));
+            try { catalog.add("과거 출처", entry[0], entry[1]); fail(entry[0]); }
+            catch (IllegalArgumentException expected) { }
+        }
+        assertEquals(3, catalog.sources.size());
+    }
+
     @Test public void migrationRunsOnceAndRetainsEnabledPriorityAndEverySavedEnum() throws Exception {
         preferences.edit().clear().putBoolean("enabled_GAME", false).putString("priority", "COMMUNITY")
                 .putStringSet("saved", Set.of("GAME", "SCHEDULE", "COMMUNITY")).commit();

@@ -5,6 +5,11 @@ export type RegisteredSource = {id:string; name:string; provider:string; kind:st
 export type SavedItem = ContentItem & {reviewed?:boolean};
 export type Registry = {schemaVersion:2; sources:RegisteredSource[]; savedItems:SavedItem[]};
 export const providers = seed.providers as Provider[];
+// Read-only migration allowlist; never offered for registration or refresh.
+const retiredPatterns:Record<string,string> = {"soop": "^https://ch\\.sooplive\\.co\\.kr/[A-Za-z0-9_]{1,30}/?$", "dcinside": "^https://gall\\.dcinside\\.com/(?:mgallery/|mini/)?board/lists/\\?id=[A-Za-z0-9_]{1,80}$", "fmkorea": "^https://www\\.fmkorea\\.com/[A-Za-z][A-Za-z0-9_]{0,79}/?$"};
+function retiredUrl(provider:string,value:string):boolean {
+  try {const url=new URL(value);return url.protocol==="https:"&&!url.username&&!url.password&&!url.hash&&value.length<=512&&Boolean(retiredPatterns[provider]&&new RegExp(retiredPatterns[provider]).test(value));} catch {return false;}
+}
 export const registryKey = "before-arrival-sources-v2";
 export const oldKey = "before-arrival-showcase-v1";
 const clone = <T,>(value:T):T => JSON.parse(JSON.stringify(value));
@@ -101,15 +106,25 @@ export function statusText(source:RegisteredSource) {
 }
 export function sourceName(state:Registry,item:ContentItem) {return state.sources.find(s=>s.id===item.sourceId)?.name||"저장한 출처";}
 function validItem(item:any,source:RegisteredSource) {
-  return typeof item?.id==="string"&&item.sourceId===source.id&&typeof item.title==="string"&&item.title.length>0&&item.title.length<=500&&typeof item.summary==="string"&&item.summary.length<=2000&&Number.isInteger(item.estimatedSeconds)&&item.estimatedSeconds>0&&item.estimatedSeconds<=3600&&(!item.originalUrl||officialUrl(source.provider,item.originalUrl,source.registrationUrl));
+  return typeof item?.id==="string"&&item.sourceId===source.id&&typeof item.title==="string"&&item.title.length>0&&item.title.length<=500&&typeof item.summary==="string"&&item.summary.length<=2000&&Number.isInteger(item.estimatedSeconds)&&item.estimatedSeconds>0&&item.estimatedSeconds<=3600&&(!item.originalUrl||officialUrl(source.provider,item.originalUrl,source.registrationUrl)||(item.provenance==="historical_saved"&&retiredUrl(source.provider,item.originalUrl)));
 }
 export function readRegistry(storage:Pick<Storage,"getItem">):Registry {
   try {
     const value=JSON.parse(storage.getItem(registryKey)||"null");
     if(value?.schemaVersion===2&&Array.isArray(value.sources)&&value.sources.length<=100&&Array.isArray(value.savedItems)) {
-      const valid=value.sources.every((s:any)=>typeof s?.id==="string"&&typeof s.name==="string"&&s.name.length<=80&&typeof s.enabled==="boolean"&&Array.isArray(s.items)&&s.items.length<=50&&(s.provider==="sample"?seed.sources.some(v=>v.id===s.id):providers.some(p=>p.id===s.provider&&typeof s.registrationUrl==="string"&&new RegExp(p.urlPattern).test(s.registrationUrl)))&&s.items.every((item:any)=>validItem(item,s)));
-      if(valid) return {...value,savedItems:value.savedItems.filter((i:any)=>{
-        let source=value.sources.find((s:RegisteredSource)=>s.id===i?.sourceId);
+      const sources=value.sources.filter((s:any)=>typeof s?.id==="string"&&typeof s.name==="string"&&s.name.length<=80&&typeof s.enabled==="boolean"&&Array.isArray(s.items)&&s.items.length<=50&&(s.provider==="sample"?seed.sources.some(v=>v.id===s.id):providers.some(p=>p.id===s.provider&&typeof s.registrationUrl==="string"&&new RegExp(p.urlPattern).test(s.registrationUrl)))&&s.items.every((item:any)=>validItem(item,s)));
+      return {...value,sources,savedItems:value.savedItems.map((i:any)=>{
+        const retired=value.sources.find((s:any)=>s&&i&&s.id===i.sourceId&&retiredUrl(s.provider,s.registrationUrl));
+        const orphanProvider=typeof i?.sourceId==="string"&&i.sourceId.startsWith("url:")?Object.keys(retiredPatterns).find(p=>retiredUrl(p,i.sourceId.slice(4))):undefined;
+        return retired||orphanProvider?{...i,provenance:"historical_saved"}:i;
+      }).filter((i:any)=>{
+        let source=sources.find((s:RegisteredSource)=>s.id===i?.sourceId);
+        if(!source&&i?.provenance==="historical_saved"&&typeof i.sourceId==="string") {
+          const old=value.sources.find((s:any)=>s?.id===i.sourceId&&retiredUrl(s.provider,s.registrationUrl));
+          const registrationUrl=i.sourceId.startsWith("url:")?i.sourceId.slice(4):"";
+          const provider=Object.keys(retiredPatterns).find(p=>retiredUrl(p,registrationUrl));
+          source=old||(provider?{id:i.sourceId,provider,registrationUrl}:undefined);
+        }
         if(!source&&typeof i?.sourceId==="string"){
           // Deleted registrations still have a canonical source ID; validate their saved URLs.
           source=seed.sources.find(s=>s.id===i.sourceId);

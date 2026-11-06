@@ -44,32 +44,11 @@
       "urlPattern": "^https://chzzk\\.naver\\.com/[a-f0-9]{32}/?$"
     },
     {
-      "id": "soop",
-      "label": "SOOP 스트리머",
-      "kind": "channel",
-      "suggestedUrl": "",
-      "urlPattern": "^https://ch\\.sooplive\\.co\\.kr/[A-Za-z0-9_]{1,30}/?$"
-    },
-    {
       "id": "navercafe",
       "label": "네이버 카페",
       "kind": "board",
       "suggestedUrl": "",
       "urlPattern": "^https://cafe\\.naver\\.com/(?:[A-Za-z0-9_]{1,80}|f-e/cafes/[0-9]+/menus/[0-9]+)/?$"
-    },
-    {
-      "id": "dcinside",
-      "label": "디시인사이드 갤러리",
-      "kind": "board",
-      "suggestedUrl": "",
-      "urlPattern": "^https://gall\\.dcinside\\.com/(?:mgallery/|mini/)?board/lists/\\?id=[A-Za-z0-9_]{1,80}$"
-    },
-    {
-      "id": "fmkorea",
-      "label": "에펨코리아 게시판",
-      "kind": "board",
-      "suggestedUrl": "",
-      "urlPattern": "^https://www\\.fmkorea\\.com/[A-Za-z][A-Za-z0-9_]{0,79}/?$"
     }
   ],
   "sources": [

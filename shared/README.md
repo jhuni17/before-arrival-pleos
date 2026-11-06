@@ -2,7 +2,7 @@
 
 `catalog.json`은 브라우저 빌드와 Android assets가 같은 바이트를 읽는 기본 카탈로그다. Android는 `app`의 assets sourceSet에 `../../shared`를 추가한다. 개별 기기에 저장한 설정을 공유하거나 서버에 보내는 파일이 아니다.
 
-- `providers`: 등록 가능한 공식 HTTPS 주소 패턴, 표시 이름, 출처 종류, 예시 주소. URL 자격증명·임의 호스트·추적/토큰 쿼리는 저장하지 않는다. 디시 등록의 공개 게시판 `id` 쿼리만 허용한다.
+- `providers`: 등록 가능한 공식 HTTPS 주소 패턴, 표시 이름, 출처 종류, 예시 주소. URL 자격증명·임의 호스트·추적/토큰 쿼리는 저장하지 않는다.
 - `sources`: 안정 ID, 이름, 제공자, 종류, 등록 URL, 사용 여부, 상태, 항목 목록. 배열 순서가 사용자 순서다.
 - `items`: `id/sourceId/title/publishedAt/publishedPrecision/originalUrl/summary/estimatedSeconds/deadlineAt/provenance/fetchedAt`. 시간 미제공은 null, 날짜만 확인된 메이플 소식은 YYYY-MM-DD 그대로이며 시간을 만들지 않는다. ETA는 초, 듣기 예산은 max45초이며 도착3분 여유를 뺀 나머지의20%다. 10분 이내 마감 항목을 먼저 둔 뒤 출처 순서와 예산으로 고른다.
 - `snapshots`: 공식 페이지에서 직접 확인해 가져온 기사3개. 앱의 네트워크 갱신 결과가 아니다. 출처를 등록하면 해당 공식 디렉터리와 일치하는 snapshot을 연결한다. 게시 시각·원문·확인 시각을 유지한다.
@@ -11,4 +11,4 @@
 
 출처 상태는 예시, 가져온 공식 스냅샷, 실제 갱신 성공, 설정 필요, 링크 저장으로 구분한다. Steam public GetNewsForApp v2만 실제 실행 경로가 구현됐다. 고정 HTTPS 목적지·공개 appID·응답256KiB·최대50검사/20보관·5~6초 제한·리다이렉트/쿠키/자격증명 금지를 적용한다. 기존 통합 환경의403과 별개로 새 실행 환경에서 공식 feed의 HTTP200·5개 공지를 확인했다. 실제 관측한 CDN 호스트 `steamstore-a.akamaihd.net`의 `/news/externalpost/steam_community_announcements/<gid>`만 추가 허용하고 응답/항목 appid 및 경로 ID와 gid 일치를 검사한다. 정확한 응답·출처 기록은 evidence/steam-real-response*.json에 있다. 이 통합 환경의 처리는 캡처한 응답의 재생이며 실제 앱 네트워크 성공이 아니다. 추출한 본문은 원문 발췌이며 한국어 생성 요약이나 실제 발화 실측으로 소개하지 않는다.
 
-`evidence/`는 공식 페이지 확인3건과 문서별 기능/제약의 근거다. 연구 도구가 읽은 공식 페이지와 앱 런타임 성공을 구분한다. YouTube·치지직·카페의 필요한 연결 설정, SOOP·게시판의 확인되지 않은 자동 연결 범위는 UI 상태로 안내한다. 세션·쿠키·브라우저 기록·비밀키를 읽거나 동봉하지 않는다.
+`evidence/`는 공식 페이지 확인3건과 문서별 기능/제약의 근거다. 연구 도구가 읽은 공식 페이지와 앱 런타임 성공을 구분한다. YouTube·치지직·카페는 연결 설정이 필요하며 아직 자동 수집하지 않는다. 제거된 제공자의 연구 기록은 역사적 증거다. 세션·쿠키·브라우저 기록·비밀키를 읽거나 동봉하지 않는다.
