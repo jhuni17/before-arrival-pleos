@@ -726,6 +726,6 @@ select:focus-visible {
  .scene-composition[data-arrived="true"] .local-only{padding:4px 8px}
  .phone .saved-source{grid-template-columns:auto minmax(0,1fr);align-items:center;font-size:14px}
  .phone .saved-filters{gap:4px}
- .phone .saved-filters button,.phone .saved-position button{font-size:14px;padding:8px 6px}
+ .phone .saved-filters button,.phone .saved-position button{font-size:16px;padding:8px 6px}
  .phone .saved-search{gap:4px;font-size:14px}
 }
