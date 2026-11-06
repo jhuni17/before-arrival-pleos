@@ -20,7 +20,9 @@ try{
  for(const [provider,name] of [['lol','롤'],['valorant','발로란트'],['maple','메이플']]){await page.getByLabel('출처 서비스',{exact:true}).selectOption(provider);await page.getByLabel('출처 이름',{exact:true}).fill(name);await page.getByRole('button',{name:'출처 추가',exact:true}).click();}
  for(const title of [A,B,C])await saveDeferred(page,title);
  const seed=await read(page);seed.savedItems.push({...seed.savedItems[0],id:'search-test',originalUrl:'https://www.leagueoflegends.com/ko-kr/news/test/',title:'Alpha PATCH 한글'});
- await page.evaluate(({key,seed})=>localStorage.setItem(key,JSON.stringify(seed)),{key,seed});await page.reload();
+ await page.evaluate(({key,seed})=>localStorage.setItem(key,JSON.stringify(seed)),{key,seed});await page.goto(base+'/?state=arrived');
+ await page.locator('.scene-composition[data-arrived="true"]').waitFor({state:'visible'});
+ await page.getByRole('searchbox',{name:'저장한 제목 검색',exact:true}).waitFor({state:'visible'});
  let requests=0,popups=0;page.on('request',()=>requests++);page.on('popup',()=>popups++);
  await page.evaluate(()=>{const original=Storage.prototype.setItem;window.__writes=0;Storage.prototype.setItem=function(k,v){window.__writes++;if(window.__undoFailWrites)throw new DOMException('Denied','QuotaExceededError');return original.call(this,k,v);};});
  const search=page.getByRole('searchbox',{name:'저장한 제목 검색'}),clear=page.getByRole('button',{name:'검색 지우기',exact:true}),all=page.getByRole('button',{name:'전체',exact:true}),unread=page.getByRole('button',{name:'미확인만',exact:true});
