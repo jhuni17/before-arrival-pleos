@@ -665,6 +665,8 @@ select:focus-visible {
  .secondary { min-height: 48px; margin-top: 4px; }
  /* Keep the first saved title in the arrival viewport without shrinking controls. */
  .scene-composition[data-arrived="true"] .phone-app { padding-top: 4px; }
+ .scene-composition[data-arrived="true"] .phone h2 { margin: 4px 0; }
+ .scene-composition[data-arrived="true"] .local-only { padding: 8px; font-size: 12px; }
 }
 
 .saved-review{margin-right:8px;max-width:100%;white-space:normal}
@@ -710,3 +712,9 @@ select:focus-visible {
 
 .saved-review-next{min-height:48px;max-width:100%;white-space:normal;font:inherit}
 #saved-next-help:focus{outline:2px solid var(--text);outline-offset:4px}
+
+.phone .saved-capacity{margin:4px 0;font-size:12px;color:var(--text);overflow-wrap:anywhere}
+
+@media (max-width:760px){
+ .phone .saved-search,.phone .saved-filters{margin:4px 0}
+}

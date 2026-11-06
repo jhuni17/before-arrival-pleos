@@ -3,7 +3,7 @@ import {completedRefreshFeedback,failedRefreshFeedback} from "./refresh-feedback
 import {savedIdentity,toggleSavedReview,prepareSavedRemoval,prepareSavedRestore,type SavedRemoval} from "./saved-undo";
 import { Stage } from "../../kit/stage";
 import type { Act } from "../../kit/act";
-import { providers,defaults,registryKey,readRegistry,addSource,moveSource,toggleSource,planRegistry,saveItem,statusText,sourceName,refreshSteam,applyFeed,officialUrl,localSteamConnectionAvailable,type Registry,type ContentItem,type RegisteredSource } from "./catalog";
+import { savedItemLimit,providers,defaults,registryKey,readRegistry,addSource,moveSource,toggleSource,planRegistry,saveItem,statusText,sourceName,refreshSteam,applyFeed,officialUrl,localSteamConnectionAvailable,type Registry,type ContentItem,type RegisteredSource } from "./catalog";
 import "./showcase.css";
 export type Frame = "opening"|"saved"|"priority"|"arrived"|"settings"|"restricted"|"unknown";
 export type Scene = {frame:Frame};
@@ -157,6 +157,7 @@ function Pocket({frame,state,update,refresh,busy}:{frame:Frame;state:Registry;up
   else if(filter.mode==="unread")reviewFocus.current=neighbor?savedIdentity(neighbor):"";
  }
  return <aside className="phone" ref={pocket} aria-label={frame==="settings"?"이 브라우저 출처 설정":"이 브라우저 도착 후 확인"}><div className="phone-system">{frame==="settings"?"8:30":"9:00"}<span>휴대폰 모형 · 브라우저에서 동작</span></div><div className="phone-app"><span className="eyebrow">도착 전에</span><h2>{frame==="settings"?"내 출근길 출처":"도착해서 보기"}</h2><p className="local-only">현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨</p>
+ {frame==="arrived"&&<p className="saved-capacity" role="status">보관 {state.savedItems.length}/{savedItemLimit}건 · 전체 용량{state.savedItems.length>=savedItemLimit&&<span> · 항목 직접 삭제 후 저장을 재시도해 주세요.</span>}</p>}
  {frame==="arrived"&&<div className="saved-source"><label htmlFor="saved-source-filter">저장한 출처</label><select id="saved-source-filter" aria-describedby="saved-source-count-help" value={filter.sourceId} onChange={e=>filter.selectSource(e.target.value)}><option value="">전체 출처 · 미확인 {unreadTotal}건</option>{sourceOptions.map(source=><option key={source.id} value={source.id}>{source.name}{sourceOptions.filter(other=>other.name===source.name).length>1?` (${source.id})`:""} · 미확인 {unreadCounts.get(source.id)||0}건</option>)}</select><small id="saved-source-count-help">전체 저장 기준 · 검색/필터 무관</small></div>}
  {frame==="arrived"&&filter.notice&&<p className="saved-source-notice" role="status">{filter.notice} <button onClick={filter.retry}>출처 필터 저장 재시도</button></p>}
  {frame==="arrived"&&<div className="saved-search"><label htmlFor="saved-title-search">저장한 제목 검색</label><input ref={searchInput} id="saved-title-search" type="search" value={filter.query} onChange={e=>filter.search(e.target.value)}/><button onClick={()=>{filter.search("");searchInput.current?.focus();}}>검색 지우기</button></div>}
