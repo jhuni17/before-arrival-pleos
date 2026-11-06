@@ -43,9 +43,12 @@ final class ContentCatalog {
 
     static final class Item {
         final String id, sourceId, title, originalUrl, summary, provenance, publishedAt, publishedPrecision;
+        final String historicalProvider, historicalRegistrationUrl;
         final Instant deadlineAt, fetchedAt;
         final int estimatedSeconds;
         Item(JSONObject json) {
+            historicalProvider = json.optString("historicalProvider");
+            historicalRegistrationUrl = json.optString("historicalRegistrationUrl");
             id = json.optString("id"); sourceId = json.optString("sourceId"); title = json.optString("title");
             originalUrl = nullable(json, "originalUrl"); summary = json.optString("summary");
             provenance = json.optString("provenance"); estimatedSeconds = json.optInt("estimatedSeconds");
@@ -63,7 +66,8 @@ final class ContentCatalog {
                     .put("originalUrl", value(originalUrl)).put("summary", summary)
                     .put("provenance", provenance).put("estimatedSeconds", estimatedSeconds)
                     .put("publishedAt", value(publishedAt)).put("publishedPrecision", publishedPrecision).put("deadlineAt", value(deadlineAt))
-                    .put("fetchedAt", value(fetchedAt));
+                    .put("fetchedAt", value(fetchedAt)).put("historicalProvider", historicalProvider)
+                    .put("historicalRegistrationUrl", historicalRegistrationUrl);
         }
     }
 
@@ -136,10 +140,14 @@ final class ContentCatalog {
         } catch (JSONException absent) { /* First launch or unreadable local state uses the shared defaults. */ }
         JSONArray sourceList = content.getJSONArray("sources");
         Set<String> ids = new HashSet<>();
+        java.util.Map<String, Source> retiredSources = new java.util.HashMap<>();
         for (int i = 0; i < Math.min(100, sourceList.length()); i++) {
             JSONObject sourceJson = sourceList.optJSONObject(i);
             if (sourceJson == null) continue;
             Source source = new Source(sourceJson);
+            if (sourceJson.opt("id") instanceof String && sourceJson.opt("name") instanceof String
+                    && !source.id.trim().isEmpty() && !source.name.trim().isEmpty() && source.name.length() <= 80
+                    && retiredUrl(source.provider, source.registrationUrl)) retiredSources.putIfAbsent(source.id, source);
             Provider registeredProvider = provider(source.provider);
             boolean sample = "sample".equals(source.provider)
                     && java.util.Arrays.asList("sample-game", "sample-schedule", "sample-community").contains(source.id);
@@ -158,6 +166,16 @@ final class ContentCatalog {
             JSONObject itemJson = saved.optJSONObject(i);
             if (itemJson == null) continue;
             Item item = new Item(itemJson);
+            Source retired = retiredSources.get(item.sourceId);
+            String oldProvider = retired == null ? item.historicalProvider : retired.provider;
+            String oldRegistration = retired == null ? item.historicalRegistrationUrl : retired.registrationUrl;
+            if (source(item.sourceId) == null && validItem(item, item.sourceId, true)
+                    && validHistoricalRecord(itemJson) && retiredUrl(oldProvider, oldRegistration) && retiredUrl(oldProvider, item.originalUrl)
+                    && !"demo_sample".equals(item.provenance) && !isSaved(item)) {
+                savedItems.add(new Item(item.json().put("provenance", "historical_saved")
+                        .put("historicalProvider", oldProvider).put("historicalRegistrationUrl", oldRegistration)));
+                continue;
+            }
             if (source(item.sourceId) != null && validItem(item, item.sourceId) && !isSaved(item)
                     && ("demo_sample".equals(item.provenance) ? "sample".equals(source(item.sourceId).provider) : canOpen(item))) savedItems.add(item);
         }
@@ -287,10 +305,36 @@ final class ContentCatalog {
         if (!"steam".equals(provider.id)) return provider.accepts(url);
         return ContentFeedClient.isOfficialArticle(registration, url);
     }
+    private static boolean validHistoricalRecord(JSONObject json) {
+        for (String field : new String[]{"id", "sourceId", "title", "summary", "provenance", "originalUrl"})
+            if (!(json.opt(field) instanceof String)) return false;
+        Object seconds = json.opt("estimatedSeconds");
+        return seconds instanceof Number && ((Number) seconds).doubleValue() == json.optInt("estimatedSeconds");
+    }
+    // Migration-only allowlist: never installed in providers or available to refresh.
+    private static boolean retiredUrl(String provider, String url) {
+        if (url == null || url.length() > 512) return false;
+        String pattern;
+        switch (provider) {
+            case "soop": pattern = "^https://ch\\.sooplive\\.co\\.kr/[A-Za-z0-9_]{1,30}/?$"; break;
+            case "dcinside": pattern = "^https://gall\\.dcinside\\.com/(?:mgallery/|mini/)?board/lists/\\?id=[A-Za-z0-9_]{1,80}$"; break;
+            case "fmkorea": pattern = "^https://www\\.fmkorea\\.com/[A-Za-z][A-Za-z0-9_]{0,79}/?$"; break;
+            default: return false;
+        }
+        try {
+            URI uri = new URI(url);
+            return "https".equals(uri.getScheme()) && uri.getHost() != null
+                    && uri.getRawUserInfo() == null && uri.getRawFragment() == null
+                    && uri.getPort() == -1 && url.matches(pattern);
+        } catch (Exception invalid) { return false; }
+    }
     private static boolean validItem(Item item, String sourceId) {
+        return validItem(item, sourceId, false);
+    }
+    private static boolean validItem(Item item, String sourceId, boolean historical) {
         return !item.id.trim().isEmpty() && item.id.length() <= 300 && item.sourceId.equals(sourceId) && !item.title.trim().isEmpty()
                 && item.title.length() <= 500 && !item.summary.trim().isEmpty() && item.summary.length() <= 2000 && item.estimatedSeconds > 0 && item.estimatedSeconds <= 3600
-                && ("demo_sample".equals(item.provenance) || "official_snapshot".equals(item.provenance) || "official_runtime".equals(item.provenance));
+                && ("demo_sample".equals(item.provenance) || "official_snapshot".equals(item.provenance) || "official_runtime".equals(item.provenance) || (historical && "historical_saved".equals(item.provenance)));
     }
     private static String nullable(JSONObject json, String key) { return json.isNull(key) ? null : json.optString(key, null); }
     private static Instant instant(JSONObject json, String key) {

@@ -51,6 +51,63 @@ public class CatalogTest {
         assertEquals(3, catalog.sources.size());
     }
 
+    @Test public void retiredSavedRecordsSurviveRepeatedReloadWithoutRegistrationOrRefresh() throws Exception {
+        ContentCatalog.Source current = catalog.add("LoL", "lol", "https://www.leagueoflegends.com/ko-kr/news/game-updates/");
+        current.enabled = false;
+        catalog.move(current.id, -1);
+        catalog.toggleSaved(current.items.get(0));
+        catalog.toggleSaved(catalog.source("sample-game").items.get(0));
+        catalog.persist(preferences);
+        JSONObject stored = new JSONObject(preferences.getString(ContentCatalog.STORAGE_KEY, ""));
+        JSONArray sources = stored.getJSONArray("sources"), saved = stored.getJSONArray("savedItems");
+        String[][] retired = {{"soop", "https://ch.sooplive.co.kr/official"},
+                {"dcinside", "https://gall.dcinside.com/board/lists/?id=game"},
+                {"fmkorea", "https://www.fmkorea.com/game"}};
+        for (String[] entry : retired) {
+            String id = "old-" + entry[0];
+            sources.put(new JSONObject().put("id", id).put("name", "이전 출처").put("provider", entry[0])
+                    .put("registrationUrl", entry[1]).put("enabled", true));
+            JSONObject item = current.items.get(0).json().put("id", id).put("sourceId", id)
+                    .put("originalUrl", entry[1]);
+            saved.put(item).put(new JSONObject(item.toString())); // Duplicate history is still deduplicated.
+            for (String unsafe : new String[]{entry[1].replace("https:", "http:"), entry[1] + "#fragment",
+                    entry[1].replace("https://", "https://user@"), entry[1].replace(".com/", ".com.evil.test/").replace(".kr/", ".kr.evil.test/")})
+                saved.put(new JSONObject(item.toString()).put("originalUrl", unsafe));
+            Object[][] invalidFields = {{"title", " "}, {"summary", JSONObject.NULL},
+                    {"estimatedSeconds", "9"}, {"estimatedSeconds", 1.5}, {"estimatedSeconds", 0},
+                    {"provenance", "invented"}, {"sourceId", "unknown"}};
+            for (int n = 0; n < invalidFields.length; n++) {
+                String uniqueUrl = entry[1].replace("official", "invalid" + n).replace("game", "invalid" + n);
+                saved.put(new JSONObject(item.toString()).put("originalUrl", uniqueUrl)
+                        .put((String) invalidFields[n][0], invalidFields[n][1]));
+            }
+        }
+        preferences.edit().putString(ContentCatalog.STORAGE_KEY, stored.toString()).commit();
+        for (int reload = 0; reload < 2; reload++) {
+            catalog = new ContentCatalog(defaults, preferences);
+            assertEquals(7, catalog.providers.size());
+            assertEquals(4, catalog.sources.size());
+            assertEquals("sample-community", catalog.sources.get(3).id);
+            assertEquals(current.id, catalog.sources.get(2).id);
+            assertFalse(catalog.source(current.id).enabled);
+            assertEquals(5, catalog.savedItems.size());
+            assertEquals("official_snapshot", catalog.savedItems.get(0).provenance);
+            assertTrue(catalog.canOpen(catalog.savedItems.get(0)));
+            assertEquals("demo_sample", catalog.savedItems.get(1).provenance);
+            for (int i = 0; i < retired.length; i++) {
+                ContentCatalog.Item history = catalog.savedItems.get(i + 2);
+                assertEquals("old-" + retired[i][0], history.sourceId);
+                assertEquals("historical_saved", history.provenance);
+                assertEquals(current.items.get(0).title, history.title);
+                assertEquals(current.items.get(0).summary, history.summary);
+                assertFalse(catalog.canOpen(history));
+                assertNull(catalog.provider(retired[i][0]));
+                assertNull(catalog.source(history.sourceId));
+                assertFalse(catalog.importSnapshot(history.sourceId, "{\"items\":[]}", NOW));
+            }
+        }
+    }
+
     @Test public void migrationRunsOnceAndRetainsEnabledPriorityAndEverySavedEnum() throws Exception {
         preferences.edit().clear().putBoolean("enabled_GAME", false).putString("priority", "COMMUNITY")
                 .putStringSet("saved", Set.of("GAME", "SCHEDULE", "COMMUNITY")).commit();
