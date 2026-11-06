@@ -1,0 +1,94 @@
+{
+  "baseCandidateSha": "4ce27066b940dcded731c854178c642c8491bc3a",
+  "workingTreeDirty": true,
+  "scope": "Focused local browser sample checks of the uncommitted CSS fix; no Android or actual Pleos execution evidence. Full regression and GitHub CI remain pending.",
+  "change": "Explicit 16px saved-search input; regenerated HTML; no spacing or verification criteria changes.",
+  "checks": [
+    "npm run build: PASS",
+    "saved-search-browser-verify.mjs: PASS on standalone retry; initial concurrent run timed out at page.reload (30000ms)",
+    "npm run verify:arrival: PASS",
+    "saved-position-browser-verify.mjs: PASS",
+    "git diff --check: PASS"
+  ],
+  "evidenceDirectory": "/tmp/before-arrival-search-fix",
+  "evidenceRetention": "Captures and full reports are local /tmp artifacts, not repository-tracked.",
+  "artifactsSha256": {
+    "search/search-report.json": "2edbd733ae6660c87cf2dcf04010aceab9171f58ae5a544069637c282be47314",
+    "arrival/arrival-browser-report.json": "f3d3de785ce821904eefc4be0c3dde2d16fdbb3a3c50310cfdebaa0d2622732a",
+    "position/saved-position-report.json": "f2c12d4046778293b1b8f8ae2175ba74923a293d244ceaa4069d68250202c3bf"
+  },
+  "readability": [
+    {
+      "theme": "day",
+      "viewport": {
+        "width": 320,
+        "height": 960
+      },
+      "contrast": 17.442218774298816,
+      "fontSize": 16,
+      "overflow": false,
+      "pageOverflow": false
+    },
+    {
+      "theme": "day",
+      "viewport": {
+        "width": 390,
+        "height": 1080
+      },
+      "contrast": 17.442218774298816,
+      "fontSize": 16,
+      "overflow": false,
+      "pageOverflow": false
+    },
+    {
+      "theme": "night",
+      "viewport": {
+        "width": 320,
+        "height": 960
+      },
+      "contrast": 15.251694958229084,
+      "fontSize": 16,
+      "overflow": false,
+      "pageOverflow": false
+    },
+    {
+      "theme": "night",
+      "viewport": {
+        "width": 390,
+        "height": 1080
+      },
+      "contrast": 15.251694958229084,
+      "fontSize": 16,
+      "overflow": false,
+      "pageOverflow": false
+    }
+  ],
+  "sourceSha256": {
+    "showcase/before-arrival-showcase.html": "53caaddd2ff593f808958b4b9ac1feb1836351c62ef1e09e5d43350b14dac9da",
+    "showcase/examples/before-arrival/showcase.css": "63eeb87b26b9b23fb7d563db6f3ca543490e741e414f063353917b5de6b51fce",
+    "showcase/examples/before-arrival/index.tsx": "5b98dccf2c1bf6ad2c731a2bea03539893c8fe5c2b4a695689c37f0152a3c243",
+    "showcase/examples/before-arrival/saved-undo.ts": "490487beec45fd64f3ca05f302670060bb876054413995f7a4fee9dfc2805afc",
+    "showcase/saved-search-browser-verify.mjs": "051fb8e65cae9718ec96902aefe3716370f98ff5ea3c651aa2687933b3d2982a",
+    "showcase/arrival-browser-verify.mjs": "43f3e3ab731e092d48b7eedac9749bae91a0151b8f56bf36e9bd0b29badcf2ba",
+    "showcase/saved-position-browser-verify.mjs": "b2ac24c84cab405808b7cc24eb235834dbd388089627dc53646b112285d10dc5",
+    "showcase/package.json": "fe40d207eb1e32741d7d8497e961940c0543588fea38a2b4447b4dfd51dec6e1"
+  },
+  "searchCaptureSha256": [
+    {
+      "path": "day-search-320.png",
+      "sha256": "69719f9dc2248bc39cb240eb49457fab8e888a86a965c3fc9a494bbd82487d42"
+    },
+    {
+      "path": "day-search-390.png",
+      "sha256": "c2f3105c356a5925637e19153874e32b36673e438356bfb4e24426ac9e85b334"
+    },
+    {
+      "path": "night-search-320.png",
+      "sha256": "9db318f7956affcd8248f3944fbcdbb4374bf800d5ad421b4c4b0b7a56ff23fd"
+    },
+    {
+      "path": "night-search-390.png",
+      "sha256": "e7773d7fb1a88aafe1e7665342ea3a1190aeff1e392e3ce454cd9377bbcd67ea"
+    }
+  ]
+}

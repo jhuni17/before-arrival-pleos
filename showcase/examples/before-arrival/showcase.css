@@ -679,7 +679,7 @@ select:focus-visible {
 
 .saved-search{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
 .saved-search label{width:100%;color:var(--text)}
-.saved-search input{flex:1;min-width:0;width:100%;min-height:44px;box-sizing:border-box;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.saved-search input{flex:1;min-width:0;width:100%;min-height:44px;box-sizing:border-box;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font:inherit;font-size:16px}
 .saved-search button{min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
 
 .saved-review-undo[data-active="true"]{border:1px solid var(--line);border-radius:10px;padding:12px;margin:12px 0;overflow-wrap:anywhere}
