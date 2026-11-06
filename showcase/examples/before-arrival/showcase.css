@@ -664,6 +664,7 @@ select:focus-visible {
  .play-status { margin-top: 8px; }
  .secondary { min-height: 48px; margin-top: 4px; }
  /* Keep the first saved title in the arrival viewport without shrinking controls. */
+ .ba-page:has(.scene-composition[data-arrived="true"]) .intro { padding: 0; }
  .scene-composition[data-arrived="true"] .phone-app { padding-top: 4px; }
  .scene-composition[data-arrived="true"] .phone h2 { margin: 4px 0; }
  .scene-composition[data-arrived="true"] .local-only { padding: 8px; font-size: 12px; }
@@ -703,6 +704,7 @@ select:focus-visible {
 .phone .saved-position p{font-size:12px;margin:0}
 .phone .saved-position p:empty{display:none}
 .ba-scene .saved-position button,.ba-scene .saved-position-save{font:inherit;min-height:44px;max-width:100%;white-space:normal}
+.phone .saved-position button[aria-disabled="true"]{opacity:.55}
 .phone .saved-position .saved-count{font-size:15px}
 
 .ba-scene .saved-source-notice{overflow-wrap:anywhere}

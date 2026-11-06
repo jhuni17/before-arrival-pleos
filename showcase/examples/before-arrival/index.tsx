@@ -85,6 +85,12 @@ function Pocket({frame,state,update,refresh,busy}:{frame:Frame;state:Registry;up
  const positionKey="before-arrival-saved-position-v1";
  const [position,setPosition]=useState<string|null>(()=>{try{return localStorage.getItem(positionKey);}catch{return null;}});
  const [positionNotice,setPositionNotice]=useState("");
+ const positionButton=useRef<HTMLButtonElement>(null);
+ function clearPosition() {
+  if(!navigationLive.current||!canNavigate()||frame!=="arrived"||position===null)return;
+  try{localStorage.removeItem(positionKey);setPosition(null);setPositionNotice("");positionButton.current?.focus({preventScroll:true});}
+  catch{setPositionNotice("위치를 지우지 못했어요. 다시 눌러 재시도해 주세요.");}
+ }
  function rememberPosition(item:ContentItem) {
   if(!navigationLive.current||!canNavigate()||frame!=="arrived")return;
   try{const key=savedIdentity(item);localStorage.setItem(positionKey,key);setPosition(key);setPositionNotice(`「${item.title}」까지 위치를 저장했어요.`);}
@@ -162,7 +168,7 @@ function Pocket({frame,state,update,refresh,busy}:{frame:Frame;state:Registry;up
  {frame==="arrived"&&filter.notice&&<p className="saved-source-notice" role="status">{filter.notice} <button onClick={filter.retry}>출처 필터 저장 재시도</button></p>}
  {frame==="arrived"&&<div className="saved-search"><label htmlFor="saved-title-search">저장한 제목 검색</label><input ref={searchInput} id="saved-title-search" type="search" value={filter.query} onChange={e=>filter.search(e.target.value)}/><button onClick={()=>{filter.search("");searchInput.current?.focus();}}>검색 지우기</button></div>}
  {frame==="arrived"&&<div className="saved-filters" role="group" aria-label="보관함 필터"><button ref={filterButton} aria-pressed={filter.mode==="all"} onClick={()=>filter.select("all")}>전체</button><button aria-pressed={filter.mode==="unread"} onClick={()=>filter.select("unread")}>미확인만</button><button aria-pressed={filter.mode==="reviewed"} onClick={()=>filter.select("reviewed")}>확인 완료만</button>{(filter.sourceId||filter.query||filter.mode!=="all")&&<button className="saved-reset" onClick={()=>{if(filter.reset())searchInput.current?.focus();}}>조건 모두 지우기</button>}<span role="status">{query?"검색 결과 · ":""}표시 {visible.length}건</span><button className="saved-next" onClick={()=>nextUnread()} disabled={!visible.some(item=>item.reviewed!==true)} aria-describedby={!visible.some(item=>item.reviewed!==true)?"saved-next-help":undefined} title="현재 표시 순서로 이동 · 마지막에서는 처음으로 돌아가요.">다음 미확인 소식</button></div>}
- {frame==="arrived"&&<div className="saved-position"><p className="saved-count" role="status">미확인 {state.savedItems.filter(item=>item.reviewed!==true).length}건</p><button className="saved-next" onClick={returnToPosition} disabled={!positionTarget||!visible.includes(positionTarget)} aria-describedby="saved-position-help">지난 위치로 이동</button><p id="saved-position-help">{positionReason}</p><p role="status">{positionNotice}</p></div>}
+ {frame==="arrived"&&<div className="saved-position"><p className="saved-count" role="status">미확인 {state.savedItems.filter(item=>item.reviewed!==true).length}건</p><button ref={positionButton} className="saved-next" onClick={returnToPosition} aria-disabled={!positionTarget||!visible.includes(positionTarget)} aria-describedby="saved-position-help">지난 위치로 이동</button>{position!==null&&<button onClick={clearPosition}>지난 위치 지우기</button>}<p id="saved-position-help">{positionReason}</p><p role="status">{positionNotice}</p></div>}
  {frame==="arrived"&&advanceNotice&&<p role="alert">{advanceNotice}</p>}
  {frame==="arrived"&&<section className="saved-review-undo" data-active={Boolean(undo.reviewNotice)} aria-label="최근 확인 실행 취소"><p role="status" aria-live="polite" aria-atomic="true">{undo.reviewNotice}</p>{undo.reviewPending&&<button className="saved-undo-button" onClick={undo.undoReview}>확인 실행 취소</button>}</section>}
  {frame==="arrived"&&<section className="saved-undo" data-active={Boolean(undo.notice||undo.pending)} aria-label="최근 삭제 실행 취소"><p className="saved-undo-status" role="status" aria-live="polite" aria-atomic="true">{undo.notice}</p>{undo.pending&&<button className="saved-undo-button" ref={undoButton} onClick={undo.restore}>삭제 실행 취소</button>}</section>}
