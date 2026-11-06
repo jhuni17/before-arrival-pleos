@@ -720,3 +720,12 @@ select:focus-visible {
 @media (max-width:760px){
  .phone .saved-search,.phone .saved-filters{margin:4px 0}
 }
+
+@media (max-width:760px){
+ /* Fit the explicit filtered-position action above the first saved title. */
+ .scene-composition[data-arrived="true"] .local-only{padding:4px 8px}
+ .phone .saved-source{grid-template-columns:auto minmax(0,1fr);align-items:center;font-size:14px}
+ .phone .saved-filters{gap:4px}
+ .phone .saved-filters button,.phone .saved-position button{font-size:14px;padding:8px 6px}
+ .phone .saved-search{gap:4px;font-size:14px}
+}

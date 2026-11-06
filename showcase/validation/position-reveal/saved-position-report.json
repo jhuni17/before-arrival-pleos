@@ -1,0 +1,87 @@
+{
+  "candidateSha": "8e8695ee7f8fe0103bf4c91b15a3a405b06a6df9",
+  "workingTreeDirty": true,
+  "scope": "Browser sample only; no APK installation, emulator or actual Pleos SDK evidence.",
+  "captures": [
+    {
+      "path": "day-320-initial.png",
+      "sha256": "56f4a0f356bd22304403423622a1f7e04fa0bd2c5df269e59e463886b7549b90"
+    },
+    {
+      "path": "day-320-saved.png",
+      "sha256": "7225018a4654cf2312c2cbf853ce1fac6f9acca53717852d1d405ba6639c70b2"
+    },
+    {
+      "path": "day-320-control.png",
+      "sha256": "1056a08e83e4f406525c26327e09532ba4155a95770944c0576a20059f22da84"
+    },
+    {
+      "path": "day-320-target.png",
+      "sha256": "7225018a4654cf2312c2cbf853ce1fac6f9acca53717852d1d405ba6639c70b2"
+    },
+    {
+      "path": "day-390-initial.png",
+      "sha256": "9ffdbab2fc94245de886ee8b693fe4dbd775427dc575fe943ebd362d50609c8e"
+    },
+    {
+      "path": "day-390-saved.png",
+      "sha256": "ca0cd2eadf91c93607ca8eb6ade438e37f585aa8223e470fcfe862cee552ca62"
+    },
+    {
+      "path": "day-390-control.png",
+      "sha256": "8ef4495aa904e384c1add8af65fd8bef70a09c44c8c204853371b969725153ad"
+    },
+    {
+      "path": "day-390-target.png",
+      "sha256": "ca0cd2eadf91c93607ca8eb6ade438e37f585aa8223e470fcfe862cee552ca62"
+    },
+    {
+      "path": "night-320-initial.png",
+      "sha256": "253a3cf4cb9fe98141b73fcd593eb237205fc84dc9d1953f54c4dd6bf753d842"
+    },
+    {
+      "path": "night-320-saved.png",
+      "sha256": "7670891579d461ad864323a390c69777f1a444ec73bea20546690ba70344de33"
+    },
+    {
+      "path": "night-320-control.png",
+      "sha256": "74522e1aae748f2f6df97866886196ffb2ca3ee2abc690c57a43c0633ff646d7"
+    },
+    {
+      "path": "night-320-target.png",
+      "sha256": "7670891579d461ad864323a390c69777f1a444ec73bea20546690ba70344de33"
+    },
+    {
+      "path": "night-390-initial.png",
+      "sha256": "150357352a47c97e425b3d9dbedbbd3a72df40140159d0f98f9c9f8a5de4cff6"
+    },
+    {
+      "path": "night-390-saved.png",
+      "sha256": "9f3dca507ffcf737fa306c286fa36c03bab2581b9183870fc7b163213ad1c177"
+    },
+    {
+      "path": "night-390-control.png",
+      "sha256": "6a8588f77174e67f40c85f63a835092af0afe52b14e869bee66f2e17ea0e2e04"
+    },
+    {
+      "path": "night-390-target.png",
+      "sha256": "9f3dca507ffcf737fa306c286fa36c03bab2581b9183870fc7b163213ad1c177"
+    }
+  ],
+  "checkedAt": "2026-11-06T13:32:45.731Z",
+  "htmlSha256": "df2da7f00635c6f7b4435fef3ca578c708ac637ddf0b1798897e832d5b483a43",
+  "sourceSha256": {
+    "examples/before-arrival/index.tsx": "5b98dccf2c1bf6ad2c731a2bea03539893c8fe5c2b4a695689c37f0152a3c243",
+    "examples/before-arrival/saved-undo.ts": "490487beec45fd64f3ca05f302670060bb876054413995f7a4fee9dfc2805afc",
+    "examples/before-arrival/showcase.css": "8ee4dc6ccd39d6c828fd681ee872764d01718471062ad0df2d85233d3edf9ed1",
+    "saved-position-browser-verify.mjs": "b2ac24c84cab405808b7cc24eb235834dbd388089627dc53646b112285d10dc5",
+    "package.json": "fe40d207eb1e32741d7d8497e961940c0543588fea38a2b4447b4dfd51dec6e1"
+  },
+  "upstream": "official snapshots registered through UI; no external network",
+  "checks": [
+    "Reveal: each filter and all combinations, reset storage failures, reload without auto-jump, keyboard, reduced motion, batched safety transition and stale callbacks; hidden control layout captures.",
+    "Clear normal/hidden/deleted positions, remove failure/retry, other localStorage unchanged, reload, keyboard focus and stale clear callbacks; first-viewport headings at 320x960/390x1080 day/night. ",
+    "32 fixed items: position replacement, reload without auto-jump, write failure/retry, source/search/unread combinations, deleted target/undo, stale save/jump callbacks before/after restricted/unknown, unchanged registry/URLs/order/review, day/night 320/390 Tab/Enter/Space and reduced-motion immediate title focus."
+  ],
+  "readability": []
+}

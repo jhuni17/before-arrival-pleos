@@ -27,10 +27,11 @@ try{
  const mark=i=>page.getByRole('button',{name:fixture.savedItems[i].title+' 여기까지 봤어요',exact:true});
  const clear=()=>page.getByRole('button',{name:'지난 위치 지우기',exact:true});
  const resume=()=>page.getByRole('button',{name:'지난 위치로 이동',exact:true});
+ const reveal=()=>page.getByRole('button',{name:'조건 지우고 지난 위치로 이동',exact:true});
  let popups=0;page.on('popup',()=>popups++);
  const positionKey='before-arrival-saved-position-v1';
  const position=()=>page.evaluate(k=>localStorage.getItem(k),positionKey);
- await load([2,17,31]);assert(await resume().isDisabled());
+ await load([2,17,31]);assert(await resume().isDisabled());assert.equal(await reveal().count(),0);
  for(const i of [17,31]){await mark(i).click();assert.equal(await position(),'url:'+fixture.savedItems[i].originalUrl.replace(/\/$/,''));assert.deepEqual(await read(page),fixture);}
  await page.reload();await resume().waitFor();assert.notEqual(await page.evaluate(()=>document.activeElement.textContent),fixture.savedItems[31].title);
  await page.emulateMedia({reducedMotion:'reduce'});await resume().click();assert.equal(await page.evaluate(()=>document.activeElement.textContent),fixture.savedItems[31].title);
@@ -38,6 +39,39 @@ try{
   await page.getByLabel('저장한 출처',{exact:true}).selectOption(source);await search.fill(query);await page.getByRole('button',{name:unread?'미확인만':'전체',exact:true}).click();
   const hidden=Boolean(source&&source!==fixture.savedItems[31].sourceId)||!fixture.savedItems[31].title.includes(query);
   assert.equal(await resume().isDisabled(),hidden);if(hidden)assert.match(await page.locator('#saved-position-help').innerText(),/필터/);assert.deepEqual(await read(page),fixture);
+ }
+ // Every individual filter and their combinations can explicitly reveal the exact position.
+ for(const mask of [1,2,3,4,5,6,7]){
+  await load([2,17,31]);await mark(18).click();const before=await position();
+  if(mask&1)await search.fill('홀수');
+  if(mask&2)await page.getByLabel('저장한 출처',{exact:true}).selectOption(fixture.savedItems[19].sourceId);
+  if(mask&4)await page.getByRole('button',{name:'미확인만',exact:true}).click();
+  assert.equal(await reveal().count(),1);
+  await tabTo(page,reveal());await page.keyboard.press(mask%2?'Enter':'Space');
+  assert.equal(await page.evaluate(()=>document.activeElement.textContent),fixture.savedItems[18].title);
+  assert.equal(await search.inputValue(),'');assert.equal(await page.getByLabel('저장한 출처',{exact:true}).inputValue(),'');
+  assert.equal(await page.getByRole('button',{name:'전체',exact:true}).getAttribute('aria-pressed'),'true');
+  assert.equal(await reveal().count(),0);assert.deepEqual(await read(page),fixture);assert.equal(await position(),before);
+  await page.reload();assert.equal(await reveal().count(),0);assert.notEqual(await page.evaluate(()=>document.activeElement.textContent),fixture.savedItems[18].title);
+ }
+ for(const failedKey of ['before-arrival-saved-source-v1','before-arrival-saved-filter-v1']){
+  await load([2,17,31]);await mark(18).click();await search.fill('홀수');
+  await page.getByLabel('저장한 출처',{exact:true}).selectOption(fixture.savedItems[19].sourceId);
+  await page.getByRole('button',{name:'미확인만',exact:true}).click();
+  await page.evaluate(k=>{window.filterWrite=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key===k)throw Error('denied');return window.filterWrite.call(this,key,value);};},failedKey);
+  await reveal().click();assert.equal(await page.evaluate(()=>document.activeElement.textContent),fixture.savedItems[18].title);
+  assert.match(await page.locator(failedKey.includes('source')?'.saved-source-notice':'.storage-error').innerText(),/현재 화면에만 적용.*다음 방문에는 유지되지 않을 수/);
+  assert.deepEqual(await read(page),fixture);await page.evaluate(()=>Storage.prototype.setItem=window.filterWrite);
+ }
+ for(const blocked of ['주행 제한','상태 미확인']){
+  await load([2,17,31]);await mark(18).click();await search.fill('홀수');
+  const stale=await reveal().evaluateHandle(el=>el[Object.keys(el).find(k=>k.startsWith('__reactProps$'))].onClick);
+  // Batch reset and safety transition before the pending effect can move focus.
+  await page.evaluate(label=>{const click=el=>el[Object.keys(el).find(k=>k.startsWith('__reactProps$'))].onClick();click([...document.querySelectorAll('button')].find(el=>el.textContent==='조건 지우고 지난 위치로 이동'));click([...document.querySelectorAll('button')].find(el=>el.textContent===label));},blocked);
+  const snapshot=await page.evaluate(()=>JSON.stringify(localStorage));await stale.evaluate(fn=>fn());assert.equal(await page.evaluate(()=>JSON.stringify(localStorage)),snapshot);
+  assert.equal(await reveal().count(),0);assert.equal(await page.locator('.primary').getAttribute('aria-pressed'),'false');
+  await page.getByRole('button',{name:'04 도착',exact:true}).click();const focus=await page.evaluate(()=>document.activeElement.textContent);
+  await stale.evaluate(fn=>fn());assert.equal(await page.evaluate(()=>document.activeElement.textContent),focus);assert.notEqual(focus,fixture.savedItems[18].title);
  }
  await load([2,17,31]);await mark(18).click();await page.getByRole('button',{name:'미확인만',exact:true}).click();assert(await resume().isDisabled());assert.match(await page.locator('#saved-position-help').innerText(),/필터/);
  await page.getByRole('button',{name:'전체',exact:true}).click();await mark(31).click();
@@ -51,7 +85,7 @@ try{
   await page.getByRole('button',{name:'04 도착',exact:true}).click();const focus=await page.evaluate(()=>document.activeElement.textContent);
   for(const fn of stale)await fn.evaluate(fn=>fn());assert.equal(await position(),before);assert.equal(await page.evaluate(()=>document.activeElement.textContent),focus);assert.equal(await page.locator('.primary').getAttribute('aria-pressed'),'false');
  }
- await page.getByRole('button',{name:fixture.savedItems[17].title+' 저장 취소',exact:true}).click();assert(await resume().isDisabled());assert.match(await page.locator('#saved-position-help').innerText(),/삭제/);
+ await page.getByRole('button',{name:fixture.savedItems[17].title+' 저장 취소',exact:true}).click();assert(await resume().isDisabled());assert.match(await page.locator('#saved-position-help').innerText(),/삭제/);assert.equal(await reveal().count(),0);
  await page.getByRole('button',{name:'삭제 실행 취소',exact:true}).click();assert.equal(await resume().isDisabled(),false);assert.deepEqual(await read(page),fixture);
  // Clear existing, filtered-out and deleted targets, preserving all other storage.
  async function otherStorage(){return page.evaluate(k=>Object.fromEntries(Object.entries(localStorage).filter(([name])=>name!==k)),positionKey);}
@@ -70,17 +104,18 @@ try{
  await page.emulateMedia({reducedMotion:'reduce'});
  for(const theme of ['day','night'])for(const width of [320,390]){
   await load([2,17,31]);const height=width===320?960:1080;await page.setViewportSize({width,height});await page.goto(base+'/?state=arrived&theme='+theme);await page.evaluate(()=>document.fonts.ready);
-  await mark(0).click();await page.evaluate(()=>scrollTo(0,0));
+  await mark(17).click();await search.fill('짝수');await page.evaluate(()=>scrollTo(0,0));
   for(const heading of [page.locator('.phone h2'),page.locator('.saved-article h3').first()]){const box=await heading.boundingBox();assert(box&&box.y>=0&&box.y+box.height<=height, 'Full arrival and first item headings in first viewport '+JSON.stringify({theme,width,box}));}
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
   const initial=`${theme}-${width}-initial.png`;await page.screenshot({path:out+'/'+initial});report.captures.push({path:initial,sha256:createHash('sha256').update(await readFile(out+'/'+initial)).digest('hex')});
-  await tabTo(page,mark(17));await page.keyboard.press(width===320?'Enter':'Space');
+  await tabTo(page,reveal());await page.keyboard.press(width===320?'Enter':'Space');
   async function capture(kind){const path=`${theme}-${width}-${kind}.png`;await page.screenshot({path:out+'/'+path});report.captures.push({path,sha256:createHash('sha256').update(await readFile(out+'/'+path)).digest('hex')});}
   await capture('saved');await tabTo(page,resume());await capture('control');await page.keyboard.press(width===320?'Space':'Enter');
   assert.equal(await page.evaluate(()=>document.activeElement.textContent),fixture.savedItems[17].title);const box=await page.locator('.saved-article h3:focus').boundingBox();assert(box.y>=0&&box.y+box.height<=height);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);await capture('target');assert.deepEqual(await read(page),fixture);
  }
 
  assert.equal(popups,0);
+ report.checks.push('Reveal: each filter and all combinations, reset storage failures, reload without auto-jump, keyboard, reduced motion, batched safety transition and stale callbacks; hidden control layout captures.');
  report.checks.push('Clear normal/hidden/deleted positions, remove failure/retry, other localStorage unchanged, reload, keyboard focus and stale clear callbacks; first-viewport headings at 320x960/390x1080 day/night. ');
  report.checks.push('32 fixed items: position replacement, reload without auto-jump, write failure/retry, source/search/unread combinations, deleted target/undo, stale save/jump callbacks before/after restricted/unknown, unchanged registry/URLs/order/review, day/night 320/390 Tab/Enter/Space and reduced-motion immediate title focus.');
  await writeFile(out+'/saved-position-report.json',JSON.stringify(report,null,2)+'\n');console.log('PASS: saved position');
