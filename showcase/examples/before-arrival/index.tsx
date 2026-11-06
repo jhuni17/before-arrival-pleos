@@ -27,23 +27,23 @@ function Vehicle({frame,state,save,long}:{frame:Frame;state:Registry;save:(item:
  const [playing,setPlaying]=useState(false);
  useEffect(()=>setPlaying(false),[frame,state]);
  useEffect(()=>{if(!playing)return;const timer=setTimeout(()=>setPlaying(false),4000);return()=>clearTimeout(timer);},[playing]);
- const title=lead?(long&&lead.sourceId==="sample-schedule"?"오전 9시 팀 회의 장소가 본관 3층 라운지로 변경되었어요":lead.title):"";
+ const title=lead?(long?`${lead.title} · 오늘 확인할 주요 변경 사항과 출근 전에 알아둘 소식`:lead.title):"";
  const isSaved=lead&&state.savedItems.some(i=>(i.originalUrl||i.id)===(lead.originalUrl||lead.id));
  return <section className="vehicle" aria-label="차량 화면" data-blocked={blocked}>
   <div className="system-bar"><span>PLEOS CONNECT <small>시스템 UI 예시</small></span><span>{arrived?"09:00":short?"08:54":"08:40"} · {frame==="unknown"?"?":blocked?"D":"P"}</span></div>
   <div className="application-window" aria-label="애플리케이션 영역">
-   <header className="app-bar"><b>도착 전에</b><span className="status">{frame==="unknown"?"차량 상태 미확인 · 조작·음성 중지":blocked?"주행 제한 · 조작·음성 중지":"주차 시 사용 가능 · 샘플 상태"}</span></header>
+   <header className="app-bar"><b>도착 전에</b><span className="status">{frame==="unknown"?"차량 상태 미확인 · 조작·음성 중지":blocked?"주행 제한 · 조작·음성 중지":"주차 상태 · 샘플"}</span></header>
    <div className="vehicle-content">
     <section className="eta-panel" aria-label="남은 시간"><span className="eyebrow">목적지 · 회사</span><div className="eta">{arrived?"도착":<><strong>{short?4:18}</strong><span>분</span></>}</div><p>{arrived?"저장한 소식을 확인하세요":"도착까지 남은 시간"}</p><div className="route-track" aria-hidden="true"><i/><span/><i/></div><span className="route-caption">경로·시간·주차 상태는 샘플</span></section>
     <section className="brief" aria-label="이번 브리핑">
-     <div className="brief-meta"><span className="eyebrow">{blocked?"이용 일시 중지":short?"도착 전에 먼저 확인":"이번에 들을 브리핑"}</span><span>{blocked?"안전 상태":arrived?"재생 종료":`예상 ${plan.seconds}초 · 예산 ${plan.budget}초`}</span></div>
+     <div className="brief-meta"><span className="eyebrow">{blocked?"이용 일시 중지":short?"도착 전에 먼저 확인":"오늘의 대표 소식"}</span><span>{blocked?"안전 상태":arrived?"재생 종료":`예상 ${plan.seconds}초 · 예산 ${plan.budget}초`}</span></div>
      <div className="lead-card"><span className="category">{blocked?"주차 후 다시 이용":arrived?"도착 후 확인 · 연출":lead?sourceName(state,lead):"편성할 소식 없음"}</span>
       <h1>{blocked?frame==="unknown"?"차량 상태를 확인해 주세요":"안전하게 주차한 뒤 이용해 주세요":arrived?"저장한 소식을 확인하세요":lead?title:"설정한 출처와 듣기 예산을 확인해 주세요"}</h1>
-      <p>{blocked?"브리핑 화면 조작과 음성을 중지했어요.":arrived?"도착 후 보관함에서 저장한 항목을 확인하세요.":lead?lead.summary:"켜 둔 출처에 확인된 소식이 없거나 남은 듣기 예산을 넘었어요. 예시로 대체하지 않아요."}</p>
       {!blocked&&!arrived&&lead&&<><Published item={lead}/>{lead.originalUrl&&officialUrl(state.sources.find(s=>s.id===lead.sourceId)!.provider,lead.originalUrl)&&<a className="original-link" href={lead.originalUrl} target="_blank" rel="noreferrer">공식 원문 확인 ↗</a>}</>}
-      <button className="primary" disabled={blocked||!lead} onClick={()=>setPlaying(!playing)} aria-pressed={playing}><Glyph kind={playing?"pause":"play"}/>{playing?"샘플 재생 중지":"브리핑 재생 상태 보기"}</button>
+      <button className="primary" disabled={blocked||!lead} onClick={()=>setPlaying(!playing)} aria-pressed={playing}><Glyph kind={playing?"pause":"play"}/>{playing?"시연 중지":"듣기 시연"}</button>
+      <span className="play-status" role="status">{playing?"재생 상태 연출 · 실제 음성 없음":frame==="saved"?"저장 완료 장면 · 실제 저장은 버튼을 눌러요":"상태 연출만 제공 · 실제 음성 없음"}</span>
+      <p>{blocked?"브리핑 화면 조작과 음성을 중지했어요.":arrived?"도착 후 보관함에서 저장한 항목을 확인하세요.":lead?lead.summary:"켜 둔 출처에 확인된 소식이 없거나 남은 듣기 예산을 넘었어요. 예시로 대체하지 않아요."}</p>
       <button className="secondary" disabled={blocked||!lead} onClick={()=>save(lead)}><Glyph kind={isSaved||frame==="saved"?"check":"save"}/>{isSaved?"이 브라우저에 저장됨":frame==="saved"?"저장 완료 · 연출":"이 브라우저 보관함에 저장"}</button>
-      <span className="play-status" role="status">{playing?"재생 상태 연출 · 실제 음성 없음":frame==="saved"?"저장 완료 장면 · 실제 저장은 버튼을 눌러요":"브라우저 재생은 상태 연출 · 실제 음성 없음"}</span>
      </div>
      <div className="next-up">{blocked?"제한 상태에서는 목록 전환과 재생을 중지해요.":arrived?"브라우저 보관함 · Android 앱과 동기화 안 됨":<>{short?"나중에 확인":"다음 소식"} · {(short?plan.deferred:plan.selected.slice(1)).map(i=>i.title).join(" · ")||"없음"}</>}</div>
      {!blocked&&!arrived&&plan.deferred.length>0&&<section className="deferred-items" aria-label="도착 후 이어볼 소식"><h2>나중에 볼 소식</h2>{plan.deferred.map(item=>{

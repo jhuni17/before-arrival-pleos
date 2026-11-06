@@ -38,3 +38,17 @@
 | 구분선 | `--line` | `#808996` | `#565c66` | 앱 경계·시스템 구분 |
 
 주야간 전환은 HTML의 수동 컨트롤이다. 차량 조도/SDK 콜백 연결을 의미하지 않는다. 글자와 주요 재생·저장·확인 SVG는 실제 렌더링된 전경색과 배경색으로 측정한다. 상세 결과와 최소 대비는 `evidence/browser-report.json`에 기록한다. 장식용 경로선과 테두리는 정보 텍스트 대비 측정 대상과 구분한다.
+
+## 첫 화면 정리 · 2026-11-06
+
+남은 시간 → 오늘의 대표 소식 → `듣기 시연` 순서를 유지하고 상태 연출·실제 음성 없음 안내를 기본 버튼 바로 아래에 둔다. 작은 화면에서는 소개·상태·카드 간격을 줄인다. 설정과 도착 목록도 같은 Asta Sans, Text/Surface/Button 역할과 제목 굵기를 사용한다. 비공식 폰트나 새 폰트는 추가하지 않았다.
+
+배포 파일 근거 (SHA-256, 원본 변경 없음):
+
+| 파일 | SHA-256 | 근거 |
+| --- | --- | --- |
+| `assets/fonts/AstaSans-wght.ttf` | `f68410bf7d04deb992097758640145c72ddcf234070794237fc4994e18991c33` | 동봉 Asta Sans 가변 폰트 |
+| `assets/fonts/OFL.txt` | `2448ea782a6364d571a4848c34db8a042311f44c78cf00265888db19ea10d5a4` | SIL Open Font License 1.1 전문·저작권, HTML/앱 동봉 및 재배포 근거 |
+| `assets/fonts/METADATA.pb` | `d51cdebb9e64b22dc44f604984168a9b7468e0a9d6ba61db7ffb93240354bfc0` | Google Fonts 출처·upstream 커밋 |
+
+CI가 이미 호출하는 `arrival-browser-verify.mjs`는 주간·야간 1440×1080, 390×1080, 320×960 opening과 긴 제목을 스크롤 없이 캡처하고 표시 영역·대비·키보드·축소 모션을 검사한다. `EVIDENCE_DIR/arrival-browser-report.json`에 후보 SHA, 작업 트리 상태, HTML 해시, 테마·뷰포트별 결과를 기록한다. 로컬 수정본의 HEAD는 최종 후보 커밋 증거가 아니며 정확한 후보의 GitHub Actions 아티팩트로 브라우저 합격을 확인해야 한다. Oracle의 Chromium 실행 제약으로 로컬 실행이 불가능하면 합격으로 기록하지 않는다. 이 검사는 캡처/fixture 재생이며 실시간 가져오기, 기기 간 동기화, APK 설치나 실제 Pleos SDK/차량 검증의 근거가 아니다.

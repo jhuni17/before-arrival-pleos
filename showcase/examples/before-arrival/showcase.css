@@ -622,3 +622,45 @@ select:focus-visible {
 .phone .saved-undo-status{margin:0;color:var(--text);line-height:1.6;overflow-wrap:anywhere}
 .saved-undo-button{min-height:48px;margin-top:10px;padding:10px 14px;background:var(--button);color:var(--on-button);border:1px solid var(--line);border-radius:8px}
 .saved-article h3:focus-visible{outline:2px solid var(--text);outline-offset:4px}
+
+/* First glance: remaining time, lead story, then one listening demonstration. */
+.intro { padding: 20px 0; }
+.intro h2 { font-size: clamp(26px, 2.5vw, 36px); }
+.app-bar { padding-bottom: 20px; }
+.eta-panel { padding-top: 8px; }
+.lead-card p { margin: 16px 0 0; }
+.lead-card > .item-provenance { margin-bottom: 12px; }
+.play-status { margin-top: 10px; }
+.phone h2 { font-weight: 650; letter-spacing: -.03em; margin-bottom: 16px; }
+.phone h3, .deferred-card h3 { font-weight: 650; letter-spacing: -.02em; }
+.source-form h3 { margin-bottom: 0; }
+@media (max-width:760px) {
+ .ba-page { padding: 12px; }
+ .masthead { gap: 10px; padding-bottom: 10px; }
+ .masthead small { letter-spacing: 0; margin-top: 4px; }
+ .masthead button { padding: 8px; flex-shrink: 0; }
+ .intro { padding: 14px 0; }
+ .intro > .eyebrow { display: none; }
+ .intro h2 { font-size: 24px; margin: 0; }
+ .intro h2 br { display: none; }
+ .scene-controls { margin-bottom: 12px; }
+ .system-bar { padding: 10px 14px; gap: 6px; }
+ .application-window { padding: 14px 14px 12px; }
+ .app-bar { padding-bottom: 8px; }
+ .app-bar b { font-size: 18px; }
+ .status { font-size: 12px; }
+ .eta-panel { padding: 6px 0 12px; }
+ .eta { margin-top: 4px; }
+ .eta strong { font-size: 64px; }
+ .eta > span { font-size: 24px; }
+ .eta-panel p { font-size: 14px; }
+ .brief-meta { font-size: 12px; margin-bottom: 8px; }
+ .brief-meta .eyebrow { font-size: 14px; }
+ .lead-card { padding: 16px 14px 10px; }
+ .category { font-size: 14px; }
+ .lead-card h1 { font-size: 24px; line-height: 1.3; margin: 8px 0; }
+ .lead-card p { font-size: 16px; margin: 12px 0 0; }
+ .primary { min-height: 56px; padding: 12px; }
+ .play-status { margin-top: 8px; }
+ .secondary { min-height: 48px; margin-top: 4px; }
+}
