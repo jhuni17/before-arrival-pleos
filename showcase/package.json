@@ -11,7 +11,7 @@
     "verify:local-app": "node local-app-browser-verify.mjs",
     "verify:arrival": "node arrival-browser-verify.mjs",
     "verify:refresh-feedback": "node refresh-feedback-browser-verify.mjs",
-    "verify:review-undo": "node review-undo-browser-verify.mjs && node saved-item-next-browser-verify.mjs && node saved-position-browser-verify.mjs",
+    "verify:review-undo": "node review-undo-browser-verify.mjs && node saved-item-next-browser-verify.mjs && node saved-position-browser-verify.mjs && node review-next-browser-verify.mjs",
     "verify:saved-undo": "node saved-undo-browser-verify.mjs && node saved-search-browser-verify.mjs && node saved-source-browser-verify.mjs && npm run verify:review-undo"
   },
   "dependencies": {

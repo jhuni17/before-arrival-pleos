@@ -707,3 +707,6 @@ select:focus-visible {
 .ba-scene .saved-source-notice button{font:inherit;font-size:16px;min-height:44px;max-width:100%;white-space:normal}
 
 .saved-article .category{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.saved-review-next{min-height:48px;max-width:100%;white-space:normal;font:inherit}
+#saved-next-help:focus{outline:2px solid var(--text);outline-offset:4px}

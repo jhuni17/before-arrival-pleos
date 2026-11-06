@@ -44,7 +44,7 @@ try{
   await source.selectOption(sourceId);await search.fill(query);await (onlyUnread?unread:all).click();
   const expected=seed.savedItems.filter(i=>(!sourceId||i.sourceId===sourceId)&&i.title.toLowerCase().includes(query.trim().toLowerCase())&&!i.reviewed);
   await expectCounts();assert.equal(await next.isDisabled(),expected.length===0);
-  if(!expected.length)assert.match(await page.locator('#saved-next-help').innerText(),/없어 이동할 수 없어요/);
+  if(!expected.length)assert.match(await page.locator('#saved-next-help').innerText(),/미확인 소식이 없어요/);
   for(let index=0;index<expected.length+1&&expected.length;index++){
    await next.focus();await page.keyboard.press(index%2?'Space':'Enter');
    assert.equal(await page.evaluate(()=>document.activeElement.textContent),expected[index%expected.length].title);

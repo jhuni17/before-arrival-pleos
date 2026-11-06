@@ -1,0 +1,39 @@
+{
+  "candidateSha": "ba2a0de878a1f02be8bc1beb6797dc4e761745b2",
+  "workingTreeDirty": true,
+  "ime": "Synthetic composition events only; physical Korean IME remains a manual check.",
+  "scope": "Browser sample only; no APK installation, emulator or actual Pleos SDK evidence.",
+  "captures": [
+    {
+      "path": "day-320-review-next.png",
+      "sha256": "6cb3abd8a8e984b39e3ade7e83ef1f2936eadeaf70cb4d39196c3a16bb64721c"
+    },
+    {
+      "path": "day-390-review-next.png",
+      "sha256": "0f0148c6fd17f991e04df885f431a2d33c9466a255dd81633ad5b70e3301cdd8"
+    },
+    {
+      "path": "night-320-review-next.png",
+      "sha256": "5648417cca460aac16971ec1bdeff5b1eb75747ecc4f30e003f17495fd17d342"
+    },
+    {
+      "path": "night-390-review-next.png",
+      "sha256": "f2b96a26759265fe8154cfe6ce51579e31044087465ee052334c70a8e3e3bcc4"
+    }
+  ],
+  "checkedAt": "2026-11-06T11:52:35.557Z",
+  "htmlSha256": "37b598b4a3c7e80011e837156c8aad2d21434b1388618551aed42690b8f84fe6",
+  "sourceSha256": {
+    "examples/before-arrival/index.tsx": "8c647317c7aad8e2e1841e3e24786d26b17dd33827217c3deab265ea0a65f307",
+    "examples/before-arrival/saved-undo.ts": "35dc0a2985755d5e31e489bd741906e1b93691021c0e7392044734aa252c026e",
+    "examples/before-arrival/showcase.css": "0ab118717c32e87b58797e214d80fde25182fe22dfbf4ff73fe4199124216131",
+    "review-next-browser-verify.mjs": "9b94ebd5ea622b65e5943b6a2f4009b2a634ad9ebb767c254243d2d20dba4459",
+    "package.json": "87ceab8e2cbef6cb1ea76222f014b816852b6255f0f35ce968a93ec97dfd644e"
+  },
+  "upstream": "official snapshots registered through UI; no external network",
+  "checks": [
+    "0/1/32; source/search/unread combinations; wrap; exact single-item persistence; keyboard; failure/retry; reload/undo; unchanged position; restricted/unknown stale handlers; day/night 320x960 and 390x1080 focus/overflow."
+  ],
+  "readability": [],
+  "evidenceNote": "Copied from runner EVIDENCE_DIR; package.json hash refreshed after adding this focused check to the existing review-undo chain."
+}
