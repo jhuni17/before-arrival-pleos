@@ -75,7 +75,7 @@ try{
  await failWrites(filterPage,true);await tabTo(filterPage,reviewButton(filterPage,B));await filterPage.keyboard.press('Enter');
  assert.deepEqual(await titles(filterPage),[B,C]);assert(await reviewButton(filterPage,B).evaluate(el=>el===document.activeElement));assert.deepEqual(await read(filterPage),filterSeed);await expectReviewSaveFailure(filterPage);
  await failWrites(filterPage,false);await filterPage.keyboard.press('Enter');assert.deepEqual(await titles(filterPage),[C]);assert(await reviewButton(filterPage,C).evaluate(el=>el===document.activeElement));
- await filterPage.keyboard.press('Space');assert.deepEqual(await titles(filterPage),[]);assert(await all.evaluate(el=>el===document.activeElement));assert.match(await filterPage.locator('.empty-saved').innerText(),/미확인 소식이 없어요/);assert.match(await filterPage.locator('.saved-filters').innerText(),/표시 0건/);
+ await filterPage.keyboard.press('Space');assert.deepEqual(await titles(filterPage),[]);assert(await all.evaluate(el=>el===document.activeElement));assert.match(await filterPage.locator('.empty-saved').innerText(),/미확인 소식이 없어요/);assert.match(await filterPage.locator('.saved-search [role="status"]').innerText(),/표시 0건/);
  await filterPage.getByRole('button',{name:'전체 보기로 돌아가기',exact:true}).click();await reviewButton(filterPage,B,true).click();await reviewButton(filterPage,C,true).click();await unreadOnly.click();
  await tabTo(filterPage,reviewButton(filterPage,C));await filterPage.keyboard.press('Enter');assert(await reviewButton(filterPage,B).evaluate(el=>el===document.activeElement));
  await remove(filterPage,B).click();await undo(filterPage).click();assert.deepEqual(await titles(filterPage),[B]);assert.equal((await read(filterPage)).savedItems[1].reviewed,false);
@@ -83,8 +83,8 @@ try{
  const persisted=await read(filterPage);await filterPage.reload();assert.equal(await unreadOnly.getAttribute('aria-pressed'),'true');assert.deepEqual(await titles(filterPage),[B]);assert.deepEqual(await read(filterPage),persisted);
  for(const theme of ['day','night'])for(const viewport of [{width:320,height:960},{width:390,height:1080}]){
   await filterPage.setViewportSize(viewport);await filterPage.goto(base+'/?state=arrived&theme='+theme);assert.equal(await unreadOnly.getAttribute('aria-pressed'),'true');await filterPage.evaluate(()=>document.fonts.ready);
-  const audit=await filterPage.locator('.saved-filters').evaluate(el=>({overflow:el.scrollWidth>el.clientWidth+1,pageOverflow:document.documentElement.scrollWidth>innerWidth+1,text:el.innerText}));
-  assert.equal(audit.overflow,false);assert.equal(audit.pageOverflow,false);assert.match(audit.text,/표시 1건/);await filterPage.screenshot({path:out+'/'+theme+'-filter-'+viewport.width+'.png',fullPage:true});
+  const audit=await filterPage.locator('.saved-filters').evaluate(el=>({overflow:el.scrollWidth>el.clientWidth+1,pageOverflow:document.documentElement.scrollWidth>innerWidth+1}));
+  assert.equal(audit.overflow,false);assert.equal(audit.pageOverflow,false);const status=filterPage.locator('.saved-search [role="status"]');assert.equal(await status.count(),1);assert(await status.isVisible());assert.match(await status.innerText(),/표시 1건/);await filterPage.screenshot({path:out+'/'+theme+'-filter-'+viewport.width+'.png',fullPage:true});
  }
  await filterPage.close();report.checks.push('Saved filter: unchanged storage and ordered 3→2; Tab/Space selection; failed write retains focus/count; next/previous/empty focus; zero-unread message; revert and delete undo; session retention, restriction guards, stopped playback, reload restoration, day/night 320/390 captures.');
  await reviewPage.close();report.checks.push('Explicit review: legacy unread 2→1→reload→Space undo 2; focused button, exact content/order, delete undo, duplicate save, write failure, original link/listening/automatic sequence neutrality, restricted/unknown stale callback and stopped playback.');

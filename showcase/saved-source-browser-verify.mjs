@@ -74,7 +74,7 @@ try{
  await page.evaluate(({key,seed})=>localStorage.setItem(key,JSON.stringify(seed)),{key,seed});await page.reload();
  assert.equal(popups,0);
  report.checks.push('Next unread: zero/one/multiple intersections, Enter/Space, wrap, manually focused reviewed title, unchanged filters/order/URLs/storage, stale handlers during restriction and after return, no popup or automatic playback.');
- async function expectItems(items){await expectCounts();assert.deepEqual(await titles(page),items.map(i=>i.title));assert.match(await page.locator('.saved-filters').innerText(),new RegExp(`표시 ${items.length}건`));}
+ async function expectItems(items){const status=page.locator('.saved-search [role="status"]');assert.equal(await status.count(),1);assert(await status.isVisible());await expectCounts();assert.deepEqual(await titles(page),items.map(i=>i.title));assert.match(await page.locator('.saved-search [role="status"]').innerText(),new RegExp(`표시 ${items.length}건`));}
  assert.equal(await source.inputValue(),'');assert.equal(new Set(await source.locator('option').allTextContents()).size,4);
  for(const id of ids){await source.selectOption(id);await expectItems(seed.savedItems.filter(i=>i.sourceId===id));}
  const reset=page.getByRole('button',{name:'조건 모두 지우기',exact:true});
