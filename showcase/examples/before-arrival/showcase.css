@@ -692,3 +692,5 @@ select:focus-visible {
 .saved-filters .saved-next:disabled{background:var(--surface);color:var(--text)}
 #saved-next-help{overflow-wrap:anywhere}
 .saved-next:focus-visible,.saved-article h3:focus{outline:2px solid var(--text);outline-offset:4px}
+
+.saved-article .saved-item-next{display:block;min-height:48px;max-width:100%;white-space:normal;font:inherit}

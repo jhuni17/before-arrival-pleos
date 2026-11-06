@@ -1,0 +1,70 @@
+{
+  "candidateSha": "4ce5756024a7cb1fb5277cab3e161b66c7968c37",
+  "workingTreeDirty": true,
+  "ime": "Synthetic composition events only; physical Korean IME remains a manual check.",
+  "scope": "Browser sample only; no APK installation, emulator or actual Pleos SDK evidence.",
+  "captures": [
+    {
+      "path": "day-320-middle-control.png",
+      "sha256": "c9efba07e19a6b5d251a389ca168a293d7198ef96d78772496583fbdfe5bd675"
+    },
+    {
+      "path": "day-320-middle-target.png",
+      "sha256": "b8e673deed46e359c08d281985fbae255571cd497c9a9f22ecc0aee7ef072c7f"
+    },
+    {
+      "path": "day-320-wrap-target.png",
+      "sha256": "06cc3010f788c7e31113600e2c90f6710b2a7edf69de28db9d126fdb6a3fcd06"
+    },
+    {
+      "path": "day-390-middle-control.png",
+      "sha256": "a902ad8d446749c966ae044f48ce463aa3e427abcb7b71d6954eda1fc3b57f07"
+    },
+    {
+      "path": "day-390-middle-target.png",
+      "sha256": "723ad4beafa77497c7b574a1be98d85eafd83b66d011be6edbd7cb98cb30149f"
+    },
+    {
+      "path": "day-390-wrap-target.png",
+      "sha256": "6e7103fdba53ac7bd5a286ebf4314642bd31506025016960c303e69aabb25636"
+    },
+    {
+      "path": "night-320-middle-control.png",
+      "sha256": "d8b787c83361b21913945e651b99357bcee6a4a541ceaa2810438e2b77a55252"
+    },
+    {
+      "path": "night-320-middle-target.png",
+      "sha256": "14b81c6ee9db0b2bfa59950be5f7dbe6fce717a188627513e6396ffd770d1af2"
+    },
+    {
+      "path": "night-320-wrap-target.png",
+      "sha256": "e73b2fd7120cb5783c47562b84b1735af6f6d40ce0684061bd26747b09921b5b"
+    },
+    {
+      "path": "night-390-middle-control.png",
+      "sha256": "f38232a90e43824bad4890953c0682914a2d779a1ef5455ab055056e85933aaf"
+    },
+    {
+      "path": "night-390-middle-target.png",
+      "sha256": "8d6abeb2cb4ad8abcea11d3b0267c54f06d846cdc57e909c817286ad786c6613"
+    },
+    {
+      "path": "night-390-wrap-target.png",
+      "sha256": "4363788994824be52840d42df573c23c9274db1eb3bcf8c2460b44dd09e13caa"
+    }
+  ],
+  "checkedAt": "2026-11-06T06:35:07.270Z",
+  "htmlSha256": "0ce5d41ee3df5e7d3726f682d0b2a0821d235402432e47934a0bdb8deb6ee9cd",
+  "sourceSha256": {
+    "examples/before-arrival/index.tsx": "5a1b91e8403753aed1b27dcc47c712ffa5c8753e79cbbdcac53d0f094fba7ae7",
+    "examples/before-arrival/saved-undo.ts": "35dc0a2985755d5e31e489bd741906e1b93691021c0e7392044734aa252c026e",
+    "examples/before-arrival/showcase.css": "583b96f2d31dc43bf6ec9f6b0b968a1570af55568e3b2a4a9fcb23ebe44ac4fe",
+    "saved-item-next-browser-verify.mjs": "587c3f904d37657ef2d80db05e46f519893f95ef3ecc3467a6f11dcf3c752c23",
+    "package.json": "0c714d1e90e832efd01913c95a6eda72f22064527df3ce6a1d024d2754b139a0"
+  },
+  "upstream": "official snapshots registered through UI; no external network",
+  "checks": [
+    "32 fixed items; middle/end anchors; zero/one/many unread; search/source/unread combinations; click, Tab/Enter/Space; unchanged registry; restricted/unknown stale handlers before/after parking; reduced-motion immediate visible focus; day/night 320/390."
+  ],
+  "readability": []
+}
