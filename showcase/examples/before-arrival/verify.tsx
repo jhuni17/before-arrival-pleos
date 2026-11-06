@@ -1,4 +1,4 @@
-import {prepareSavedRemoval,prepareSavedRestore,savedIdentity} from "./saved-undo";
+import {toggleSavedReview,prepareSavedRemoval,prepareSavedRestore,savedIdentity} from "./saved-undo";
 import assert from "node:assert/strict";
 import actualSteamResponse from "../../../shared/evidence/steam-real-response.json";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -98,3 +98,19 @@ const duplicateUndo=prepareSavedRestore(alreadySaved,removal.removal);
 assert.equal(duplicateUndo.alreadyPresent,true);assert.equal(duplicateUndo.next,alreadySaved);assert.equal(duplicateUndo.next.savedItems.at(-1)!.summary,"newer saved copy");
 assert.equal(savedIdentity(newerCopy),savedIdentity(undoB));
 console.log("PASS: saved undo merges only removed item at original relative position, preserves intervening state, missing targets and newer canonical duplicate copies.");
+
+const reviewA={...undoA,originalUrl:null},reviewB={...undoB,originalUrl:null};
+const reviewBase={...undoBase,savedItems:[reviewA,reviewB]};
+const unread=(registry:typeof reviewBase)=>registry.savedItems.filter(item=>!(item as {reviewed?:boolean}).reviewed).length;
+assert.equal(unread(reviewBase),2);
+const reviewed=toggleSavedReview(reviewBase,reviewA);
+assert.equal(unread(reviewed),1);
+assert.deepEqual(reviewed.savedItems,[{...reviewA,reviewed:true},reviewB]);
+const reviewReload=readRegistry({getItem:key=>key===registryKey?JSON.stringify(reviewed):null});
+assert.deepEqual(reviewReload,reviewed);
+assert.equal(unread(toggleSavedReview(reviewReload,reviewA)),2);
+assert.deepEqual(saveItem(reviewReload,reviewA),reviewReload);
+const reviewRemoval=prepareSavedRemoval(reviewReload,reviewA)!;
+assert.deepEqual(prepareSavedRestore(reviewRemoval.next,reviewRemoval.removal).next,reviewReload);
+assert.equal(toggleSavedReview(reviewReload,undoD),reviewReload);
+console.log("PASS: existing saved items unread; explicit review 2→1, reload, revert, unchanged content/order, duplicate save, delete undo preserves review and missing target no-op.");

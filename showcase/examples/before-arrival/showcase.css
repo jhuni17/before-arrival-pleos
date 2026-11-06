@@ -664,3 +664,6 @@ select:focus-visible {
  .play-status { margin-top: 8px; }
  .secondary { min-height: 48px; margin-top: 4px; }
 }
+
+.saved-review{margin-right:8px;max-width:100%;white-space:normal}
+.phone .saved-count,.phone .saved-review-status{color:var(--text);font-weight:600}

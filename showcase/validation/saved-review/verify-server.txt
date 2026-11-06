@@ -1,0 +1,43 @@
+
+> verify:server
+> python3 -m unittest -v test_app_server.py
+
+test_client_disconnect_kills_blocked_upstream (test_app_server.CurlTransportTests.test_client_disconnect_kills_blocked_upstream) ... ok
+test_curl_is_fixed_https_without_shell_redirects_or_tls_bypass (test_app_server.CurlTransportTests.test_curl_is_fixed_https_without_shell_redirects_or_tls_bypass) ... ok
+test_curl_timeout_and_size_errors_are_reported (test_app_server.CurlTransportTests.test_curl_timeout_and_size_errors_are_reported) ... ok
+test_deadline_kills_blocked_upstream (test_app_server.CurlTransportTests.test_deadline_kills_blocked_upstream) ... ok
+test_streaming_byte_cap_kills_upstream (test_app_server.CurlTransportTests.test_streaming_byte_cap_kills_upstream) ... ok
+test_transport_rejects_redirect_and_failed_tls_metadata (test_app_server.CurlTransportTests.test_transport_rejects_redirect_and_failed_tls_metadata) ... ok
+test_unavailable_curl_has_a_safe_bridge_error (test_app_server.CurlTransportTests.test_unavailable_curl_has_a_safe_bridge_error) ... ok
+setUpClass (test_app_server.LocalServerTests) ... ERROR
+test_canonical_appids_target_only_fixed_steam_endpoint (test_app_server.SteamInputTests.test_canonical_appids_target_only_fixed_steam_endpoint) ... ok
+test_rejects_noncanonical_out_of_range_and_url_inputs (test_app_server.SteamInputTests.test_rejects_noncanonical_out_of_range_and_url_inputs) ... ok
+test_document_requires_matching_appid_and_bounded_news_array (test_app_server.UpstreamValidationTests.test_document_requires_matching_appid_and_bounded_news_array) ... ok
+test_empty_news_is_a_valid_upstream_result (test_app_server.UpstreamValidationTests.test_empty_news_is_a_valid_upstream_result) ... ok
+test_json_charset_and_fifty_items_are_accepted (test_app_server.UpstreamValidationTests.test_json_charset_and_fifty_items_are_accepted) ... ok
+test_malformed_json_and_invalid_utf8_are_rejected (test_app_server.UpstreamValidationTests.test_malformed_json_and_invalid_utf8_are_rejected) ... ok
+test_non_json_content_types_are_rejected_even_for_json_looking_body (test_app_server.UpstreamValidationTests.test_non_json_content_types_are_rejected_even_for_json_looking_body) ... ok
+test_redirects_and_non_success_statuses_are_rejected (test_app_server.UpstreamValidationTests.test_redirects_and_non_success_statuses_are_rejected) ... ok
+test_response_size_boundary (test_app_server.UpstreamValidationTests.test_response_size_boundary) ... ok
+
+======================================================================
+ERROR: setUpClass (test_app_server.LocalServerTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/before-arrival-loop-odcywa3f/repo/showcase/test_app_server.py", line 238, in setUpClass
+    cls.server = app_server.make_server(port=0, fetcher=fake_fetcher)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/before-arrival-loop-odcywa3f/repo/showcase/app_server.py", line 221, in make_server
+    server = ThreadingHTTPServer(("127.0.0.1", port), LocalAppHandler)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/socketserver.py", line 453, in __init__
+    self.socket = socket.socket(self.address_family,
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/socket.py", line 233, in __init__
+    _socket.socket.__init__(self, family, type, proto, fileno)
+PermissionError: [Errno 1] Operation not permitted
+
+----------------------------------------------------------------------
+Ran 16 tests in 0.156s
+
+FAILED (errors=1)

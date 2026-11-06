@@ -1,5 +1,5 @@
-import type {ContentItem,Registry} from "./catalog";
-export type SavedRemoval={item:ContentItem;index:number;before:string|null;after:string|null};
+import type {ContentItem,SavedItem,Registry} from "./catalog";
+export type SavedRemoval={item:SavedItem;index:number;before:string|null;after:string|null};
 export function savedIdentity(item:ContentItem):string {
  if(item.originalUrl){try{return "url:"+new URL(item.originalUrl).href.replace(/\/$/,"");}catch{}}
  return `item:${item.sourceId}:${item.id}`;
@@ -18,4 +18,10 @@ export function prepareSavedRestore(state:Registry,removal:SavedRemoval):{next:R
  const position=before>=0?before+1:after>=0?after:Math.min(removal.index,state.savedItems.length);
  const savedItems=[...state.savedItems];savedItems.splice(position,0,removal.item);
  return {next:{...state,savedItems},alreadyPresent:false};
+}
+
+export function toggleSavedReview(state:Registry,target:ContentItem):Registry {
+ const key=savedIdentity(target);
+ if(!state.savedItems.some(item=>savedIdentity(item)===key))return state;
+ return {...state,savedItems:state.savedItems.map(item=>savedIdentity(item)===key?{...item,reviewed:item.reviewed!==true}:item)};
 }
