@@ -31,6 +31,7 @@ try{
  let popups=0;page.on('popup',()=>popups++);
  const positionKey='before-arrival-saved-position-v1';
  const position=()=>page.evaluate(k=>localStorage.getItem(k),positionKey);
+ if(!process.env.POSITION_CONTINUE_ONLY){
  await load([2,17,31]);assert(await resume().isDisabled());assert.equal(await reveal().count(),0);
  for(const i of [17,31]){await mark(i).click();assert.equal(await position(),'url:'+fixture.savedItems[i].originalUrl.replace(/\/$/,''));assert.deepEqual(await read(page),fixture);}
  await page.reload();await resume().waitFor();assert.notEqual(await page.evaluate(()=>document.activeElement.textContent),fixture.savedItems[31].title);
@@ -101,6 +102,46 @@ try{
   assert.equal(await position(),null);assert.equal(await clear().count(),0);assert(await resume().isDisabled());assert(await resume().evaluate(el=>el===document.activeElement));assert.equal(await page.locator('#saved-position-help').innerText(),'');assert.equal(await page.locator('.saved-position [role=status]').last().innerText(),'');assert.deepEqual(await otherStorage(),before);
   await page.reload();assert.equal(await position(),null);assert.equal(await clear().count(),0);assert(await resume().isDisabled());assert.deepEqual(await otherStorage(),before);assert.equal(await page.locator('.primary').getAttribute('aria-pressed'),'false');
  }
+ }
+ // Explicit continuation uses the full saved order, excluding the anchor even after wrap.
+ const onward=()=>page.getByRole('button',{name:'지난 위치 다음 미확인부터 이어보기',exact:true});
+ async function continueCheck(target,method='Enter'){
+  const before=await page.evaluate(()=>JSON.stringify(localStorage));
+  await onward().focus();await page.keyboard.press(method);
+  assert.equal(await page.evaluate(()=>document.activeElement.textContent),fixture.savedItems[target].title);
+  assert.equal(await page.evaluate(()=>JSON.stringify(localStorage)),before);
+  assert.equal(await page.locator('.primary').getAttribute('aria-pressed'),'false');
+ }
+ await load([2,17,31]);await mark(17).click();await clear().click();assert(await onward().isDisabled());assert.match(await page.locator('#saved-position-continue-help').innerText(),/없어요/);
+ await mark(17).click();await continueCheck(31);await mark(31).click();await continueCheck(2,'Space');
+ await page.reload();assert.notEqual(await page.evaluate(()=>document.activeElement.textContent),fixture.savedItems[2].title);await continueCheck(2);
+ for(const source of ['',fixture.savedItems[2].sourceId])for(const query of ['','짝수'])for(const mode of ['전체','미확인만','확인 완료만']){
+  await page.getByLabel('저장한 출처',{exact:true}).selectOption(source);await search.fill(query);await page.getByRole('button',{name:mode,exact:true}).click();
+  if(mode==='확인 완료만'){assert(await onward().isDisabled());assert.match(await page.locator('#saved-position-continue-help').innerText(),/없어요/);}else await continueCheck(2);
+ }
+ await load([17]);await mark(17).click();assert(await onward().isDisabled());
+ await page.getByRole('button',{name:fixture.savedItems[17].title+' 저장 취소',exact:true}).click();assert(await onward().isDisabled());assert.match(await page.locator('#saved-position-continue-help').innerText(),/삭제/);
+ for(const blocked of ['주행 제한','상태 미확인']){
+  await load([2,17,31]);await mark(17).click();const stale=await onward().evaluateHandle(el=>el[Object.keys(el).find(k=>k.startsWith('__reactProps$'))].onClick);
+  await page.getByRole('button',{name:blocked,exact:true}).click();const snapshot=await page.evaluate(()=>JSON.stringify(localStorage));await stale.evaluate(fn=>fn());
+  await page.getByRole('button',{name:'04 도착',exact:true}).click();const focus=await page.evaluate(()=>document.activeElement.textContent);await stale.evaluate(fn=>fn());
+  assert.equal(await page.evaluate(()=>document.activeElement.textContent),focus);assert.equal(await page.evaluate(()=>JSON.stringify(localStorage)),snapshot);assert.equal(await page.locator('.primary').getAttribute('aria-pressed'),'false');
+ }
+ for(const theme of ['day','night'])for(const width of [320,390]){
+  const height=width===320?960:1080;await load([2,17,31]);await page.setViewportSize({width,height});await page.goto(base+'/?state=arrived&theme='+theme);await mark(17).click();await page.evaluate(()=>{scrollTo(0,0);return document.fonts.ready;});
+  const heading=await page.locator('.saved-article h3').first().boundingBox();assert(heading&&heading.y>=0&&heading.y+heading.height<=height,JSON.stringify({theme,width,heading}));
+  const metrics=await onward().evaluate(el=>{
+   const rgb=s=>s.match(/[\d.]+/g).slice(0,3).map(Number);
+   const lum=s=>rgb(s).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;}).reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0);
+   const measure=node=>{const style=getComputedStyle(node);let bg=node;while(getComputedStyle(bg).backgroundColor==='rgba(0, 0, 0, 0)')bg=bg.parentElement;const a=lum(style.color),b=lum(getComputedStyle(bg).backgroundColor);return {font:parseFloat(style.fontSize),contrast:(Math.max(a,b)+.05)/(Math.min(a,b)+.05)};};
+   return {button:measure(el),reason:measure(document.querySelector('#saved-position-continue-help')),height:el.getBoundingClientRect().height};
+  });
+  assert(metrics.height>=44);for(const text of [metrics.button,metrics.reason]){assert(text.font>=16);assert(text.contrast>=4.5);}report.readability.push({theme,width,height,...metrics});
+  await tabTo(page,onward());await page.keyboard.press(width===320?'Enter':'Space');assert.equal(await page.evaluate(()=>document.activeElement.textContent),fixture.savedItems[31].title);
+  const path=`continue-${theme}-${width}.png`;await page.screenshot({path:out+'/'+path});report.captures.push({path,sha256:createHash('sha256').update(await readFile(out+'/'+path)).digest('hex')});
+ }
+ report.checks.push('Continuation: full-order wrap excluding anchor, hidden anchor, search/source/review filters, no position/deleted/no other unread, reload without auto-jump, unchanged complete storage, no playback/popups, stale handlers across both safety transitions.');
+ if(!process.env.POSITION_CONTINUE_ONLY){
  await page.emulateMedia({reducedMotion:'reduce'});
  for(const theme of ['day','night'])for(const width of [320,390]){
   await load([2,17,31]);const height=width===320?960:1080;await page.setViewportSize({width,height});await page.goto(base+'/?state=arrived&theme='+theme);await page.evaluate(()=>document.fonts.ready);
@@ -114,9 +155,13 @@ try{
   assert.equal(await page.evaluate(()=>document.activeElement.textContent),fixture.savedItems[17].title);const box=await page.locator('.saved-article h3:focus').boundingBox();assert(box.y>=0&&box.y+box.height<=height);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);await capture('target');assert.deepEqual(await read(page),fixture);
  }
 
+ }
  assert.equal(popups,0);
+ if(!process.env.POSITION_CONTINUE_ONLY){
  report.checks.push('Reveal: each filter and all combinations, reset storage failures, reload without auto-jump, keyboard, reduced motion, batched safety transition and stale callbacks; hidden control layout captures.');
  report.checks.push('Clear normal/hidden/deleted positions, remove failure/retry, other localStorage unchanged, reload, keyboard focus and stale clear callbacks; first-viewport headings at 320x960/390x1080 day/night. ');
  report.checks.push('32 fixed items: position replacement, reload without auto-jump, write failure/retry, source/search/unread combinations, deleted target/undo, stale save/jump callbacks before/after restricted/unknown, unchanged registry/URLs/order/review, day/night 320/390 Tab/Enter/Space and reduced-motion immediate title focus.');
- await writeFile(out+'/saved-position-report.json',JSON.stringify(report,null,2)+'\n');console.log('PASS: saved position');
+ }
+ await writeFile(out+'/saved-position-report.json',JSON.stringify(report,null,2)+'\n');
+ await writeFile(out+'/saved-position-report.sha256',createHash('sha256').update(await readFile(out+'/saved-position-report.json')).digest('hex')+'  saved-position-report.json\n');console.log('PASS: saved position');
 }finally{await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}

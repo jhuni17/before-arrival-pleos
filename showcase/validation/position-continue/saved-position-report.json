@@ -1,0 +1,90 @@
+{
+  "candidateSha": "0f43c719143a54fd62f139ebfe160f2b2dd9ab0e",
+  "workingTreeDirty": true,
+  "scope": "Browser sample only; no APK installation, emulator or actual Pleos SDK evidence.",
+  "captures": [
+    {
+      "path": "continue-day-320.png",
+      "sha256": "454351c3a0c6dac3a68cf3f4c273fc80d6dff44f0a8192cf8d92666647c34318"
+    },
+    {
+      "path": "continue-day-390.png",
+      "sha256": "78bcb7ee25f8b42a7541ee1148650ad6a58ab16bb7f3526fe5c1abe67cfc321f"
+    },
+    {
+      "path": "continue-night-320.png",
+      "sha256": "47cf87837feb29bf76f6d840f69afac120b12800438887ee485e955670194953"
+    },
+    {
+      "path": "continue-night-390.png",
+      "sha256": "78d60bf1c55c8641a3540d060a18686b333500bb811d9a6109f23d2b40db5140"
+    }
+  ],
+  "checkedAt": "2026-11-06T23:04:40.209Z",
+  "htmlSha256": "eef965f1215d90203dff303ffbcb392f30b9c48ef6272fbb04d7e0aa662f3a54",
+  "sourceSha256": {
+    "examples/before-arrival/index.tsx": "ecfcb7f4a5d91424e1dd3a33030d0b77af6751de48a357f142acd3172f83e6dc",
+    "examples/before-arrival/saved-undo.ts": "490487beec45fd64f3ca05f302670060bb876054413995f7a4fee9dfc2805afc",
+    "examples/before-arrival/showcase.css": "737eb50a2e271ba7ff9ded50284778d479a4d841a279278f3ffd40282332a157",
+    "saved-position-browser-verify.mjs": "1fcf5518912fe59a0ea570d71180798c0d0aea5db8984e4238c51eb9812d67fc",
+    "package.json": "0838542a0bf4c71374cda15a38310f074b49c8a9397edd9d4b985b776aa3c96b"
+  },
+  "upstream": "official snapshots registered through UI; no external network",
+  "checks": [
+    "Continuation: full-order wrap excluding anchor, hidden anchor, search/source/review filters, no position/deleted/no other unread, reload without auto-jump, unchanged complete storage, no playback/popups, stale handlers across both safety transitions."
+  ],
+  "readability": [
+    {
+      "theme": "day",
+      "width": 320,
+      "height": 44,
+      "button": {
+        "font": 16,
+        "contrast": 18.263144269082044
+      },
+      "reason": {
+        "font": 16,
+        "contrast": 17.442218774298816
+      }
+    },
+    {
+      "theme": "day",
+      "width": 390,
+      "height": 44,
+      "button": {
+        "font": 16,
+        "contrast": 18.263144269082044
+      },
+      "reason": {
+        "font": 16,
+        "contrast": 17.442218774298816
+      }
+    },
+    {
+      "theme": "night",
+      "width": 320,
+      "height": 44,
+      "button": {
+        "font": 16,
+        "contrast": 5.32921162976606
+      },
+      "reason": {
+        "font": 16,
+        "contrast": 15.251694958229084
+      }
+    },
+    {
+      "theme": "night",
+      "width": 390,
+      "height": 44,
+      "button": {
+        "font": 16,
+        "contrast": 5.32921162976606
+      },
+      "reason": {
+        "font": 16,
+        "contrast": 15.251694958229084
+      }
+    }
+  ]
+}

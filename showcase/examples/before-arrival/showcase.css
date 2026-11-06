@@ -734,3 +734,6 @@ select:focus-visible {
 }
 
 .phone .saved-capacity-reviewed{display:block;min-height:44px;max-width:100%;padding:8px 6px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font:inherit;font-size:16px;white-space:normal}
+
+.phone #saved-position-continue-help{font-size:16px;color:var(--text)}
+.phone .saved-position .saved-position-continue[aria-disabled="true"]{opacity:1}
