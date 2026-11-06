@@ -1,0 +1,488 @@
+Bounded read-only preflight; commands run from /home/ubuntu/.local/share/before-arrival-runner/side-lanes-tm8mt0_h/android/repo
+Timezone: Asia/Seoul (UTC+09:00); no credentials supplied; no Gradle/Chromium/install/sign/license actions.
+
+START 2026-11-06T22:50:42.068744+09:00
+cwd=/home/ubuntu/.local/share/before-arrival-runner/side-lanes-tm8mt0_h/android/repo
+$ git rev-parse HEAD
+exit=0
+stdout:
+8e8695ee7f8fe0103bf4c91b15a3a405b06a6df9
+
+stderr:
+
+END 2026-11-06T22:50:42.654861+09:00
+
+START 2026-11-06T22:50:42.654879+09:00
+cwd=/home/ubuntu/.local/share/before-arrival-runner/side-lanes-tm8mt0_h/android/repo
+$ command -v java javac adb emulator apksigner curl python3
+exit=0
+stdout:
+/usr/bin/curl
+/usr/bin/python3
+
+stderr:
+
+END 2026-11-06T22:50:42.667989+09:00
+
+START 2026-11-06T22:50:42.668007+09:00
+cwd=/home/ubuntu/.local/share/before-arrival-runner/side-lanes-tm8mt0_h/android/repo
+$ java -version
+exit=127
+stdout:
+
+stderr:
+bash: line 1: java: command not found
+
+END 2026-11-06T22:50:42.672618+09:00
+
+START 2026-11-06T22:50:42.672638+09:00
+cwd=/home/ubuntu/.local/share/before-arrival-runner/side-lanes-tm8mt0_h/android/repo
+$ javac -version
+exit=127
+stdout:
+
+stderr:
+bash: line 1: javac: command not found
+
+END 2026-11-06T22:50:42.753915+09:00
+
+START 2026-11-06T22:50:42.753930+09:00
+cwd=/home/ubuntu/.local/share/before-arrival-runner/side-lanes-tm8mt0_h/android/repo
+$ python3 - <<'ENV'
+import os, pathlib
+for name in ('JAVA_HOME','ANDROID_HOME','ANDROID_SDK_ROOT','GRADLE_USER_HOME'):
+ p=os.environ.get(name)
+ print(name, p if p else '(unset)')
+ if p: print('exists:',pathlib.Path(p).exists())
+paths=['/usr/lib/jvm','/opt/java','/opt/android-sdk','/opt/android','/usr/local/lib/android/sdk',str(pathlib.Path.home()/'Android/Sdk'),str(pathlib.Path.home()/'.android/avd'),'/dev/kvm','/workspace/tools-before-arrival/jdk-17.0.12','/workspace/tools-before-arrival/android-sdk']
+for raw in paths:
+ p=pathlib.Path(raw)
+ print(raw, 'exists='+str(p.exists()))
+ if p.is_dir(): print('children:', ', '.join(sorted(x.name for x in p.iterdir())[:30]))
+roots=[pathlib.Path.home()/'.gradle/caches',pathlib.Path.home()/'.m2/repository/ai/pleos',root/'android']
+for p in roots:
+ print('bounded artifact search:',p)
+ if p.exists():
+  count=0
+  for parent,dirs,files in os.walk(p):
+   if len(pathlib.Path(parent).relative_to(p).parts)>=8: dirs[:]=[]
+   for f in files:
+    if f.endswith(('.apk','.aar')) or f in ('java','javac','adb','emulator','apksigner'):
+     print(pathlib.Path(parent)/f)
+     count+=1
+     if count>=100: break
+   if count>=100: print('truncated at 100');break
+ else: print('(absent)')
+ENV
+exit=1
+stdout:
+JAVA_HOME (unset)
+ANDROID_HOME (unset)
+ANDROID_SDK_ROOT (unset)
+GRADLE_USER_HOME (unset)
+/usr/lib/jvm exists=False
+/opt/java exists=False
+/opt/android-sdk exists=False
+/opt/android exists=False
+/usr/local/lib/android/sdk exists=False
+/home/ubuntu/Android/Sdk exists=False
+/home/ubuntu/.android/avd exists=False
+/dev/kvm exists=False
+/workspace/tools-before-arrival/jdk-17.0.12 exists=False
+/workspace/tools-before-arrival/android-sdk exists=False
+
+stderr:
+Traceback (most recent call last):
+  File "<stdin>", line 11, in <module>
+NameError: name 'root' is not defined
+
+END 2026-11-06T22:50:45.969459+09:00
+
+START 2026-11-06T22:50:45.969482+09:00
+cwd=/home/ubuntu/.local/share/before-arrival-runner/side-lanes-tm8mt0_h/android/repo
+$ rg --files -g '*.apk' -g '*.aar' -g '*AGENTS.md' -g 'local.properties' -g '*lockfile*' android .github
+exit=1
+stdout:
+
+stderr:
+
+END 2026-11-06T22:50:46.259121+09:00
+
+START 2026-11-06T22:50:46.259142+09:00
+cwd=/home/ubuntu/.local/share/before-arrival-runner/side-lanes-tm8mt0_h/android/repo
+$ cat android/app/src/main/java/com/beforearrival/briefing/NaviTimeContract.java android/app/src/pleos/java/com/beforearrival/briefing/PleosRouteConnection.java android/settings.gradle android/app/build.gradle android/app/src/pleos/AndroidManifest.xml
+exit=0
+stdout:
+package com.beforearrival.briefing;
+
+import java.time.Duration;
+
+/**
+ * The accessible 3.0.5 reference exposes remainTime's name but no unit, sentinel,
+ * or range. Do not guess seconds/minutes, or copy the unrelated battery API unit.
+ * Replace this guard only with a cited, versioned SDK contract and fixture.
+ */
+final class NaviTimeContract {
+    static Duration decode(Object rawRemainTime) {
+        throw new IllegalStateException("NaviHelper 3.0.5 remainTime 단위·유효 범위 확인 필요");
+    }
+    private NaviTimeContract() {}
+}
+package com.beforearrival.briefing;
+
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
+
+import java.time.Instant;
+
+import ai.pleos.playground.navi.constants.NaviErrorCode;
+import ai.pleos.playground.navi.data.DestinationInfo;
+import ai.pleos.playground.navi.helper.NaviHelper;
+import ai.pleos.playground.navi.helper.listener.NaviHelperEventListener;
+import kotlin.Unit;
+
+/** SDK-dependent candidate; must be compiled and exercised against the real 3.0.5 AAR. */
+final class PleosRouteConnection implements RouteConnection {
+    private static final String PERMISSION = "pleos.car.permission.NAVI_ROUTE";
+    private final Context context;
+    private final NavigationRouteInput route;
+    private final Handler main = new Handler(Looper.getMainLooper());
+    private NaviHelper helper;
+    private NaviHelperEventListener listener;
+    private long token;
+    private boolean closed;
+    private boolean pending;
+    private final Runnable timeout = () -> invalidate("내비 응답 없음 · 다시 연결해 주세요");
+    private final Runnable poll = this::requestDestination;
+
+    PleosRouteConnection(Context context, NavigationRouteInput route) {
+        this.context = context;
+        this.route = route;
+    }
+
+    @Override public void start() {
+        token = route.start(Instant.now());
+        if (!hasPermission()) {
+            invalidate("내비 경로 조회 권한 없음");
+            return;
+        }
+        try {
+            helper = new NaviHelper(context);
+            listener = new NaviHelperEventListener() {
+                @Override public void onDestinationInfo(DestinationInfo info) {
+                    Instant receivedAt = Instant.now();
+                    main.post(() -> receive(info, receivedAt));
+                }
+                @Override public void onRouteCancelled() { postInvalidate("경로 취소 · 다시 연결해 주세요"); }
+                @Override public void onDestinationChanged() { postInvalidate("목적지 변경 · 다시 연결해 주세요"); }
+                @Override public void onError(NaviErrorCode code) { postInvalidate("내비 오류 · 다시 연결해 주세요"); }
+            };
+            helper.initialize(() -> {
+                main.post(() -> {
+                    if (!current()) return;
+                    try {
+                        helper.addListener(listener);
+                        requestDestination();
+                    } catch (RuntimeException error) { invalidate("내비 서비스 연결 실패"); }
+                });
+                return Unit.INSTANCE;
+            }, error -> {
+                postInvalidate("내비 서비스 연결 실패");
+                return Unit.INSTANCE;
+            });
+            main.postDelayed(timeout, 10_000);
+        } catch (RuntimeException | LinkageError error) {
+            Log.w("BeforeArrival", "NaviHelper unavailable", error);
+            invalidate("NaviHelper 사용 불가");
+        }
+    }
+
+    private boolean hasPermission() {
+        return context.checkSelfPermission(PERMISSION) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private boolean current() { return !closed && route.isCurrent(token); }
+
+    private void requestDestination() {
+        if (!current() || pending) return;
+        if (!hasPermission()) { invalidate("내비 경로 조회 권한 없음"); return; }
+        try {
+            pending = true;
+            helper.getDestinationInfo();
+            main.removeCallbacks(timeout);
+            main.postDelayed(timeout, 10_000);
+        } catch (RuntimeException error) { invalidate("내비 서비스 사용 불가"); }
+    }
+
+    private void receive(DestinationInfo info, Instant receivedAt) {
+        if (!current() || !pending) return;
+        if (!hasPermission()) { invalidate("내비 경로 조회 권한 없음"); return; }
+        pending = false;
+        main.removeCallbacks(timeout);
+        try {
+            route.destination(token, NaviTimeContract.decode(info == null ? null : info.getRemainTime()), receivedAt);
+            if (current()) main.postDelayed(poll, 5_000);
+        } catch (RuntimeException error) {
+            invalidate("도착 시간 단위·유효 범위 확인 필요");
+        }
+    }
+
+    private void postInvalidate(String reason) { main.post(() -> { if (current()) invalidate(reason); }); }
+
+    private void invalidate(String reason) {
+        route.invalidate(token, Instant.now(), reason);
+        dispose();
+    }
+
+    @Override public void close() {
+        closed = true;
+        route.close(Instant.now());
+        dispose();
+    }
+
+    private void dispose() {
+        main.removeCallbacks(timeout);
+        main.removeCallbacks(poll);
+        NaviHelper previous = helper;
+        helper = null;
+        if (previous == null) return;
+        try { if (listener != null) previous.removeListener(listener); }
+        catch (RuntimeException error) { Log.w("BeforeArrival", "Navi listener cleanup failed", error); }
+        finally {
+            listener = null;
+            try { previous.release(); }
+            catch (RuntimeException error) { Log.w("BeforeArrival", "Navi release failed", error); }
+        }
+    }
+}
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        exclusiveContent {
+            forRepository { maven { url 'https://nexus-playground.pleos.ai/repository/maven-releases/' } }
+            filter { includeGroup 'ai.pleos.playground' }
+        }
+    }
+}
+
+rootProject.name = 'BeforeArrival'
+include ':app'
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.beforearrival.briefing'
+    compileSdk 35
+    useLibrary 'android.car', false
+
+    defaultConfig {
+        applicationId 'com.beforearrival.briefing'
+        minSdk 29
+        targetSdk 35
+        versionCode 1
+        versionName '0.1'
+    }
+
+    flavorDimensions 'route'
+    productFlavors {
+        sample { dimension 'route'; applicationIdSuffix '.sample' }
+        pleos { dimension 'route' }
+    }
+
+    testOptions { unitTests.includeAndroidResources = true }
+    sourceSets { main.assets.srcDirs += ['../../shared'] }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+dependencies {
+    testImplementation "junit:junit:4.13.2"
+    testImplementation "org.robolectric:robolectric:4.16.1"
+    pleosImplementation "ai.pleos.playground:NaviHelper:3.0.5"
+}
+
+// Use the same session proxy/trust configuration for the Robolectric test JVM.
+tasks.withType(Test).configureEach {
+    ['https.proxyHost', 'https.proxyPort', 'http.proxyHost', 'http.proxyPort',
+     'javax.net.ssl.trustStore'].each { key ->
+        if (System.getProperty(key)) systemProperty key, System.getProperty(key)
+    }
+    systemProperty 'robolectric.dependency.repo.url', 'https://repo.maven.apache.org/maven2'
+}
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="pleos.car.permission.NAVI_ROUTE" />
+</manifest>
+
+stderr:
+
+END 2026-11-06T22:50:46.271866+09:00
+
+START 2026-11-06T22:50:46.271881+09:00
+cwd=/home/ubuntu/.local/share/before-arrival-runner/side-lanes-tm8mt0_h/android/repo
+$ python3 android/checks/verify-colors.py
+exit=0
+stdout:
+values: text/background 15.28:1
+values: text/surface 17.44:1
+values: text_secondary/background 6.28:1
+values: text_secondary/surface 7.17:1
+values: button/surface 15.40:1
+values: on_button/button 15.40:1
+values-night: text/background 17.32:1
+values-night: text/surface 15.25:1
+values-night: text_secondary/background 10.01:1
+values-night: text_secondary/surface 8.81:1
+values-night: button/surface 15.25:1
+values-night: on_button/button 16.43:1
+
+stderr:
+
+END 2026-11-06T22:50:46.664541+09:00
+
+START 2026-11-06T22:50:46.664561+09:00
+cwd=/home/ubuntu/.local/share/before-arrival-runner/side-lanes-tm8mt0_h/android/repo
+$ curl -q --head --connect-timeout 5 --max-time 15 --proto '=https' https://nexus-playground.pleos.ai/repository/maven-releases/ai/pleos/playground/NaviHelper/3.0.5/NaviHelper-3.0.5.pom
+exit=56
+stdout:
+HTTP/1.1 403 Forbidden
+content-type: text/plain
+x-proxy-error: blocked-by-allowlist
+content-length: 24
+date: Fri, 06 Nov 2026 13:50:47 GMT
+
+
+stderr:
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+curl: (56) CONNECT tunnel failed, response 403
+
+END 2026-11-06T22:50:48.259163+09:00
+
+Supplement: corrected artifact search after initial NameError; initial partial results above retained.
+
+START 2026-11-06T22:51:11.161280+09:00
+cwd=/home/ubuntu/.local/share/before-arrival-runner/side-lanes-tm8mt0_h/android/repo
+$ python3 - <<'ENV'
+import os,pathlib
+root=pathlib.Path.cwd()
+for p in [pathlib.Path.home()/'.gradle/caches',pathlib.Path.home()/'.m2/repository/ai/pleos',root]:
+ print('search root:',p,'exists:',p.exists())
+ count=0
+ if not p.exists(): continue
+ for parent,dirs,files in os.walk(p):
+  if len(pathlib.Path(parent).relative_to(p).parts)>=8: dirs[:]=[]
+  dirs[:]=[d for d in dirs if d not in ('.git','node_modules')]
+  for f in files:
+   if f.endswith(('.apk','.aar')):
+    print(pathlib.Path(parent)/f);count+=1
+  if count>=100: print('truncated at 100');break
+ print('matched:',count)
+ENV
+exit=0
+stdout:
+search root: /home/ubuntu/.gradle/caches exists: False
+search root: /home/ubuntu/.m2/repository/ai/pleos exists: False
+search root: /home/ubuntu/.local/share/before-arrival-runner/side-lanes-tm8mt0_h/android/repo exists: True
+matched: 0
+
+stderr:
+
+END 2026-11-06T22:51:11.967040+09:00
+
+START 2026-11-06T22:51:11.967072+09:00
+cwd=/home/ubuntu/.local/share/before-arrival-runner/side-lanes-tm8mt0_h/android/repo
+$ for tool in java javac adb emulator apksigner; do command -v "$tool"; result=$?; printf '%s exit=%s\n' "$tool" "$result"; done
+exit=0
+stdout:
+java exit=1
+javac exit=1
+adb exit=1
+emulator exit=1
+apksigner exit=1
+
+stderr:
+
+END 2026-11-06T22:51:12.056141+09:00
+
+START 2026-11-06T22:51:12.056165+09:00
+cwd=/home/ubuntu/.local/share/before-arrival-runner/side-lanes-tm8mt0_h/android/repo
+$ git status --short
+exit=0
+stdout:
+?? android/validation/preflight-2026-11-06.txt
+?? android/validation/public-sdk-javac.md
+
+stderr:
+
+END 2026-11-06T22:51:15.788423+09:00
+
+START 2026-11-06T22:51:15.788452+09:00
+cwd=/home/ubuntu/.local/share/before-arrival-runner/side-lanes-tm8mt0_h/android/repo
+$ cat /etc/codex/network-policy.json
+exit=1
+stdout:
+
+stderr:
+cat: /etc/codex/network-policy.json: No such file or directory
+
+END 2026-11-06T22:51:15.867816+09:00
+
+START 2026-11-06T22:52:51.573417+09:00
+cwd=/home/ubuntu/.local/share/before-arrival-runner/side-lanes-tm8mt0_h/android/repo
+$ git diff --check
+exit=0
+stdout:
+
+stderr:
+
+END 2026-11-06T22:53:02.554697+09:00
+
+START 2026-11-06T22:53:02.554730+09:00
+cwd=/home/ubuntu/.local/share/before-arrival-runner/side-lanes-tm8mt0_h/android/repo
+$ git diff --name-only
+exit=0
+stdout:
+android/VALIDATION.md
+
+stderr:
+
+END 2026-11-06T22:53:08.664968+09:00
+
+START 2026-11-06T22:53:08.666120+09:00
+cwd=/home/ubuntu/.local/share/before-arrival-runner/side-lanes-tm8mt0_h/android/repo
+$ git status --short
+exit=0
+stdout:
+ M android/VALIDATION.md
+?? android/validation/preflight-2026-11-06.txt
+?? android/validation/public-sdk-javac.md
+?? android/validation/submission-preflight-2026-11-06.md
+
+stderr:
+
+END 2026-11-06T22:53:11.558039+09:00

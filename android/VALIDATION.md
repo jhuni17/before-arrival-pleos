@@ -1,5 +1,7 @@
 # Android 검증 기록 · 원본 차량 작업
 
+> 2026-11-06 제한적 현지 점검은 [제출 증거 사전 점검](validation/submission-preflight-2026-11-06.md)을 따른다. 아래 Maven 403은 과거 환경 결과다. 사용자 제공 독립 검증은 공개 NaviHelper 3.0.5/navi-data 3.0.4 다운로드·체크섬과 `getRemainTime(): int`를 확인했다. 단위·sentinel 및 전체 Pleos 빌드·기기 동작은 미확인이고 decoder 차단을 유지한다.
+
 > 이 기록과 validation/ 로그는 차량 입력 `479db2bc4e55bd58e9cda1f9408ea294e1c8ebf3` 작업 환경의 결과다. 이 통합 환경에서 APK 바이너리를 받거나 서명을 다시 검사한 기록이 아니다. Android 소스 입력 30개는 통합 후 해시 대조를 통과했다. 이 문서의 원본30개 입력·11건 테스트·옛 APK 해시는 과거 기록이다. 이후27 소스의 APK·24건 테스트·41개 입력과 독립 검증은 [현재 기록](../sources-notes.md)을 따른다.
 
 확인 시각: 2026-11-05T20:41:46+09:00 (Asia/Seoul). 환경: before-arrival-pleos. 저장소: 비공개 `jhuni17/before-arrival-pleos`.
