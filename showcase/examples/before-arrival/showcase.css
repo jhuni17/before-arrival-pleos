@@ -694,3 +694,9 @@ select:focus-visible {
 .saved-next:focus-visible,.saved-article h3:focus{outline:2px solid var(--text);outline-offset:4px}
 
 .saved-article .saved-item-next{display:block;min-height:48px;max-width:100%;white-space:normal;font:inherit}
+
+.phone .saved-position{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:0;overflow-wrap:anywhere}
+.phone .saved-position p{font-size:12px;margin:0}
+.phone .saved-position p:empty{display:none}
+.ba-scene .saved-position button,.ba-scene .saved-position-save{font:inherit;min-height:44px;max-width:100%;white-space:normal}
+.phone .saved-position .saved-count{font-size:15px}

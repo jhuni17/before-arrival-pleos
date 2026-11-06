@@ -1,0 +1,69 @@
+{
+  "candidateSha": "8d3676848df0fd43d752ea5160b16713377ca15f",
+  "workingTreeDirty": true,
+  "scope": "Browser sample only; no APK installation, emulator or actual Pleos SDK evidence.",
+  "captures": [
+    {
+      "path": "day-320-saved.png",
+      "sha256": "8322f1d36b2de8a21b4a5b164bf16c2b9b465ad79a72edea28876a843b2b27de"
+    },
+    {
+      "path": "day-320-control.png",
+      "sha256": "083d9af30d9969b82a8fd15c519d9f4512e8c8a4ddc5da0ea19869e534ddc807"
+    },
+    {
+      "path": "day-320-target.png",
+      "sha256": "caf11257d08ad7167e15dc346d246a58bd28658f1ad3848e2c5e7bb3cb185cbb"
+    },
+    {
+      "path": "day-390-saved.png",
+      "sha256": "109a9df9a480b8cd1e92037cf99264278b5497cab6ccdaa44a41cae58122dc74"
+    },
+    {
+      "path": "day-390-control.png",
+      "sha256": "ccdffeeb170c77267143c1d9eff333fa3f9328a6eb00ca002342fed093e3dae3"
+    },
+    {
+      "path": "day-390-target.png",
+      "sha256": "74640cd4804c619077987beed407646eb74a2cb81a02b8a56d0804e1785549ff"
+    },
+    {
+      "path": "night-320-saved.png",
+      "sha256": "30cc1bd5ae27daaf287ec910a66aa0bcc7bf209add0b4b94ec572c37ef02783b"
+    },
+    {
+      "path": "night-320-control.png",
+      "sha256": "c967f78632d54ef361a93a4c8a9ef48288654ae345e8013fb4153a722ae87c3f"
+    },
+    {
+      "path": "night-320-target.png",
+      "sha256": "b2233e13c0998dd6b1a304c8d2ec97686cfef44e0bbc3c0537b8713038947179"
+    },
+    {
+      "path": "night-390-saved.png",
+      "sha256": "2223758be85f92fedc8bf6873a73a6e8d8a7fcc48f43b4cf870a231a48f41967"
+    },
+    {
+      "path": "night-390-control.png",
+      "sha256": "4d355b4967432d90b659f23ef8e60909081933aa7c5cf55c1b3cd87e65a5a4ea"
+    },
+    {
+      "path": "night-390-target.png",
+      "sha256": "f6a00654d445c85339186d976f8442efe2421bb3302674a9410b79534b59d05f"
+    }
+  ],
+  "checkedAt": "2026-11-06T07:10:26.362Z",
+  "htmlSha256": "60eae3d73d1adfce93aef7cb7392ccc777fc7258fe5f3202924d91e19f55d9bb",
+  "sourceSha256": {
+    "examples/before-arrival/index.tsx": "e843c969bcd510aeea40338856186e49ad5af4ddccde61f3d9d0304f5d6d9391",
+    "examples/before-arrival/saved-undo.ts": "35dc0a2985755d5e31e489bd741906e1b93691021c0e7392044734aa252c026e",
+    "examples/before-arrival/showcase.css": "1e803c36070d2d8067d7ddc9e7d824a5949898e1ca87ffef9cba50250357ba7a",
+    "saved-position-browser-verify.mjs": "3994c6d46d789f193d75d422839f5c19c462ebf590444017aa51215ab83ffec9",
+    "package.json": "5532ad9f1cc27eed70c5e65408e978b2f17368d2323c2c4eb2623a66da4450fa"
+  },
+  "upstream": "official snapshots registered through UI; no external network",
+  "checks": [
+    "32 fixed items: position replacement, reload without auto-jump, write failure/retry, source/search/unread combinations, deleted target/undo, stale save/jump callbacks before/after restricted/unknown, unchanged registry/URLs/order/review, day/night 320/390 Tab/Enter/Space and reduced-motion immediate title focus."
+  ],
+  "readability": []
+}
