@@ -78,13 +78,15 @@ jobs:
           node-version: '22'
           package-manager-cache: false
 
-      - name: Check briefing logic and local Steam bridge
+      - name: Build showcase and run browser regression tests
         if: ${{ !cancelled() }}
         shell: bash
         working-directory: showcase
         run: |
           {
             npm ci
+            npm run build
+            sha256sum before-arrival-showcase.html > ../ci-evidence/showcase-html-sha256.txt
             npm run verify
             npm run verify:server
             npx --no-install playwright-core install --with-deps chromium
@@ -94,6 +96,7 @@ jobs:
             npm run verify:arrival
             npm run verify:refresh-feedback
             npm run verify:saved-undo
+            npm run verify:browser
           } 2>&1 | tee ../ci-evidence/showcase.log
 
       - name: Upload evidence for the candidate commit
