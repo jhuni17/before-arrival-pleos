@@ -71,6 +71,9 @@ public final class MainActivity extends Activity {
     private boolean transcriptVisible;
     private enum SavedFilter { ALL, UNREAD, CONFIRMED }
     private SavedFilter savedFilter = SavedFilter.ALL;
+    private Item undoConfirmed;
+    private Object undoToken;
+    private LinearLayout savedUndo;
     private Button savedFirstUnread;
     private TextView savedUnreadEmpty;
     private Button savedAll;
@@ -147,6 +150,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onPause() {
         resumed = false;
+        clearConfirmationUndo();
         lifecycleGeneration++;
         dismissDialog();
         speech.stop();
@@ -284,6 +288,8 @@ public final class MainActivity extends Activity {
         savedUnread = button("미확인만", false, () -> selectSavedFilter(SavedFilter.UNREAD));
         savedConfirmed = button("확인 완료만", false, () -> selectSavedFilter(SavedFilter.CONFIRMED));
         add(savedPanel, buttonRow(savedAll, savedUnread, savedConfirmed), 8);
+        savedUndo = column();
+        add(savedPanel, savedUndo, 8);
         savedRows = column();
         add(savedPanel, savedRows, 4);
         add(savedPanel, label(ContentCatalog.LOCAL_NOTICE, 13, MUTED, false), 8);
@@ -478,6 +484,7 @@ public final class MainActivity extends Activity {
         accessLabel.setText(allowed ? "주차 시 사용 가능 · 차량 UX 제한 해제" : "차량 상태 미확인");
         content.setVisibility(allowed ? View.VISIBLE : View.GONE);
         restrictionNotice.setVisibility(allowed ? View.GONE : View.VISIBLE);
+        if (!canInteract()) clearConfirmationUndo();
         if (!allowed) {
             lifecycleGeneration++;
             dismissDialog();
@@ -541,6 +548,7 @@ public final class MainActivity extends Activity {
 
     private void toggleSaved(Item item) {
         if (!canInteract()) return;
+        if (undoConfirmed != null && undoConfirmed.key().equals(item.key())) clearConfirmationUndo();
         catalog.toggleSaved(item); catalog.persist(preferences);
         Button save = briefingRows.findViewWithTag(item.key());
         if (save != null) updateSaveButton(save, item);
@@ -573,7 +581,40 @@ public final class MainActivity extends Activity {
         if (candidate != null) showSavedDetail(candidate);
     }
 
+    private void clearConfirmationUndo() {
+        undoConfirmed = null;
+        undoToken = null;
+        if (savedUndo != null) savedUndo.removeAllViews();
+    }
+
+    private void rememberConfirmation(Item item) {
+        undoConfirmed = item;
+        undoToken = new Object();
+    }
+
+    private void renderConfirmationUndo() {
+        savedUndo.removeAllViews();
+        if (undoConfirmed == null) return;
+        Item item = undoConfirmed;
+        Object token = undoToken;
+        add(savedUndo, label(item.title, 14, TEXT, true), 4);
+        Button undo = button("확인 실행 취소", false, () -> {});
+        undo.setTag("undo-confirmation");
+        undo.setOnClickListener(view -> {
+            if (!canInteract() || token != undoToken || !catalog.isSaved(item)
+                    || !catalog.isConfirmed(item)) return;
+            if (!catalog.setConfirmed(item, false, preferences)) {
+                undo.setText("저장 실패 · 확인 실행 취소 다시 시도");
+                return;
+            }
+            clearConfirmationUndo();
+            renderSaved();
+        });
+        add(savedUndo, undo, 4);
+    }
+
     private void renderSaved() {
+        renderConfirmationUndo();
         boolean hasUnread = firstUnread() != null;
         enableButton(savedFirstUnread, hasUnread);
         savedUnreadEmpty.setVisibility(hasUnread ? View.GONE : View.VISIBLE);
@@ -670,6 +711,7 @@ public final class MainActivity extends Activity {
                 confirmNext.setText("저장 실패 · 다시 시도");
                 return;
             }
+            rememberConfirmation(item);
             Item candidate = nextUnread(item);
             renderSaved();
             if (candidate == null) dismissDialog();
@@ -689,10 +731,14 @@ public final class MainActivity extends Activity {
         confirm.setOnClickListener(view -> {
             if (!canInteract() || generation != lifecycleGeneration || activeDialog != shown
                     || shown == null || !shown.isShowing() || !catalog.isSaved(item)) return;
+            boolean wasConfirmed = catalog.isConfirmed(item);
             if (!catalog.setConfirmed(item, target, preferences)) {
                 confirm.setText("저장 실패 · 다시 시도");
                 return;
             }
+            if (target && !wasConfirmed) rememberConfirmation(item);
+            else if (!target && undoConfirmed != null && undoConfirmed.key().equals(item.key()))
+                clearConfirmationUndo();
             renderSaved();
             dismissDialog();
         });
