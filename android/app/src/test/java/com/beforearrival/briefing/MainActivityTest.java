@@ -1151,18 +1151,46 @@ public class MainActivityTest {
             assertEquals(items.size() - 1, catalog.savedItems.size());
             assertEquals(items.size() - 1, catalog.unreadCount());
             assertSame(items.get(1), ReflectionHelpers.callInstanceMethod(activity, "firstUnread"));
-            assertEquals(filter.equals("savedConfirmed") ? 1 : items.size() - 1,
-                    ((LinearLayout) field("savedRows")).getChildCount());
+            assertDeletionFilterDisplay(filter, items, false);
             undoDeletion().performClick();
             assertTrue(catalog.isConfirmed(items.get(0))); assertNull(undoConfirmation());
             assertEquals(items.size(), catalog.savedItems.size());
             assertEquals(items.size() - 1, catalog.unreadCount());
-            assertTrue(((Button) field("savedFirstUnread")).isEnabled());
-            assertEquals(filter.equals("savedAll") ? items.size() : filter.equals("savedUnread")
-                    ? items.size() - 1 : 1, ((LinearLayout) field("savedRows")).getChildCount());
+            assertDeletionFilterDisplay(filter, items, true);
             assertNull(field("activeDialog"));
             assertTrue(catalog.setConfirmed(items.get(0), false, field("preferences")));
         }
+    }
+
+    private void assertDeletionFilterDisplay(String filter, List<ContentCatalog.Item> items,
+            boolean restored) {
+        assertTrue(((Button) field(filter)).isSelected());
+        int total = restored ? items.size() : items.size() - 1;
+        assertEquals("도착해서 보기 · " + total + " · 미확인 " + (items.size() - 1),
+                ((TextView) field("savedHeading")).getText().toString());
+        assertTrue(((Button) field("savedFirstUnread")).isEnabled());
+        assertEquals(View.GONE, ((TextView) field("savedUnreadEmpty")).getVisibility());
+        assertSame(items.get(1), ReflectionHelpers.callInstanceMethod(activity, "firstUnread"));
+        LinearLayout rows = field("savedRows");
+        if (filter.equals("savedConfirmed") && !restored) {
+            // Two empty-state views, while the other saved items remain unread.
+            assertEquals(2, rows.getChildCount());
+            assertEquals("확인 완료한 소식이 없어요.", ((TextView) rows.getChildAt(0)).getText().toString());
+            assertEquals("전체 보기", ((Button) rows.getChildAt(1)).getText().toString());
+            return;
+        }
+        assertEquals(filter.equals("savedConfirmed") ? 1
+                : filter.equals("savedUnread") ? items.size() - 1 : total, rows.getChildCount());
+        int row = 0;
+        for (int i = 0; i < items.size(); i++) {
+            if (i == 0 && (!restored || filter.equals("savedUnread"))) continue;
+            if (i != 0 && filter.equals("savedConfirmed")) continue;
+            assertEquals(items.get(i).title + (i == 0 ? " · 확인 완료" : " · 미확인"),
+                    ((Button) rows.getChildAt(row++)).getText().toString());
+        }
+        assertFalse(descendants(rows, TextView.class).stream().anyMatch(text ->
+                text.getText().toString().equals("확인 완료한 소식이 없어요.")
+                        || text.getText().toString().equals("전체 보기")));
     }
 
     @Test public void deletingLastUnreadAndUndoUpdateEntryAndCountsForEveryFilter() {
