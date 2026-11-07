@@ -690,11 +690,13 @@ public class MainActivityTest {
         ContentCatalog catalog = field("catalog");
         String[] fields = {"savedAll", "savedUnread", "savedConfirmed"};
         String[] names = {"전체", "미확인만", "확인 완료만"};
+        String[] filters = {"ALL", "UNREAD", "CONFIRMED"};
         int[] counts = {catalog.savedItems.size(), catalog.unreadCount(),
                 catalog.savedItems.size() - catalog.unreadCount()};
         for (int i = 0; i < fields.length; i++) {
             Button button = field(fields[i]);
             String text = names[i] + " " + counts[i] + "건";
+            assertEquals(field("savedFilter").toString().equals(filters[i]), button.isSelected());
             assertEquals(text, button.getText().toString());
             assertEquals(text + (button.isSelected() ? " 선택됨" : ""),
                     button.getContentDescription().toString());
@@ -703,6 +705,14 @@ public class MainActivityTest {
             assertEquals(20f * activity.getResources().getDisplayMetrics().scaledDensity,
                     button.getTextSize(), 0.1f);
         }
+    }
+
+    private void assertSavedFilterCounts(int total, int unread) {
+        ContentCatalog catalog = field("catalog");
+        assertEquals(total, catalog.savedItems.size());
+        assertEquals(unread, catalog.unreadCount());
+        assertEquals(total - unread, catalog.savedItems.stream().filter(catalog::isConfirmed).count());
+        assertSavedFilterCounts();
     }
 
     private void assertFirstUnreadPreview(ContentCatalog.Item expected) {
@@ -921,14 +931,17 @@ public class MainActivityTest {
             showDetail(items.get(items.size() - 1));
             Button stale = detailAction("confirm-next");
             stale.performClick();
+            assertSavedFilterCounts(items.size(), items.size() - 2);
             assertDetail(items.get(0));
             AlertDialog current = field("activeDialog");
             stale.performClick();
             assertSame(current, field("activeDialog"));
             detailAction("confirm-next").performClick();
+            assertSavedFilterCounts(items.size(), items.size() - 3);
             for (int i = 2; i < items.size() - 1; i++) {
                 assertDetail(items.get(i));
                 detailAction("confirm-next").performClick();
+                assertSavedFilterCounts(items.size(), items.size() - i - 2);
             }
             assertNull(field("activeDialog"));
             assertEquals(0, catalog.unreadCount());
@@ -943,7 +956,7 @@ public class MainActivityTest {
             assertFalse(((SpeechPlayback) field("speech")).isPlaying());
         }
         controller.recreate(); activity = controller.get();
-        assertEquals(0, ((ContentCatalog) field("catalog")).unreadCount());
+        assertSavedFilterCounts(items.size(), 0);
         assertTrue(((Button) field("savedAll")).isSelected());
     }
 
@@ -951,21 +964,45 @@ public class MainActivityTest {
         List<ContentCatalog.Item> items = saveNavigationItems();
         ContentCatalog catalog = field("catalog");
         android.content.SharedPreferences preferences = field("preferences");
+        java.util.Map<String, ?> stored;
+        for (boolean throwsAfterWrite : new boolean[]{false, true}) {
+            assertTrue(catalog.setConfirmed(items.get(0), false, preferences));
+            ((Button) field("savedAll")).performClick();
+            showDetail(items.get(0));
+            Button retry = detailAction("confirm-next");
+            AlertDialog before = field("activeDialog");
+            stored = preferences.getAll();
+            String storage = preferences.getString(ContentCatalog.STORAGE_KEY, null);
+            assertSavedFilterCounts(items.size(), items.size());
+            assertEquals(items, catalog.savedItems);
+            for (ContentCatalog.Item item : items) assertFalse(catalog.isConfirmed(item));
+            assertDetail(items.get(0));
+            ReflectionHelpers.setField(activity, "preferences",
+                    CatalogTest.failingCommits(preferences, throwsAfterWrite));
+            retry.performClick();
+            assertSavedFilterCounts(items.size(), items.size());
+            assertEquals("저장 실패 · 다시 시도", retry.getText().toString());
+            assertEquals("도착해서 보기 · " + items.size() + " · 미확인 " + items.size(),
+                    ((TextView) field("savedHeading")).getText().toString());
+            assertSame(before, field("activeDialog"));
+            assertDetail(items.get(0));
+            assertEquals(items, catalog.savedItems);
+            for (ContentCatalog.Item item : items) assertFalse(catalog.isConfirmed(item));
+            assertEquals(storage, preferences.getString(ContentCatalog.STORAGE_KEY, null));
+            assertEquals(stored, preferences.getAll());
+            ReflectionHelpers.setField(activity, "preferences", preferences);
+            retry.performClick();
+            assertSavedFilterCounts(items.size(), items.size() - 1);
+            assertEquals(items, catalog.savedItems);
+            assertTrue(catalog.isConfirmed(items.get(0)));
+            for (int i = 1; i < items.size(); i++) assertFalse(catalog.isConfirmed(items.get(i)));
+            assertDetail(items.get(1));
+        }
+        assertTrue(catalog.setConfirmed(items.get(0), false, preferences));
+        ((Button) field("savedAll")).performClick();
         showDetail(items.get(0));
         Button action = detailAction("confirm-next");
-        AlertDialog original = field("activeDialog");
-        ReflectionHelpers.setField(activity, "preferences", CatalogTest.failingCommits(preferences));
-        java.util.Map<String, ?> stored = preferences.getAll();
-        action.performClick();
-        assertEquals("저장 실패 · 다시 시도", action.getText().toString());
-        assertSame(original, field("activeDialog"));
-        assertDetail(items.get(0));
-        assertFalse(catalog.isConfirmed(items.get(0)));
-        assertEquals(items.size(), catalog.unreadCount());
-        assertEquals("도착해서 보기 · " + items.size() + " · 미확인 " + items.size(),
-                ((TextView) field("savedHeading")).getText().toString());
-        assertEquals(stored, preferences.getAll());
-        ReflectionHelpers.setField(activity, "preferences", preferences);
+        AlertDialog original;
         catalog.toggleSaved(items.get(1));
         for (int i = 2; i < items.size() - 1; i++)
             assertTrue(catalog.setConfirmed(items.get(i), true, preferences));
@@ -1081,11 +1118,13 @@ public class MainActivityTest {
         ((Button) field("savedUnread")).performClick();
         showDetail(items.get(0));
         detailAction("confirm-next").performClick();
+        assertSavedFilterCounts(items.size(), 0);
         assertNull(field("activeDialog"));
         assertEquals(0, catalog.unreadCount());
         assertFalse(((Button) field("savedFirstUnread")).isEnabled());
         assertEquals(View.VISIBLE, ((TextView) field("savedUnreadEmpty")).getVisibility());
         undoConfirmation().performClick();
+        assertSavedFilterCounts(items.size(), 1);
         assertEquals(1, catalog.unreadCount());
         assertTrue(((Button) field("savedFirstUnread")).isEnabled());
         assertEquals(View.GONE, ((TextView) field("savedUnreadEmpty")).getVisibility());
@@ -1093,6 +1132,13 @@ public class MainActivityTest {
         assertEquals(1, ((LinearLayout) field("savedRows")).getChildCount());
         for (int i = 1; i < items.size(); i++) assertTrue(catalog.isConfirmed(items.get(i)));
         assertNull(field("activeDialog"));
+        controller.recreate(); activity = controller.get();
+        assertSavedFilterCounts(items.size(), 1);
+        assertEquals("ALL", field("savedFilter").toString());
+        assertTrue(((Button) field("savedAll")).isSelected());
+        ContentCatalog restored = field("catalog");
+        assertFalse(restored.isConfirmed(items.get(0)));
+        for (int i = 1; i < items.size(); i++) assertTrue(restored.isConfirmed(items.get(i)));
     }
 
     @Test public void undoConfirmationStorageFailuresKeepTargetAndRetryPersists() {
