@@ -226,6 +226,10 @@ final class ContentCatalog {
         for (int i = 0; i < savedItems.size(); i++) if (savedItems.get(i).key().equals(item.key())) { savedItems.remove(i); confirmedKeys.remove(item.key()); return; }
         savedItems.add(item);
     }
+    boolean save(Item item, SharedPreferences preferences) {
+        if (isSaved(item)) return true;
+        return changeSaved(preferences, () -> savedItems.add(item));
+    }
     static final class DeletedItem {
         final Item item;
         final int index;

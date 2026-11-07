@@ -229,6 +229,34 @@ public class CatalogTest {
         assertTrue(new ContentCatalog(defaults, preferences).isConfirmed(item));
     }
 
+    @Test public void newSaveRequiresCommitAndPreservesOrderConfirmationAndPayload() throws Exception {
+        ContentCatalog.Item a = catalog.sources.get(0).items.get(0);
+        ContentCatalog.Item b = catalog.sources.get(1).items.get(0);
+        ContentCatalog.Item c = catalog.sources.get(2).items.get(0);
+        assertTrue(catalog.save(a, preferences)); assertTrue(catalog.save(b, preferences));
+        assertTrue(catalog.setConfirmed(a, true, preferences));
+        String stored = preferences.getString(ContentCatalog.STORAGE_KEY, null);
+        for (boolean throwsAfterWrite : new boolean[]{false, true}) {
+            assertFalse(catalog.save(c, failingCommits(preferences, throwsAfterWrite)));
+            assertEquals(java.util.List.of(a, b), catalog.savedItems);
+            assertTrue(catalog.isConfirmed(a)); assertFalse(catalog.isConfirmed(b));
+            assertFalse(catalog.isSaved(c)); assertEquals(1, catalog.unreadCount());
+            assertEquals(stored, preferences.getString(ContentCatalog.STORAGE_KEY, null));
+        }
+        assertTrue(catalog.save(a, failingCommits(preferences)));
+        assertSame(a, catalog.savedItems.get(0)); assertTrue(catalog.isConfirmed(a));
+        assertEquals(stored, preferences.getString(ContentCatalog.STORAGE_KEY, null));
+        assertTrue(catalog.save(c, preferences)); assertTrue(catalog.save(c, preferences));
+        java.util.List<ContentCatalog.Item> items = java.util.List.of(a, b, c);
+        assertEquals(items, catalog.savedItems); assertFalse(catalog.isConfirmed(c));
+        ContentCatalog restored = new ContentCatalog(defaults, preferences);
+        assertEquals(items.size(), restored.savedItems.size());
+        for (int i = 0; i < items.size(); i++) {
+            assertEquals(items.get(i).json().toString(), restored.savedItems.get(i).json().toString());
+        }
+        assertTrue(restored.isConfirmed(restored.savedItems.get(0)));
+    }
+
     static SharedPreferences failingCommits(SharedPreferences real) {
         return failingCommits(real, false);
     }

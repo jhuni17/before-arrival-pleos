@@ -559,7 +559,10 @@ public final class MainActivity extends Activity {
             undoDeleted = deleted;
             if (undoConfirmed != null && undoConfirmed.key().equals(item.key())) clearConfirmationUndo();
         } else {
-            catalog.toggleSaved(item); catalog.persist(preferences);
+            if (!catalog.save(item, preferences)) {
+                android.widget.Toast.makeText(this, "저장 실패 · 다시 시도", android.widget.Toast.LENGTH_SHORT).show();
+                return;
+            }
             if (undoDeleted != null && undoDeleted.item.key().equals(item.key())) clearDeletionUndo();
         }
         Button save = briefingRows.findViewWithTag(item.key());
