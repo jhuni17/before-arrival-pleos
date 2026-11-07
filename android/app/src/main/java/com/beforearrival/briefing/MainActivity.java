@@ -73,6 +73,8 @@ public final class MainActivity extends Activity {
     private enum SavedFilter { ALL, UNREAD, CONFIRMED }
     private SavedFilter savedFilter = SavedFilter.ALL;
     private String savedQuery = "";
+    private String savedSourceId;
+    private Button savedSource;
     private TextView savedSearchStatus;
     private Button savedSearchClear;
     private Button savedConditionsClear;
@@ -310,6 +312,8 @@ public final class MainActivity extends Activity {
         savedUnread = button("미확인만", false, () -> selectSavedFilter(SavedFilter.UNREAD));
         savedConfirmed = button("확인 완료만", false, () -> selectSavedFilter(SavedFilter.CONFIRMED));
         add(savedPanel, buttonRow(savedAll, savedUnread, savedConfirmed), 8);
+        savedSource = button("", false, this::showSavedSources);
+        add(savedPanel, savedSource, 8);
         add(savedPanel, button(getString(R.string.saved_search), false, this::showSavedSearch), 8);
         savedSearchClear = button(getString(R.string.saved_search_clear), false, this::clearSavedSearch);
         add(savedPanel, savedSearchClear, 4);
@@ -627,6 +631,7 @@ public final class MainActivity extends Activity {
         if (!canInteract()) return;
         savedQuery = "";
         savedFilter = SavedFilter.ALL;
+        savedSourceId = null;
         renderSaved();
     }
 
@@ -634,6 +639,34 @@ public final class MainActivity extends Activity {
         if (!canInteract()) return;
         savedQuery = "";
         renderSaved();
+    }
+
+    private String savedSourceLabel(Source source) {
+        boolean duplicate = catalog.sources.stream().filter(other -> other.name.equals(source.name)).count() > 1;
+        return duplicate ? getString(R.string.saved_source_identity, source.name, source.id) : source.name;
+    }
+
+    private void showSavedSources() {
+        if (!canInteract()) return;
+        int generation = lifecycleGeneration;
+        List<String> ids = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
+        ids.add(null);
+        labels.add(getString(R.string.saved_source_all));
+        for (Source source : catalog.sources) {
+            ids.add(source.id);
+            labels.add(savedSourceLabel(source));
+        }
+        showDialog(new AlertDialog.Builder(this)
+                .setTitle(R.string.saved_source_choose)
+                .setSingleChoiceItems(labels.toArray(new String[0]), ids.indexOf(savedSourceId), (dialog, which) -> {
+                    if (!canInteract() || generation != lifecycleGeneration || activeDialog != dialog
+                            || !((AlertDialog) dialog).isShowing()) return;
+                    savedSourceId = ids.get(which);
+                    dismissDialog();
+                    renderSaved();
+                })
+                .setNegativeButton(R.string.saved_search_close, null));
     }
 
     private void showSavedSearch() {
@@ -664,6 +697,7 @@ public final class MainActivity extends Activity {
 
     private void showCapacityConfirmed() {
         if (!canInteract() || !hasCapacityConfirmed()) return;
+        savedSourceId = null;
         savedQuery = "";
         selectSavedFilter(SavedFilter.CONFIRMED);
     }
@@ -753,6 +787,10 @@ public final class MainActivity extends Activity {
         setRouteButton(savedAll, savedFilter == SavedFilter.ALL);
         setRouteButton(savedUnread, savedFilter == SavedFilter.UNREAD);
         setRouteButton(savedConfirmed, savedFilter == SavedFilter.CONFIRMED);
+        Source selectedSource = savedSourceId == null ? null : catalog.source(savedSourceId);
+        String sourceLabel = selectedSource == null ? getString(R.string.saved_source_all) : savedSourceLabel(selectedSource);
+        savedSource.setText(getString(R.string.saved_source_selection, sourceLabel));
+        savedSource.setContentDescription(savedSource.getText());
         int savedCount = catalog.savedItems.size();
         int unreadCount = catalog.unreadCount();
         updateSavedFilter(savedAll, R.string.saved_filter_all, savedCount);
@@ -770,20 +808,20 @@ public final class MainActivity extends Activity {
         if (catalog.savedItems.isEmpty()) {
             add(savedRows, label("저장한 소식이 없어요.", 14, MUTED, false), 4);
         }
-        if (savedQuery.isEmpty() && !catalog.savedItems.isEmpty()
+        if (savedSourceId == null && savedQuery.isEmpty() && !catalog.savedItems.isEmpty()
                 && ((savedFilter == SavedFilter.UNREAD && catalog.unreadCount() == 0)
                 || (savedFilter == SavedFilter.CONFIRMED && catalog.unreadCount() == catalog.savedItems.size()))) {
             add(savedRows, label(savedFilter == SavedFilter.CONFIRMED
                     ? "확인 완료한 소식이 없어요." : "미확인 소식이 없어요.", 14, MUTED, false), 4);
             add(savedRows, button("전체 보기", false, () -> {
                 if (!canInteract()) return;
-                savedQuery = "";
-                selectSavedFilter(SavedFilter.ALL);
+                clearSavedConditions();
             }), 6);
         }
         int visibleCount = 0;
         String query = normalizeSavedTitle(savedQuery);
         for (Item item : catalog.savedItems) {
+            if (savedSourceId != null && !savedSourceId.equals(item.sourceId)) continue;
             if (!normalizeSavedTitle(item.title).contains(query)) continue;
             if (savedFilter == SavedFilter.UNREAD && catalog.isConfirmed(item)) continue;
             if (savedFilter == SavedFilter.CONFIRMED && !catalog.isConfirmed(item)) continue;
@@ -800,14 +838,16 @@ public final class MainActivity extends Activity {
             add(savedRows, entry, 6);
         }
         boolean searching = !savedQuery.isEmpty();
-        savedConditionsClear.setVisibility(searching || savedFilter != SavedFilter.ALL
+        savedConditionsClear.setVisibility(savedSourceId != null || searching || savedFilter != SavedFilter.ALL
                 ? View.VISIBLE : View.GONE);
         savedSearchClear.setVisibility(searching ? View.VISIBLE : View.GONE);
-        savedSearchStatus.setVisibility(searching ? View.VISIBLE : View.GONE);
-        savedSearchStatus.setText(getString(R.string.saved_search_status, savedQuery, visibleCount)
+        savedSearchStatus.setVisibility(searching || savedSourceId != null ? View.VISIBLE : View.GONE);
+        savedSearchStatus.setText((searching ? getString(R.string.saved_search_status, savedQuery, visibleCount)
+                : getString(R.string.saved_source_status, sourceLabel, visibleCount))
                 + "\n" + getString(R.string.saved_search_navigation));
-        if (searching && visibleCount == 0 && !catalog.savedItems.isEmpty()) {
-            add(savedRows, label(getString(R.string.saved_search_empty), 14, MUTED, false), 4);
+        if ((searching || savedSourceId != null) && visibleCount == 0 && !catalog.savedItems.isEmpty()) {
+            add(savedRows, label(getString(searching ? R.string.saved_search_empty : R.string.saved_source_empty), 14, MUTED, false), 4);
+            add(savedRows, button(getString(R.string.saved_show_all), false, this::clearSavedConditions), 6);
         }
     }
 
