@@ -16,6 +16,8 @@ import java.util.StringJoiner;
 
 /** Local catalog; registration never claims to fetch a provider's news. */
 final class ContentCatalog {
+    static final int SAVED_ITEM_LIMIT = 500;
+    static final String SAVED_CAPACITY_NOTICE = "저장 공간이 가득 찼어요 · 저장 항목을 직접 삭제한 뒤 다시 시도해 주세요";
     static final String STORAGE_KEY = "catalog_v2";
     static final String LOCAL_NOTICE = "이 Android 앱에만 저장 · 브라우저/다른 기기와 동기화 안 됨";
     private JSONArray snapshots;
@@ -155,7 +157,7 @@ final class ContentCatalog {
             }
         }
         JSONArray saved = content.optJSONArray("savedItems");
-        if (saved != null) for (int i = 0; i < Math.min(500, saved.length()); i++) {
+        if (saved != null) for (int i = 0; i < Math.min(SAVED_ITEM_LIMIT, saved.length()); i++) {
             JSONObject itemJson = saved.optJSONObject(i);
             if (itemJson == null) continue;
             Item item = new Item(itemJson);
@@ -226,8 +228,10 @@ final class ContentCatalog {
         for (int i = 0; i < savedItems.size(); i++) if (savedItems.get(i).key().equals(item.key())) { savedItems.remove(i); confirmedKeys.remove(item.key()); return; }
         savedItems.add(item);
     }
+    boolean savedAtCapacity() { return savedItems.size() >= SAVED_ITEM_LIMIT; }
     boolean save(Item item, SharedPreferences preferences) {
         if (isSaved(item)) return true;
+        if (savedAtCapacity()) return false;
         return changeSaved(preferences, () -> savedItems.add(item));
     }
     static final class DeletedItem {
@@ -251,6 +255,7 @@ final class ContentCatalog {
     }
     boolean restoreDeleted(DeletedItem deleted, SharedPreferences preferences) {
         if (isSaved(deleted.item)) return true;
+        if (savedAtCapacity()) return false;
         return changeSaved(preferences, () -> {
             savedItems.add(Math.min(deleted.index, savedItems.size()), deleted.item);
             if (deleted.confirmed) confirmedKeys.add(deleted.item.key());

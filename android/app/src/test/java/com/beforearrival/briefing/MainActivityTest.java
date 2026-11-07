@@ -1097,6 +1097,69 @@ public class MainActivityTest {
         }
     }
 
+    @Test public void capacityKeepsFiltersButtonsAndUndoUntilUserDeletesAndRetries() throws Exception {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        ContentCatalog catalog = field("catalog");
+        android.content.SharedPreferences preferences = field("preferences");
+        ContentCatalog.Item target = items.get(0);
+        showDetail(items.get(1)); detailAction("confirm-saved").performClick();
+        ReflectionHelpers.callInstanceMethod(activity, "dismissDialog");
+        Object confirmationToken = field("undoToken");
+        String narration = ((ContentCatalog.Plan) field("plan")).narration();
+        for (String filter : new String[]{"savedAll", "savedUnread", "savedConfirmed"}) {
+            deleteSaved(target);
+            for (int i = catalog.savedItems.size(); i < ContentCatalog.SAVED_ITEM_LIMIT; i++)
+                assertTrue(catalog.save(CatalogTest.capacityItem(catalog, i), preferences));
+            ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
+            ((Button) field(filter)).performClick();
+            Button save = ((LinearLayout) field("briefingRows")).findViewWithTag(target.key());
+            Button undo = undoDeletion();
+            Button confirmation = undoConfirmation();
+            String stored = preferences.getString(ContentCatalog.STORAGE_KEY, null);
+            String heading = ((TextView) field("savedHeading")).getText().toString();
+            List<ContentCatalog.Item> before = new ArrayList<>(catalog.savedItems);
+            LinearLayout rows = field("savedRows");
+            List<View> views = new ArrayList<>();
+            for (int i = 0; i < rows.getChildCount(); i++) views.add(rows.getChildAt(i));
+            save.performClick();
+            assertEquals(ContentCatalog.SAVED_CAPACITY_NOTICE, org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
+            assertEquals("저장", save.getText().toString());
+            assertEquals(target.title + " 저장", save.getContentDescription().toString());
+            assertEquals(before, catalog.savedItems);
+            assertEquals(ContentCatalog.SAVED_ITEM_LIMIT - 1, catalog.unreadCount());
+            assertEquals(stored, preferences.getString(ContentCatalog.STORAGE_KEY, null));
+            assertEquals(heading, ((TextView) field("savedHeading")).getText().toString());
+            assertTrue(((Button) field(filter)).isSelected());
+            assertSame(items.get(2), ReflectionHelpers.callInstanceMethod(activity, "firstUnread"));
+            assertEquals(views.size(), rows.getChildCount());
+            for (int i = 0; i < views.size(); i++) assertSame(views.get(i), rows.getChildAt(i));
+            assertSame(undo, undoDeletion()); assertSame(confirmation, undoConfirmation());
+            undo.performClick();
+            assertEquals(ContentCatalog.SAVED_CAPACITY_NOTICE, undo.getText().toString());
+            assertSame(undo, undoDeletion()); assertEquals(before, catalog.savedItems);
+            assertEquals(stored, preferences.getString(ContentCatalog.STORAGE_KEY, null));
+            ContentCatalog.Item removed = catalog.savedItems.get(catalog.savedItems.size() - 1);
+            deleteSaved(removed);
+            Button latest = undoDeletion();
+            assertNotSame(undo, latest);
+            undo.performClick(); assertFalse(catalog.isSaved(target));
+            save = ((LinearLayout) field("briefingRows")).findViewWithTag(target.key());
+            save.performClick();
+            assertEquals(ContentCatalog.SAVED_ITEM_LIMIT, catalog.savedItems.size());
+            assertSame(target, catalog.savedItems.get(ContentCatalog.SAVED_ITEM_LIMIT - 1));
+            assertSame(latest, undoDeletion());
+            assertSame(confirmationToken, field("undoToken"));
+            assertNull(field("activeDialog"));
+            assertFalse(((SpeechPlayback) field("speech")).isPlaying());
+            assertEquals(narration, ((ContentCatalog.Plan) field("plan")).narration());
+        }
+        controller.recreate(); activity = controller.get();
+        ContentCatalog restored = field("catalog");
+        assertEquals(ContentCatalog.SAVED_ITEM_LIMIT, restored.savedItems.size());
+        for (int i = 0; i < catalog.savedItems.size(); i++)
+            assertEquals(catalog.savedItems.get(i).json().toString(), restored.savedItems.get(i).json().toString());
+    }
+
     @Test public void newSaveFailureKeepsFiltersAndUndoUntilSameButtonRetry() throws Exception {
         List<ContentCatalog.Item> items = saveNavigationItems();
         ContentCatalog catalog = field("catalog");

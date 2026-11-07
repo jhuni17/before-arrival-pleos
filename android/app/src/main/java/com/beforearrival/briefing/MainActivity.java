@@ -560,7 +560,8 @@ public final class MainActivity extends Activity {
             if (undoConfirmed != null && undoConfirmed.key().equals(item.key())) clearConfirmationUndo();
         } else {
             if (!catalog.save(item, preferences)) {
-                android.widget.Toast.makeText(this, "저장 실패 · 다시 시도", android.widget.Toast.LENGTH_SHORT).show();
+                android.widget.Toast.makeText(this, catalog.savedAtCapacity() ? ContentCatalog.SAVED_CAPACITY_NOTICE
+                        : "저장 실패 · 다시 시도", android.widget.Toast.LENGTH_SHORT).show();
                 return;
             }
             if (undoDeleted != null && undoDeleted.item.key().equals(item.key())) clearDeletionUndo();
@@ -642,7 +643,8 @@ public final class MainActivity extends Activity {
         undo.setOnClickListener(view -> {
             if (!canInteract() || undoDeleted != deleted) return;
             if (!catalog.restoreDeleted(deleted, preferences)) {
-                undo.setText("저장 실패 · 삭제 실행 취소 다시 시도");
+                undo.setText(catalog.savedAtCapacity() ? ContentCatalog.SAVED_CAPACITY_NOTICE
+                        : "저장 실패 · 삭제 실행 취소 다시 시도");
                 return;
             }
             undoDeleted = null;

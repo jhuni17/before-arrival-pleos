@@ -257,6 +257,45 @@ public class CatalogTest {
         assertTrue(restored.isConfirmed(restored.savedItems.get(0)));
     }
 
+    // Copies valid sample payloads with distinct keys; fixture size follows the restore boundary.
+    static ContentCatalog.Item capacityItem(ContentCatalog catalog, int index) throws Exception {
+        return new ContentCatalog.Item(catalog.source("sample-game").items.get(0).json()
+                .put("id", "capacity-" + index).put("originalUrl", JSONObject.NULL));
+    }
+
+    @Test public void capacityRejectsWithoutWritingAndAllowsDuplicateAndRestoreRetry() throws Exception {
+        for (int i = 0; i < ContentCatalog.SAVED_ITEM_LIMIT - 1; i++)
+            catalog.savedItems.add(capacityItem(catalog, i));
+        ContentCatalog.Item first = catalog.savedItems.get(0);
+        assertTrue(catalog.setConfirmed(first, true, preferences));
+        ContentCatalog.Item last = capacityItem(catalog, ContentCatalog.SAVED_ITEM_LIMIT - 1);
+        assertTrue(catalog.save(last, preferences));
+        String stored = preferences.getString(ContentCatalog.STORAGE_KEY, null);
+        java.util.List<ContentCatalog.Item> before = new java.util.ArrayList<>(catalog.savedItems);
+        ContentCatalog.Item extra = capacityItem(catalog, ContentCatalog.SAVED_ITEM_LIMIT);
+        assertFalse(catalog.save(extra, preferences));
+        assertTrue(catalog.save(new ContentCatalog.Item(first.json().put("title", "changed")), failingCommits(preferences)));
+        assertEquals(before, catalog.savedItems); assertTrue(catalog.isConfirmed(first));
+        assertEquals(stored, preferences.getString(ContentCatalog.STORAGE_KEY, null));
+        ContentCatalog restored = new ContentCatalog(defaults, preferences);
+        assertEquals(ContentCatalog.SAVED_ITEM_LIMIT, restored.savedItems.size());
+        for (int i = 0; i < before.size(); i++)
+            assertEquals(before.get(i).json().toString(), restored.savedItems.get(i).json().toString());
+        assertTrue(restored.isConfirmed(restored.savedItems.get(0)));
+        ContentCatalog.DeletedItem deleted = catalog.deleteSaved(first, preferences);
+        assertTrue(catalog.save(extra, preferences));
+        stored = preferences.getString(ContentCatalog.STORAGE_KEY, null);
+        before = new java.util.ArrayList<>(catalog.savedItems);
+        assertFalse(catalog.restoreDeleted(deleted, preferences));
+        assertEquals(before, catalog.savedItems);
+        assertEquals(stored, preferences.getString(ContentCatalog.STORAGE_KEY, null));
+        assertTrue(catalog.restoreDeleted(new ContentCatalog.DeletedItem(last, 0, true), failingCommits(preferences)));
+        assertEquals(before, catalog.savedItems); assertFalse(catalog.isConfirmed(last));
+        assertNotNull(catalog.deleteSaved(extra, preferences));
+        assertTrue(catalog.restoreDeleted(deleted, preferences));
+        assertSame(first, catalog.savedItems.get(0)); assertTrue(catalog.isConfirmed(first));
+    }
+
     static SharedPreferences failingCommits(SharedPreferences real) {
         return failingCommits(real, false);
     }
