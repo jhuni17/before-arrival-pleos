@@ -564,6 +564,99 @@ public class MainActivityTest {
         unread.performClick(); assertTrue(all.isSelected());
     }
 
+    @Test public void firstUnreadUsesWholeSavedOrderAndPreservesFilterAndData() {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        ContentCatalog catalog = field("catalog");
+        android.content.SharedPreferences preferences = field("preferences");
+        assertTrue(catalog.setConfirmed(items.get(0), true, preferences));
+        java.util.Map<String, ?> stored = preferences.getAll();
+        ContentCatalog.Plan plan = field("plan");
+        String narration = plan.narration();
+        for (String filter : new String[]{"savedAll", "savedUnread", "savedConfirmed"}) {
+            Button selected = field(filter);
+            selected.performClick();
+            ((Button) field("savedFirstUnread")).performClick();
+            assertDetail(items.get(1));
+            ((AlertDialog) field("activeDialog")).getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+            assertTrue(selected.isSelected());
+            assertEquals(items, catalog.savedItems);
+            assertEquals(stored, preferences.getAll());
+            assertSame(plan, field("plan"));
+            assertEquals(narration, plan.narration());
+            assertFalse(((SpeechPlayback) field("speech")).isPlaying());
+            assertNull(Shadows.shadowOf(activity).getNextStartedActivity());
+        }
+        controller.recreate(); activity = controller.get();
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        assertTrue(((Button) field("savedAll")).isSelected());
+        assertNull(field("activeDialog"));
+        ((Button) field("savedFirstUnread")).performClick();
+        assertDetail(items.get(1));
+    }
+
+    @Test public void firstUnreadRechecksCandidatesAndRefreshesEmptyState() {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        assertFalse(((Button) field("savedFirstUnread")).isEnabled());
+        assertEquals(View.VISIBLE, ((TextView) field("savedUnreadEmpty")).getVisibility());
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        ContentCatalog catalog = field("catalog");
+        android.content.SharedPreferences preferences = field("preferences");
+        Button entry = field("savedFirstUnread");
+        assertTrue(entry.isEnabled());
+        catalog.toggleSaved(items.get(0));
+        assertTrue(catalog.setConfirmed(items.get(1), true, preferences));
+        entry.performClick();
+        assertDetail(items.get(2));
+        ((AlertDialog) field("activeDialog")).getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+        for (ContentCatalog.Item item : catalog.savedItems)
+            assertTrue(catalog.setConfirmed(item, true, preferences));
+        entry.performClick();
+        assertNull(field("activeDialog"));
+        assertFalse(entry.isEnabled());
+        assertEquals(View.VISIBLE, ((TextView) field("savedUnreadEmpty")).getVisibility());
+        assertTrue(catalog.setConfirmed(items.get(2), false, preferences));
+        ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
+        assertTrue(entry.isEnabled());
+        entry.performClick();
+        assertDetail(items.get(2));
+        assertFalse(detailAction("next-unread").isEnabled());
+        detailAction("confirm-saved").performClick();
+        assertFalse(entry.isEnabled());
+        showDetail(items.get(2));
+        detailAction("confirm-saved").performClick();
+        assertTrue(entry.isEnabled());
+        entry.performClick();
+        ((AlertDialog) field("activeDialog")).getButton(AlertDialog.BUTTON_NEUTRAL).performClick();
+        assertFalse(entry.isEnabled());
+    }
+
+    @Test public void firstUnreadRejectsDirectCallbacksOutsideParkedResumedState() {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        for (AccessPolicy.State state : new AccessPolicy.State[]{
+                AccessPolicy.State.RESTRICTED, AccessPolicy.State.UNKNOWN}) {
+            ((Button) field("savedFirstUnread")).performClick();
+            AlertDialog shown = field("activeDialog");
+            setAccess(state);
+            assertFalse(shown.isShowing());
+            ReflectionHelpers.callInstanceMethod(activity, "showFirstUnread");
+            assertNull(field("activeDialog"));
+            setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+            assertNull(field("activeDialog"));
+            assertFalse(((SpeechPlayback) field("speech")).isPlaying());
+        }
+        ((Button) field("savedFirstUnread")).performClick();
+        AlertDialog shown = field("activeDialog");
+        controller.pause();
+        assertFalse(shown.isShowing());
+        ReflectionHelpers.callInstanceMethod(activity, "showFirstUnread");
+        assertNull(field("activeDialog"));
+        controller.resume();
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        assertNull(field("activeDialog"));
+        ((Button) field("savedFirstUnread")).performClick();
+        assertDetail(items.get(0));
+    }
+
     @Test public void nextUnreadUsesSavedOrderWrapsAndLeavesDataUntouched() {
         List<ContentCatalog.Item> items = saveNavigationItems();
         ContentCatalog catalog = field("catalog");

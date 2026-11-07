@@ -71,6 +71,8 @@ public final class MainActivity extends Activity {
     private boolean transcriptVisible;
     private enum SavedFilter { ALL, UNREAD, CONFIRMED }
     private SavedFilter savedFilter = SavedFilter.ALL;
+    private Button savedFirstUnread;
+    private TextView savedUnreadEmpty;
     private Button savedAll;
     private Button savedUnread;
     private Button savedConfirmed;
@@ -274,6 +276,10 @@ public final class MainActivity extends Activity {
         add(content, savedPanel, 12);
         savedHeading = heading("", 21);
         add(savedPanel, savedHeading, 0);
+        savedFirstUnread = button("첫 미확인 보기", false, this::showFirstUnread);
+        add(savedPanel, savedFirstUnread, 8);
+        savedUnreadEmpty = label("미확인 소식이 없어요.", 14, MUTED, false);
+        add(savedPanel, savedUnreadEmpty, 4);
         savedAll = button("전체", false, () -> selectSavedFilter(SavedFilter.ALL));
         savedUnread = button("미확인만", false, () -> selectSavedFilter(SavedFilter.UNREAD));
         savedConfirmed = button("확인 완료만", false, () -> selectSavedFilter(SavedFilter.CONFIRMED));
@@ -553,7 +559,24 @@ public final class MainActivity extends Activity {
         renderSaved();
     }
 
+    private Item firstUnread() {
+        for (Item item : catalog.savedItems) {
+            if (!catalog.isConfirmed(item)) return item;
+        }
+        return null;
+    }
+
+    private void showFirstUnread() {
+        if (!canInteract()) return;
+        Item candidate = firstUnread();
+        renderSaved();
+        if (candidate != null) showSavedDetail(candidate);
+    }
+
     private void renderSaved() {
+        boolean hasUnread = firstUnread() != null;
+        enableButton(savedFirstUnread, hasUnread);
+        savedUnreadEmpty.setVisibility(hasUnread ? View.GONE : View.VISIBLE);
         setRouteButton(savedAll, savedFilter == SavedFilter.ALL);
         setRouteButton(savedUnread, savedFilter == SavedFilter.UNREAD);
         setRouteButton(savedConfirmed, savedFilter == SavedFilter.CONFIRMED);
