@@ -2201,7 +2201,7 @@ public class MainActivityTest {
         assertDetail(items.get(2));
     }
 
-    @Test public void savedSourceEmptyArchiveAndCapacityShortcutReset() {
+    @Test public void savedSourceEmptyArchiveAndCapacityShortcutReset() throws Exception {
         setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
         ContentCatalog catalog = field("catalog");
         String sourceId = catalog.sources.get(0).id;
