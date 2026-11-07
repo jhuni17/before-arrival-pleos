@@ -75,6 +75,7 @@ public final class MainActivity extends Activity {
     private String savedQuery = "";
     private String savedSourceId;
     private Button savedSource;
+    private Button savedSourceClear;
     private TextView savedSearchStatus;
     private Button savedSearchClear;
     private Button savedConditionsClear;
@@ -314,6 +315,9 @@ public final class MainActivity extends Activity {
         add(savedPanel, buttonRow(savedAll, savedUnread, savedConfirmed), 8);
         savedSource = button("", false, this::showSavedSources);
         add(savedPanel, savedSource, 8);
+        savedSourceClear = button(getString(R.string.saved_source_clear), false, this::clearSavedSource);
+        savedSourceClear.setContentDescription(savedSourceClear.getText());
+        add(savedPanel, savedSourceClear, 8);
         add(savedPanel, button(getString(R.string.saved_search), false, this::showSavedSearch), 8);
         savedSearchClear = button(getString(R.string.saved_search_clear), false, this::clearSavedSearch);
         add(savedPanel, savedSearchClear, 4);
@@ -635,6 +639,12 @@ public final class MainActivity extends Activity {
         renderSaved();
     }
 
+    private void clearSavedSource() {
+        if (!canInteract()) return;
+        savedSourceId = null;
+        renderSaved();
+    }
+
     private void clearSavedSearch() {
         if (!canInteract()) return;
         savedQuery = "";
@@ -802,6 +812,7 @@ public final class MainActivity extends Activity {
         String sourceLabel = selectedSource == null ? getString(R.string.saved_source_all) : savedSourceLabel(selectedSource);
         savedSource.setText(getString(R.string.saved_source_selection, sourceLabel));
         savedSource.setContentDescription(savedSource.getText());
+        savedSourceClear.setVisibility(savedSourceId == null ? View.GONE : View.VISIBLE);
         int savedCount = catalog.savedItems.size();
         int unreadCount = catalog.unreadCount();
         String query = normalizeSavedTitle(savedQuery);

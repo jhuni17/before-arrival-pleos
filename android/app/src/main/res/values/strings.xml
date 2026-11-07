@@ -34,6 +34,7 @@
     <string name="saved_search_navigation">첫 미확인·다음 미확인·확인하고 다음은 전체 저장 순서를 따라요.</string>
     <string name="saved_search_empty">검색 결과가 없어요</string>
     <string name="saved_source_choose">저장한 출처 선택</string>
+    <string name="saved_source_clear">출처만 지우기</string>
     <string name="saved_source_all">전체 출처</string>
     <string name="saved_source_counts">%1$s · 저장 %2$d건 · 미확인 %3$d건</string>
     <string name="saved_source_identity">%1$s · %2$s</string>
