@@ -756,6 +756,24 @@ public final class MainActivity extends Activity {
             if (catalog.savedItems.get(i).key().equals(item.key())) { savedIndex = i; break; }
         }
         LinearLayout actions = column();
+        Source source = catalog.source(item.sourceId);
+        String sourceName = source == null || source.name.trim().isEmpty()
+                ? getString(R.string.saved_source_unknown) : source.name;
+        boolean official = "official_snapshot".equals(item.provenance)
+                || "official_runtime".equals(item.provenance);
+        int kind = "demo_sample".equals(item.provenance) ? R.string.saved_kind_sample
+                : "official_snapshot".equals(item.provenance) ? R.string.saved_kind_snapshot
+                : "official_runtime".equals(item.provenance) ? R.string.saved_kind_runtime
+                : R.string.saved_kind_unknown;
+        String metadataText = getString(R.string.saved_source, sourceName) + "\n" + getString(kind);
+        if (official) metadataText += "\n" + getString(R.string.saved_fetched_at,
+                item.fetchedAt == null ? getString(R.string.saved_fetched_unknown) : item.fetchedAt.toString());
+        TextView metadata = label(metadataText, 14, MUTED, false);
+        metadata.setTag("saved-detail-metadata");
+        metadata.setSingleLine(false);
+        metadata.setEllipsize(null);
+        metadata.setClickable(false);
+        add(actions, metadata, 4);
         TextView progress = label("전체 저장 " + catalog.savedItems.size() + "건 중 "
                 + (savedIndex + 1) + "번째 · 미확인 " + catalog.unreadCount() + "건", 14, MUTED, false);
         progress.setTag("saved-detail-position");

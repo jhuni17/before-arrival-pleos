@@ -1733,6 +1733,91 @@ public class MainActivityTest {
         return items;
     }
 
+    @Test public void savedMetadataUsesStoredProvenanceAndOptionalTimeWithoutMutations() throws Exception {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ContentCatalog catalog = field("catalog");
+        ContentCatalog.Source named = catalog.sources.get(0);
+        ContentCatalog.Source blank = new ContentCatalog.Source(new org.json.JSONObject()
+                .put("id", "blank-fixture").put("name", " "));
+        catalog.sources.add(blank);
+        String[] kinds = {"demo_sample", "official_snapshot", "official_runtime", "unknown"};
+        String[] labels = {"예시 콘텐츠", "공식 소식 · 스냅샷 자료", "공식 소식 · 직접 갱신 자료", "자료 구분 확인 필요"};
+        for (int i = 0; i < kinds.length; i++) for (boolean timed : new boolean[]{false, true}) {
+            String sourceId = i == 0 ? named.id : i == 1 ? blank.id : "missing-fixture";
+            ContentCatalog.Item item = new ContentCatalog.Item(new org.json.JSONObject()
+                    .put("id", kinds[i] + timed).put("sourceId", sourceId).put("title", "같은 제목")
+                    .put("summary", "저장된 요약").put("provenance", kinds[i])
+                    .put("fetchedAt", timed ? "2026-01-02T03:04:05Z" : org.json.JSONObject.NULL));
+            catalog.toggleSaved(item);
+            android.content.SharedPreferences preferences = field("preferences");
+            catalog.persist(preferences);
+            java.util.Map<String, ?> before = preferences.getAll();
+            List<ContentCatalog.Item> order = new ArrayList<>(catalog.savedItems);
+            ContentCatalog.Plan plan = field("plan");
+            for (String filter : new String[]{"savedAll", "savedUnread", "savedConfirmed"}) {
+                ((Button) field(filter)).performClick();
+                showDetail(item);
+                assertMetadata(item, "출처 · " + (i == 0 ? named.name : "출처 확인 필요") + "\n" + labels[i]
+                        + (i == 1 || i == 2 ? "\n가져온 시각(UTC) · "
+                        + (timed ? "2026-01-02T03:04:05Z" : "가져온 시각 미제공") : ""));
+                assertEquals(before, preferences.getAll());
+                assertEquals(order, catalog.savedItems);
+                assertFalse(catalog.isConfirmed(item));
+                assertSame(plan, field("plan"));
+                assertNull(Shadows.shadowOf(activity).getNextStartedActivity());
+                assertFalse(((SpeechPlayback) field("speech")).isPlaying());
+            }
+        }
+    }
+
+    @Test public void savedMetadataSurvivesFixtureRefreshFailureAndRecreation() throws Exception {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ContentCatalog catalog = field("catalog");
+        ContentCatalog.Source source = catalog.add("공식 출처 fixture", "lol",
+                "https://www.leagueoflegends.com/ko-kr/news/game-updates/");
+        // Local fixture input only: no network request or real SDK callback.
+        ContentCatalog.Item saved = new ContentCatalog.Item(source.items.get(0).json()
+                .put("provenance", "official_snapshot").put("fetchedAt", "2026-01-02T03:04:05Z"));
+        catalog.toggleSaved(saved);
+        ContentCatalog.Item sameTitle = new ContentCatalog.Item(catalog.sources.get(0).items.get(0).json()
+                .put("title", saved.title));
+        catalog.toggleSaved(sameTitle);
+        String expected = saved.json().toString();
+        String metadata = "출처 · " + source.name + "\n공식 소식 · 스냅샷 자료\n가져온 시각(UTC) · 2026-01-02T03:04:05Z";
+        for (boolean failure : new boolean[]{false, true}) {
+            assertTrue(catalog.importSnapshot(source.id, new org.json.JSONObject().put("items",
+                    new org.json.JSONArray().put(saved.json().put("summary", "갱신 fixture 요약"))).toString(),
+                    java.time.Instant.parse("2026-02-03T04:05:06Z"), true));
+            if (failure) catalog.markFailure(source.id, java.time.Instant.parse("2026-02-04T04:05:06Z"));
+            catalog.persist(field("preferences"));
+            for (boolean recreate : new boolean[]{false, true}) {
+                if (recreate) {
+                    controller.recreate(); activity = controller.get();
+                    setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+                    catalog = field("catalog");
+                    assertTrue(((Button) field("savedAll")).isSelected());
+                }
+                ContentCatalog.Item restored = catalog.savedItems.get(0);
+                assertEquals(expected, restored.json().toString());
+                showDetail(restored);
+                assertMetadata(restored, metadata);
+                showDetail(catalog.savedItems.get(1));
+                assertMetadata(catalog.savedItems.get(1), "출처 · "
+                        + catalog.source(sameTitle.sourceId).name + "\n예시 콘텐츠");
+            }
+        }
+    }
+
+    private void assertMetadata(ContentCatalog.Item item, String expected) {
+        AlertDialog dialog = field("activeDialog");
+        TextView metadata = dialog.findViewById(android.R.id.custom).findViewWithTag("saved-detail-metadata");
+        assertEquals(expected, metadata.getText().toString());
+        assertNull(metadata.getEllipsize());
+        assertEquals(Integer.MAX_VALUE, metadata.getMaxLines());
+        assertFalse(metadata.isClickable());
+        assertNull(metadata.getContentDescription()); // Accessibility reads the complete text.
+    }
+
     private void showDetail(ContentCatalog.Item item) {
         ReflectionHelpers.callInstanceMethod(activity, "showSavedDetail",
                 ReflectionHelpers.ClassParameter.from(ContentCatalog.Item.class, item));
@@ -1765,6 +1850,14 @@ public class MainActivityTest {
         for (int i = 0; i < catalog.savedItems.size(); i++) {
             if (catalog.savedItems.get(i).key().equals(item.key())) { index = i; break; }
         }
+        ContentCatalog.Source source = catalog.source(item.sourceId);
+        String name = source == null || source.name.trim().isEmpty() ? "출처 확인 필요" : source.name;
+        String kind = "demo_sample".equals(item.provenance) ? "예시 콘텐츠"
+                : "official_snapshot".equals(item.provenance) ? "공식 소식 · 스냅샷 자료"
+                : "official_runtime".equals(item.provenance) ? "공식 소식 · 직접 갱신 자료" : "자료 구분 확인 필요";
+        boolean official = "official_snapshot".equals(item.provenance) || "official_runtime".equals(item.provenance);
+        assertMetadata(item, "출처 · " + name + "\n" + kind + (official ? "\n가져온 시각(UTC) · "
+                + (item.fetchedAt == null ? "가져온 시각 미제공" : item.fetchedAt.toString()) : ""));
         TextView position = dialog.findViewById(android.R.id.custom).findViewWithTag("saved-detail-position");
         assertEquals("전체 저장 " + catalog.savedItems.size() + "건 중 " + (index + 1)
                 + "번째 · 미확인 " + catalog.unreadCount() + "건", position.getText().toString());
