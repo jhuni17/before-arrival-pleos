@@ -1492,7 +1492,9 @@ public class MainActivityTest {
         ReflectionHelpers.callInstanceMethod(activity, "dismissDialog");
         Object confirmationToken = field("undoToken");
         String narration = ((ContentCatalog.Plan) field("plan")).narration();
+        for (String query : new String[]{target.title, "no matching saved title"})
         for (String filter : new String[]{"savedAll", "savedUnread", "savedConfirmed"}) {
+            applySearch(query);
             deleteSaved(target);
             Button save = ((LinearLayout) field("briefingRows")).findViewWithTag(target.key());
             assertNotNull(save);
@@ -1506,6 +1508,7 @@ public class MainActivityTest {
             List<View> rows = new ArrayList<>();
             LinearLayout savedRows = field("savedRows");
             for (int i = 0; i < savedRows.getChildCount(); i++) rows.add(savedRows.getChildAt(i));
+            // Both modes write to real preferences before returning false or throwing.
             for (boolean throwsAfterWrite : new boolean[]{false, true}) {
                 ReflectionHelpers.setField(activity, "preferences", CatalogTest.failingCommits(preferences, throwsAfterWrite));
                 save.performClick();
@@ -1524,6 +1527,7 @@ public class MainActivityTest {
                 assertEquals(rows.size(), savedRows.getChildCount());
                 for (int i = 0; i < rows.size(); i++) assertSame(rows.get(i), savedRows.getChildAt(i));
                 assertSame(undo, undoDeletion()); assertSame(confirmation, undoConfirmation());
+                assertSearchDisplay(query, filter);
             }
             ReflectionHelpers.setField(activity, "preferences", preferences);
             save.performClick();
@@ -1535,8 +1539,8 @@ public class MainActivityTest {
             assertEquals("도착해서 보기 · " + items.size() + " · 미확인 " + (items.size() - 1),
                     ((TextView) field("savedHeading")).getText().toString());
             assertTrue(((Button) field(filter)).isSelected());
-            assertEquals(filter.equals("savedConfirmed") ? 1 : filter.equals("savedUnread")
-                    ? items.size() - 1 : items.size(), savedRows.getChildCount());
+            assertFalse(catalog.isConfirmed(target));
+            assertSearchDisplay(query, filter);
             assertNull(undoDeletion()); assertNotNull(undoConfirmation());
             assertSame(confirmationToken, field("undoToken"));
             undo.performClick(); assertEquals(items.size(), catalog.savedItems.size());
@@ -1545,6 +1549,8 @@ public class MainActivityTest {
             assertEquals(narration, ((ContentCatalog.Plan) field("plan")).narration());
         }
         controller.recreate(); activity = controller.get();
+        assertEquals("", (String) field("savedQuery"));
+        assertTrue(((Button) field("savedAll")).isSelected());
         ContentCatalog restored = field("catalog");
         assertSavedCapacity(restored.savedItems.size());
         assertEquals(catalog.savedItems.size(), restored.savedItems.size());
@@ -1556,6 +1562,7 @@ public class MainActivityTest {
         List<ContentCatalog.Item> items = saveNavigationItems();
         ContentCatalog catalog = field("catalog");
         android.content.SharedPreferences preferences = field("preferences");
+        applySearch(items.get(0).title);
         deleteSaved(items.get(0)); deleteSaved(items.get(1));
         Button save = ((LinearLayout) field("briefingRows")).findViewWithTag(items.get(0).key());
         String stored = preferences.getString(ContentCatalog.STORAGE_KEY, null);
@@ -1837,6 +1844,104 @@ public class MainActivityTest {
         undoDeletion().performClick();
         assertTrue(catalog.isSaved(items.get(0)));
         assertEquals(savedRowText(items.get(0)), ((Button) rows.getChildAt(0)).getText().toString());
+    }
+
+    private void assertSearchDisplay(String query, String filter) {
+        ContentCatalog catalog = field("catalog");
+        assertEquals(query, (String) field("savedQuery"));
+        assertTrue(((Button) field(filter)).isSelected());
+        List<ContentCatalog.Item> expected = new ArrayList<>();
+        for (ContentCatalog.Item item : catalog.savedItems) {
+            if (!item.title.trim().toLowerCase(java.util.Locale.ROOT)
+                    .contains(query.trim().toLowerCase(java.util.Locale.ROOT))) continue;
+            if (filter.equals("savedUnread") && catalog.isConfirmed(item)) continue;
+            if (filter.equals("savedConfirmed") && !catalog.isConfirmed(item)) continue;
+            expected.add(item);
+        }
+        LinearLayout rows = field("savedRows");
+        assertEquals(Math.max(1, expected.size()), rows.getChildCount());
+        for (int i = 0; i < expected.size(); i++)
+            assertEquals(savedRowText(expected.get(i)), ((Button) rows.getChildAt(i)).getText().toString());
+        if (expected.isEmpty())
+            assertEquals("검색 결과가 없어요", ((TextView) rows.getChildAt(0)).getText().toString());
+        assertTrue(((TextView) field("savedSearchStatus")).getText().toString()
+                .contains("표시 " + expected.size() + "건"));
+        assertEquals("도착해서 보기 · " + catalog.savedItems.size() + " · 미확인 " + catalog.unreadCount(),
+                ((TextView) field("savedHeading")).getText().toString());
+        assertSavedCapacity(catalog.savedItems.size());
+    }
+
+    private Button searchResultDelete(String filter) {
+        ((Button) field("savedAll")).performClick();
+        ((Button) ((LinearLayout) field("savedRows")).getChildAt(0)).performClick();
+        Button remove = ((AlertDialog) field("activeDialog")).getButton(AlertDialog.BUTTON_NEUTRAL);
+        ((Button) field(filter)).performClick();
+        return remove;
+    }
+
+    @Test public void savedTitleSearchDeletionAndRestoreFailuresRetryWithCurrentFilter() {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        ContentCatalog catalog = field("catalog");
+        android.content.SharedPreferences preferences = field("preferences");
+        ContentCatalog.Item target = items.get(0);
+        showDetail(target); detailAction("confirm-saved").performClick();
+        ReflectionHelpers.callInstanceMethod(activity, "dismissDialog");
+        deleteSaved(items.get(1)); // A different, valid deletion undo must survive a failed delete.
+        String query = target.title;
+        applySearch(query);
+        for (String filter : new String[]{"savedAll", "savedUnread", "savedConfirmed"}) {
+            ((Button) field(filter)).performClick();
+            List<ContentCatalog.Item> order = new ArrayList<>(catalog.savedItems);
+            java.util.Map<String, ?> stored = preferences.getAll();
+            Object previousUndo = field("undoDeleted");
+            Object confirmation = field("undoToken");
+            // failingCommits performs the real write before false/exception in both modes.
+            for (boolean throwsAfterWrite : new boolean[]{false, true}) {
+                ReflectionHelpers.setField(activity, "preferences", CatalogTest.failingCommits(preferences, throwsAfterWrite));
+                searchResultDelete(filter).performClick();
+                Shadows.shadowOf(Looper.getMainLooper()).idle();
+                assertEquals(order, catalog.savedItems);
+                assertEquals(stored, preferences.getAll());
+                assertTrue(catalog.isConfirmed(target));
+                assertSame(previousUndo, field("undoDeleted"));
+                assertSame(confirmation, field("undoToken"));
+                assertSearchDisplay(query, filter);
+            }
+            ReflectionHelpers.setField(activity, "preferences", preferences);
+            searchResultDelete(filter).performClick();
+            Shadows.shadowOf(Looper.getMainLooper()).idle();
+            assertFalse(catalog.isSaved(target));
+            assertSearchDisplay(query, filter);
+            Button undo = undoDeletion();
+            assertNotNull(undo);
+            Object deleted = field("undoDeleted");
+            List<ContentCatalog.Item> remaining = new ArrayList<>(catalog.savedItems);
+            stored = preferences.getAll();
+            ContentCatalog.Plan plan = field("plan");
+            applySearch("no matching saved title");
+            ((Button) field("savedSearchClear")).performClick();
+            assertSame(deleted, field("undoDeleted"));
+            assertEquals(stored, preferences.getAll());
+            assertSame(plan, field("plan"));
+            assertFalse(((SpeechPlayback) field("speech")).isPlaying());
+            applySearch(query);
+            undo = undoDeletion();
+            for (boolean throwsAfterWrite : new boolean[]{false, true}) {
+                ReflectionHelpers.setField(activity, "preferences", CatalogTest.failingCommits(preferences, throwsAfterWrite));
+                undo.performClick();
+                assertEquals(remaining, catalog.savedItems);
+                assertEquals(stored, preferences.getAll());
+                assertSame(deleted, field("undoDeleted"));
+                assertSame(undo, undoDeletion());
+                assertSearchDisplay(query, filter);
+            }
+            ReflectionHelpers.setField(activity, "preferences", preferences);
+            undo.performClick();
+            assertEquals(order, catalog.savedItems);
+            assertTrue(catalog.isConfirmed(target));
+            assertNull(undoDeletion());
+            assertSearchDisplay(query, filter);
+        }
     }
 
     @Test public void savedTitleSearchDraftAndStaleCallbacksCannotApplyAfterAccessChanges() {

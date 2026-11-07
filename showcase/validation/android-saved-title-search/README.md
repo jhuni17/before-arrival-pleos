@@ -1,12 +1,12 @@
 # Android 저장 제목 검색 검증
 
-2026-11-07. 변경 범위는 MainActivity.java, strings.xml, MainActivityTest.java 및 이 보고서다.
+2026-11-07. 이번 변경 범위는 MainActivityTest.java 및 이 보고서 두 파일이다. 제품 코드는 변경하지 않았다.
 
 ## 이전 후보 근거
 
-수용된 계획에서 후보 cbaaa7ac의 Android 입력 60개 CI 해시 일치, 테스트 69개 통과,
-lint 오류 0개·경고 9개 및 unsigned APK 해시 일치를 확인했다고 전달받았다.
-이번 작업에서 해당 CI 결과를 다시 조회하지 않았다. 이 근거는 새 검색 변경의 통과 증거가 아니다.
+수용된 계획에서 후보 ab2a9adc의 Android 입력 60개 CI 해시 일치, JVM 테스트 72개 통과,
+lint 오류 0개·경고 10개 및 unsigned APK 해시 일치를 확인했다고 전달받았다.
+이번 작업에서 해당 CI 결과를 다시 조회하지 않았다. 이 근거는 이번에 보완한 테스트의 통과 증거가 아니다.
 
 ## 변경
 
@@ -23,19 +23,35 @@ lint 오류 0개·경고 9개 및 unsigned APK 해시 일치를 확인했다고 
 초안 취소, 제한·pause 이후 오래된 콜백 및 재생성 초기값을 다룬다.
 테스트 fixture 건수는 제품 제한이 아니며 제품 제한은 기존 500건을 유지한다.
 
+## 이번 회귀 검증 보완
+
+기존 신규 저장 실패 테스트를 제목 일치/불일치 검색과 ALL·UNREAD·CONFIRMED 조합으로 확장했다.
+실제 검색 버튼·입력·적용 및 브리핑 저장 버튼을 사용하며, 실패 후 같은 저장 버튼으로 재시도한다.
+저장 순서·확인 상태·저장소·검색어·선택 필터·결과 및 전체 건수·용량·실행 취소 대상을 검사한다.
+신규 저장은 미확인이며 같은 항목 재저장은 해당 삭제 실행 취소를 무효화한다.
+용량 기대값은 ContentCatalog.SAVED_ITEM_LIMIT을 참조하며 fixture 크기를 제한으로 취급하지 않는다.
+
+검색 결과의 실제 상세 저장 취소와 삭제 실행 취소에 두 실패 모드와 정상 preferences 재시도를 추가했다.
+CatalogTest.failingCommits(preferences, throwsAfterWrite)는 실제 쓰기를 수행한 뒤 false를 반환하거나
+예외를 던진다. 실패 시 저장소·순서·확인 상태·검색 표시·유효한 실행 취소 대상을 검사하고,
+복원 성공 시 원래 위치와 확인 상태 및 현재 필터 교집합을 확인한다.
+검색 적용·해제의 저장소·편성·음성·삭제 실행 취소 불변도 검사한다.
+다른 항목의 삭제 실행 취소 유지와 RESTRICTED·UNKNOWN·pause의 저장 차단 테스트에도 검색을 적용했다.
+재생성 후 성공한 데이터 유지 및 검색어 빈 문자열·ALL 초기화를 검사한다.
+기존 검색 대화상자 수명·음성 중지·canOpen 보호 테스트는 유지했다.
+
 ## 이번 로컬 실행
 
-- `./gradlew :app:testSampleDebugUnitTest --tests 'com.beforearrival.briefing.MainActivityTest.savedTitleSearch*'`
-  (android 디렉터리): 래퍼 실행 권한 없음(exit 126).
-- `bash android/gradlew -p android :app:testSampleDebugUnitTest --tests 'com.beforearrival.briefing.MainActivityTest.savedTitleSearch*'`:
+- `bash android/gradlew -p android :app:testSampleDebugUnitTest --tests 'com.beforearrival.briefing.MainActivityTest.newSaveFailureKeepsFiltersAndUndoUntilSameButtonRetry' --tests 'com.beforearrival.briefing.MainActivityTest.newSavePreservesOtherDeletionUndoAndRejectsUnsafeCallbacks' --tests 'com.beforearrival.briefing.MainActivityTest.savedTitleSearch*'`:
   JAVA_HOME 미설정 및 PATH에 java 없음(exit 1). 테스트 컴파일·실행 전 차단.
 - `bash android/gradlew -p android :app:lintSampleDebug`:
   같은 Java 부재로 차단(exit 1). 새 lint 결과 없음.
 - `git diff --check`: 통과.
-- Python 표준 XML 파서로 strings.xml 구문 검사: 통과.
+- `git status --short --untracked-files=all`: 허용된 테스트와 이 보고서만 변경, 미추적 파일 없음.
 
 전체 `:app:testSampleDebugUnitTest` 회귀 실행은 사용자의 집중 로컬 검사 지시에 따라
-GitHub CI에 남긴다. 위 집중 테스트와 lint는 로컬 도구 부재로 검증하지 못했다.
+GitHub CI에 남긴다(로컬 전체 실행 안 함). 집중 테스트와 lint는 Java 부재로 검증하지 못했다.
+새 테스트의 컴파일과 동작은 미검증이며 기존 후보 CI 결과로 대체하지 않는다.
 새 APK 빌드나 해시 검증은 수행하지 않았다. 워크플로·빌드·SDK 설정, 라이선스,
 자격증명 및 서명 키는 변경하지 않았다.
 
