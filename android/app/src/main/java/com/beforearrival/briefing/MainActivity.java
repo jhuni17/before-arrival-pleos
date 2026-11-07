@@ -71,6 +71,7 @@ public final class MainActivity extends Activity {
     private boolean transcriptVisible;
     private enum SavedFilter { ALL, UNREAD, CONFIRMED }
     private SavedFilter savedFilter = SavedFilter.ALL;
+    private ContentCatalog.DeletedItem undoDeleted;
     private Item undoConfirmed;
     private Object undoToken;
     private LinearLayout savedUndo;
@@ -150,6 +151,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onPause() {
         resumed = false;
+        clearDeletionUndo();
         clearConfirmationUndo();
         lifecycleGeneration++;
         dismissDialog();
@@ -484,7 +486,7 @@ public final class MainActivity extends Activity {
         accessLabel.setText(allowed ? "주차 시 사용 가능 · 차량 UX 제한 해제" : "차량 상태 미확인");
         content.setVisibility(allowed ? View.VISIBLE : View.GONE);
         restrictionNotice.setVisibility(allowed ? View.GONE : View.VISIBLE);
-        if (!canInteract()) clearConfirmationUndo();
+        if (!canInteract()) { clearConfirmationUndo(); clearDeletionUndo(); }
         if (!allowed) {
             lifecycleGeneration++;
             dismissDialog();
@@ -548,8 +550,18 @@ public final class MainActivity extends Activity {
 
     private void toggleSaved(Item item) {
         if (!canInteract()) return;
-        if (undoConfirmed != null && undoConfirmed.key().equals(item.key())) clearConfirmationUndo();
-        catalog.toggleSaved(item); catalog.persist(preferences);
+        if (catalog.isSaved(item)) {
+            ContentCatalog.DeletedItem deleted = catalog.deleteSaved(item, preferences);
+            if (deleted == null) {
+                android.widget.Toast.makeText(this, "저장 실패 · 저장 취소 다시 시도", android.widget.Toast.LENGTH_SHORT).show();
+                return;
+            }
+            undoDeleted = deleted;
+            if (undoConfirmed != null && undoConfirmed.key().equals(item.key())) clearConfirmationUndo();
+        } else {
+            catalog.toggleSaved(item); catalog.persist(preferences);
+            if (undoDeleted != null && undoDeleted.item.key().equals(item.key())) clearDeletionUndo();
+        }
         Button save = briefingRows.findViewWithTag(item.key());
         if (save != null) updateSaveButton(save, item);
         renderSaved();
@@ -613,8 +625,34 @@ public final class MainActivity extends Activity {
         add(savedUndo, undo, 4);
     }
 
+    private void clearDeletionUndo() {
+        undoDeleted = null;
+        if (savedUndo != null) renderConfirmationUndo();
+    }
+
+    private void renderDeletionUndo() {
+        if (undoDeleted == null) return;
+        ContentCatalog.DeletedItem deleted = undoDeleted;
+        add(savedUndo, label(deleted.item.title, 14, TEXT, true), 4);
+        Button undo = button("삭제 실행 취소", false, () -> {});
+        undo.setTag("undo-deletion");
+        undo.setOnClickListener(view -> {
+            if (!canInteract() || undoDeleted != deleted) return;
+            if (!catalog.restoreDeleted(deleted, preferences)) {
+                undo.setText("저장 실패 · 삭제 실행 취소 다시 시도");
+                return;
+            }
+            undoDeleted = null;
+            Button save = briefingRows.findViewWithTag(deleted.item.key());
+            if (save != null) updateSaveButton(save, deleted.item);
+            renderSaved();
+        });
+        add(savedUndo, undo, 4);
+    }
+
     private void renderSaved() {
         renderConfirmationUndo();
+        renderDeletionUndo();
         boolean hasUnread = firstUnread() != null;
         enableButton(savedFirstUnread, hasUnread);
         savedUnreadEmpty.setVisibility(hasUnread ? View.GONE : View.VISIBLE);

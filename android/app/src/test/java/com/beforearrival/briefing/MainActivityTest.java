@@ -1097,6 +1097,114 @@ public class MainActivityTest {
         }
     }
 
+    private Button undoDeletion() {
+        return ((LinearLayout) field("savedUndo")).findViewWithTag("undo-deletion");
+    }
+
+    private void deleteSaved(ContentCatalog.Item item) {
+        ReflectionHelpers.callInstanceMethod(activity, "toggleSaved",
+                ReflectionHelpers.ClassParameter.from(ContentCatalog.Item.class, item));
+    }
+
+    @Test public void deletionUndoPreservesOtherConfirmationAndHandlesFailuresAndResave() {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        ContentCatalog catalog = field("catalog");
+        android.content.SharedPreferences preferences = field("preferences");
+        showDetail(items.get(0)); detailAction("confirm-saved").performClick();
+        ReflectionHelpers.callInstanceMethod(activity, "dismissDialog");
+        Button confirmation = undoConfirmation();
+        String narration = ((ContentCatalog.Plan) field("plan")).narration();
+        deleteSaved(items.get(1));
+        Button first = undoDeletion(); assertNotNull(first);
+        ReflectionHelpers.setField(activity, "preferences", CatalogTest.failingCommits(preferences));
+        deleteSaved(items.get(2));
+        assertSame(first, undoDeletion()); assertTrue(catalog.isSaved(items.get(2)));
+        first.performClick(); assertFalse(catalog.isSaved(items.get(1)));
+        assertTrue(first.getText().toString().contains("다시 시도"));
+        ReflectionHelpers.setField(activity, "preferences", preferences);
+        first.performClick(); assertTrue(catalog.isSaved(items.get(1)));
+        assertNotNull(undoConfirmation());
+        confirmation.performClick(); assertFalse(catalog.isConfirmed(items.get(0)));
+        deleteSaved(items.get(1)); first = undoDeletion();
+        deleteSaved(items.get(2)); Button latest = undoDeletion();
+        first.performClick(); assertFalse(catalog.isSaved(items.get(1)));
+        latest.performClick(); assertTrue(catalog.isSaved(items.get(2)));
+        deleteSaved(items.get(0)); Button stale = undoDeletion();
+        deleteSaved(items.get(0)); // Re-save invalidates the old callback.
+        stale.performClick(); assertNull(undoDeletion()); assertTrue(catalog.isSaved(items.get(0)));
+        assertNull(field("activeDialog"));
+        assertEquals(narration, ((ContentCatalog.Plan) field("plan")).narration());
+    }
+
+    @Test public void deletionUndoUpdatesEveryFilterAndRestoresConfirmedDetailDeletion() {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        ContentCatalog catalog = field("catalog");
+        for (String filter : new String[]{"savedAll", "savedUnread", "savedConfirmed"}) {
+            showDetail(items.get(0)); detailAction("confirm-saved").performClick();
+            ReflectionHelpers.callInstanceMethod(activity, "dismissDialog");
+            ((Button) field(filter)).performClick();
+            showDetail(items.get(0));
+            ((AlertDialog) field("activeDialog")).getButton(AlertDialog.BUTTON_NEUTRAL).performClick();
+            Shadows.shadowOf(Looper.getMainLooper()).idle();
+            assertFalse(catalog.isSaved(items.get(0))); assertNull(undoConfirmation());
+            assertNotNull(undoDeletion());
+            assertEquals(items.size() - 1, catalog.savedItems.size());
+            assertEquals(items.size() - 1, catalog.unreadCount());
+            assertSame(items.get(1), ReflectionHelpers.callInstanceMethod(activity, "firstUnread"));
+            assertEquals(filter.equals("savedConfirmed") ? 1 : items.size() - 1,
+                    ((LinearLayout) field("savedRows")).getChildCount());
+            undoDeletion().performClick();
+            assertTrue(catalog.isConfirmed(items.get(0))); assertNull(undoConfirmation());
+            assertEquals(items.size(), catalog.savedItems.size());
+            assertEquals(items.size() - 1, catalog.unreadCount());
+            assertTrue(((Button) field("savedFirstUnread")).isEnabled());
+            assertEquals(filter.equals("savedAll") ? items.size() : filter.equals("savedUnread")
+                    ? items.size() - 1 : 1, ((LinearLayout) field("savedRows")).getChildCount());
+            assertNull(field("activeDialog"));
+            assertTrue(catalog.setConfirmed(items.get(0), false, field("preferences")));
+        }
+    }
+
+    @Test public void deletingLastUnreadAndUndoUpdateEntryAndCountsForEveryFilter() {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        ContentCatalog catalog = field("catalog");
+        for (int i = 1; i < items.size(); i++)
+            assertTrue(catalog.setConfirmed(items.get(i), true, field("preferences")));
+        for (String filter : new String[]{"savedAll", "savedUnread", "savedConfirmed"}) {
+            ((Button) field(filter)).performClick();
+            deleteSaved(items.get(0));
+            assertEquals(0, catalog.unreadCount());
+            assertFalse(((Button) field("savedFirstUnread")).isEnabled());
+            assertNull(ReflectionHelpers.callInstanceMethod(activity, "firstUnread"));
+            assertEquals("도착해서 보기 · " + (items.size() - 1) + " · 미확인 0",
+                    ((TextView) field("savedHeading")).getText().toString());
+            undoDeletion().performClick();
+            assertEquals(1, catalog.unreadCount());
+            assertTrue(((Button) field("savedFirstUnread")).isEnabled());
+            assertSame(items.get(0), ReflectionHelpers.callInstanceMethod(activity, "firstUnread"));
+            assertEquals(filter.equals("savedAll") ? items.size() : filter.equals("savedUnread")
+                    ? 1 : items.size() - 1, ((LinearLayout) field("savedRows")).getChildCount());
+        }
+    }
+
+    @Test public void deletionUndoCallbacksExpireAcrossSafetyAndLifecycleTransitions() {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        for (int transition = 0; transition < 4; transition++) {
+            setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+            deleteSaved(items.get(0)); Button old = undoDeletion(); assertNotNull(old);
+            if (transition < 2) setAccess(transition == 0 ? AccessPolicy.State.RESTRICTED : AccessPolicy.State.UNKNOWN);
+            else if (transition == 2) controller.pause();
+            else { controller.recreate(); activity = controller.get(); }
+            old.performClick(); assertNull(undoDeletion());
+            if (transition == 2) controller.resume();
+            setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+            old.performClick(); assertNull(undoDeletion());
+            assertFalse(((ContentCatalog) field("catalog")).isSaved(items.get(0)));
+            assertNull(field("activeDialog"));
+            deleteSaved(items.get(0));
+        }
+    }
+
     private Button undoConfirmation() {
         return ((LinearLayout) field("savedUndo")).findViewWithTag("undo-confirmation");
     }

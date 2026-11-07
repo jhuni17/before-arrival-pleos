@@ -180,14 +180,71 @@ public class CatalogTest {
         }
     }
 
+    @Test public void deletionRestoresExactDataAndPositionWithoutRevertingInterveningChanges() throws Exception {
+        ContentCatalog.Item a = catalog.sources.get(0).items.get(0);
+        ContentCatalog.Item b = catalog.sources.get(1).items.get(0);
+        ContentCatalog.Item c = catalog.sources.get(2).items.get(0);
+        catalog.toggleSaved(a); catalog.toggleSaved(b); catalog.persist(preferences);
+        assertTrue(catalog.setConfirmed(a, true, preferences));
+        ContentCatalog.DeletedItem deleted = catalog.deleteSaved(a, preferences);
+        assertNotNull(deleted);
+        catalog.toggleSaved(c); catalog.sources.get(0).enabled = false;
+        assertTrue(catalog.setConfirmed(b, true, preferences));
+        assertTrue(catalog.restoreDeleted(deleted, preferences));
+        assertSame(a, catalog.savedItems.get(0));
+        assertEquals(a.json().toString(), catalog.savedItems.get(0).json().toString());
+        assertEquals(java.util.List.of(a, b, c), catalog.savedItems);
+        assertTrue(catalog.isConfirmed(a)); assertTrue(catalog.isConfirmed(b));
+        ContentCatalog restored = new ContentCatalog(defaults, preferences);
+        assertEquals(3, restored.savedItems.size()); assertEquals(1, restored.unreadCount());
+        assertFalse(restored.sources.get(0).enabled);
+        assertEquals(a.json().toString(), restored.savedItems.get(0).json().toString());
+        deleted = catalog.deleteSaved(c, preferences);
+        assertNotNull(catalog.deleteSaved(b, preferences));
+        assertTrue(catalog.restoreDeleted(deleted, preferences));
+        assertSame(c, catalog.savedItems.get(1)); // Clamp the old index to the current size.
+        deleted = catalog.deleteSaved(a, preferences);
+        catalog.toggleSaved(a); catalog.persist(preferences);
+        java.util.List<ContentCatalog.Item> before = new java.util.ArrayList<>(catalog.savedItems);
+        assertTrue(catalog.restoreDeleted(deleted, preferences));
+        assertEquals(before, catalog.savedItems); assertFalse(catalog.isConfirmed(a));
+    }
+
+    @Test public void deletionAndRestoreFailuresRollbackEvenWhenCommitMutatesStorage() throws Exception {
+        ContentCatalog.Item item = catalog.sources.get(0).items.get(0);
+        catalog.toggleSaved(item); assertTrue(catalog.setConfirmed(item, true, preferences));
+        String stored = preferences.getString(ContentCatalog.STORAGE_KEY, null);
+        assertNull(catalog.deleteSaved(item, failingCommits(preferences, true)));
+        assertTrue(catalog.isConfirmed(item)); assertEquals(stored, preferences.getString(ContentCatalog.STORAGE_KEY, null));
+        assertNull(catalog.deleteSaved(item, failingCommits(preferences)));
+        assertTrue(catalog.isConfirmed(item)); assertEquals(stored, preferences.getString(ContentCatalog.STORAGE_KEY, null));
+        ContentCatalog.DeletedItem deleted = catalog.deleteSaved(item, preferences);
+        assertNotNull(deleted);
+        stored = preferences.getString(ContentCatalog.STORAGE_KEY, null);
+        assertFalse(catalog.restoreDeleted(deleted, failingCommits(preferences, true)));
+        assertFalse(catalog.isSaved(item)); assertEquals(stored, preferences.getString(ContentCatalog.STORAGE_KEY, null));
+        assertFalse(catalog.restoreDeleted(deleted, failingCommits(preferences)));
+        assertFalse(catalog.isSaved(item)); assertEquals(stored, preferences.getString(ContentCatalog.STORAGE_KEY, null));
+        assertTrue(catalog.restoreDeleted(deleted, preferences));
+        assertTrue(new ContentCatalog(defaults, preferences).isConfirmed(item));
+    }
+
     static SharedPreferences failingCommits(SharedPreferences real) {
+        return failingCommits(real, false);
+    }
+
+    static SharedPreferences failingCommits(SharedPreferences real, boolean throwsAfterWrite) {
         return (SharedPreferences) java.lang.reflect.Proxy.newProxyInstance(
                 SharedPreferences.class.getClassLoader(), new Class<?>[]{SharedPreferences.class}, (proxy, method, args) -> {
                     if (!method.getName().equals("edit")) return method.invoke(real, args);
                     SharedPreferences.Editor editor = real.edit();
                     return java.lang.reflect.Proxy.newProxyInstance(SharedPreferences.Editor.class.getClassLoader(),
                             new Class<?>[]{SharedPreferences.Editor.class}, (ep, em, ea) -> {
-                                if (em.getName().equals("commit")) { editor.commit(); return false; }
+                                if (em.getName().equals("commit")) {
+                                    editor.commit();
+                                    if (throwsAfterWrite) throw new IllegalStateException("storage failure");
+                                    return false;
+                                }
                                 Object result = em.invoke(editor, ea);
                                 return result == editor ? ep : result;
                             });

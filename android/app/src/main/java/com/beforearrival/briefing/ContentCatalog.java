@@ -226,6 +226,50 @@ final class ContentCatalog {
         for (int i = 0; i < savedItems.size(); i++) if (savedItems.get(i).key().equals(item.key())) { savedItems.remove(i); confirmedKeys.remove(item.key()); return; }
         savedItems.add(item);
     }
+    static final class DeletedItem {
+        final Item item;
+        final int index;
+        final boolean confirmed;
+        DeletedItem(Item item, int index, boolean confirmed) {
+            this.item = item; this.index = index; this.confirmed = confirmed;
+        }
+    }
+    DeletedItem deleteSaved(Item item, SharedPreferences preferences) {
+        for (int i = 0; i < savedItems.size(); i++) {
+            Item saved = savedItems.get(i);
+            if (!saved.key().equals(item.key())) continue;
+            DeletedItem deleted = new DeletedItem(saved, i, isConfirmed(saved));
+            return changeSaved(preferences, () -> {
+                savedItems.remove(saved); confirmedKeys.remove(saved.key());
+            }) ? deleted : null;
+        }
+        return null;
+    }
+    boolean restoreDeleted(DeletedItem deleted, SharedPreferences preferences) {
+        if (isSaved(deleted.item)) return true;
+        return changeSaved(preferences, () -> {
+            savedItems.add(Math.min(deleted.index, savedItems.size()), deleted.item);
+            if (deleted.confirmed) confirmedKeys.add(deleted.item.key());
+        });
+    }
+    private boolean changeSaved(SharedPreferences preferences, Runnable change) {
+        List<Item> previous = new ArrayList<>(savedItems);
+        Set<String> confirmed = new HashSet<>(confirmedKeys);
+        String oldStorage;
+        try { oldStorage = preferences.getString(STORAGE_KEY, null); }
+        catch (RuntimeException failure) { return false; }
+        try {
+            change.run();
+            if (preferences.edit().putString(STORAGE_KEY, storageJson()).commit()) return true;
+        } catch (JSONException | RuntimeException failure) { /* Restore and allow retry. */ }
+        savedItems.clear(); savedItems.addAll(previous);
+        confirmedKeys.clear(); confirmedKeys.addAll(confirmed);
+        try {
+            if (oldStorage == null) preferences.edit().remove(STORAGE_KEY).commit();
+            else preferences.edit().putString(STORAGE_KEY, oldStorage).commit();
+        } catch (RuntimeException failure) { /* Best effort restoration; no success is reported. */ }
+        return false;
+    }
     boolean isConfirmed(Item item) { return isSaved(item) && confirmedKeys.contains(item.key()); }
     int unreadCount() {
         int count = 0;
