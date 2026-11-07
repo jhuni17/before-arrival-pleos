@@ -1721,6 +1721,157 @@ public class MainActivityTest {
         return ((LinearLayout) field("savedUndo")).findViewWithTag("undo-confirmation");
     }
 
+    private Button searchButton(View view, String text) {
+        if (view instanceof Button && text.equals(((Button) view).getText().toString())) return (Button) view;
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                Button found = searchButton(group.getChildAt(i), text);
+                if (found != null) return found;
+            }
+        }
+        return null;
+    }
+
+    private AlertDialog searchDraft(String query) {
+        Button open = searchButton(activity.getWindow().getDecorView(), "저장한 제목 검색");
+        assertNotNull(open);
+        open.performClick();
+        AlertDialog dialog = field("activeDialog");
+        EditText input = dialog.findViewById(android.R.id.content).findViewWithTag("saved-search-input");
+        assertEquals("저장한 제목 검색", input.getContentDescription().toString());
+        assertEquals((String) field("savedQuery"), input.getText().toString());
+        input.setText(query);
+        return dialog;
+    }
+
+    private void applySearch(String query) {
+        searchDraft(query).getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+    }
+
+    @Test public void savedTitleSearchMatchesLiteralTitlesAndIntersectsEveryFilter() throws Exception {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ContentCatalog catalog = field("catalog");
+        String[] titles = {"  한글 AbC [.*]  ", "한글 AbC [.*]", "요약 아닌 제목"};
+        List<ContentCatalog.Item> items = new ArrayList<>();
+        for (int i = 0; i < titles.length; i++) {
+            ContentCatalog.Item item = new ContentCatalog.Item(new org.json.JSONObject()
+                    .put("id", "search-" + i).put("sourceId", catalog.sources.get(i).id)
+                    .put("title", titles[i]).put("summary", "summary-only"));
+            items.add(item);
+            catalog.toggleSaved(item);
+        }
+        android.content.SharedPreferences preferences = field("preferences");
+        assertTrue(catalog.setConfirmed(items.get(0), true, preferences));
+        ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
+        java.util.Map<String, ?> before = preferences.getAll();
+        ContentCatalog.Plan plan = field("plan");
+        for (String query : new String[]{" 한글 ", " aBc ", "[.*]"}) {
+            applySearch(query);
+            for (String filter : new String[]{"savedAll", "savedUnread", "savedConfirmed"}) {
+                ((Button) field(filter)).performClick();
+                LinearLayout rows = field("savedRows");
+                int expected = filter.equals("savedAll") ? 2 : 1;
+                assertEquals(expected, rows.getChildCount());
+                assertTrue(((TextView) field("savedSearchStatus")).getText().toString()
+                        .contains("표시 " + expected + "건"));
+                int first = filter.equals("savedUnread") ? 1 : 0;
+                assertEquals(savedRowText(items.get(first)), ((Button) rows.getChildAt(0)).getText().toString());
+                ((Button) rows.getChildAt(0)).performClick();
+                AlertDialog detail = field("activeDialog");
+                assertDetail(items.get(first));
+                detail.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+                Shadows.shadowOf(Looper.getMainLooper()).idle();
+            }
+        }
+        applySearch("summary-only");
+        assertEquals("검색 결과가 없어요", ((TextView) ((LinearLayout) field("savedRows"))
+                .getChildAt(0)).getText().toString());
+        ((Button) field("savedSearchClear")).performClick();
+        assertTrue(((Button) field("savedConfirmed")).isSelected());
+        assertEquals("", (String) field("savedQuery"));
+        applySearch("   ");
+        assertEquals("", (String) field("savedQuery"));
+        assertEquals(before, preferences.getAll());
+        assertEquals(items, catalog.savedItems);
+        assertSame(plan, field("plan"));
+        assertEquals("도착해서 보기 · 3 · 미확인 2",
+                ((TextView) field("savedHeading")).getText().toString());
+    }
+
+    @Test public void savedTitleSearchRecalculatesMutationsAndPreservesUndo() {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        ContentCatalog catalog = field("catalog");
+        android.content.SharedPreferences preferences = field("preferences");
+        applySearch(items.get(0).title);
+        ((Button) field("savedUnread")).performClick();
+        LinearLayout rows = field("savedRows");
+        ((Button) rows.getChildAt(0)).performClick();
+        Button confirm = detailAction("confirm-saved");
+        ReflectionHelpers.setField(activity, "preferences", CatalogTest.failingCommits(preferences));
+        confirm.performClick();
+        assertFalse(catalog.isConfirmed(items.get(0)));
+        assertEquals(1, rows.getChildCount());
+        ReflectionHelpers.setField(activity, "preferences", preferences);
+        confirm.performClick();
+        assertTrue(catalog.isConfirmed(items.get(0)));
+        assertEquals("검색 결과가 없어요", ((TextView) rows.getChildAt(0)).getText().toString());
+        Object token = field("undoToken");
+        java.util.Map<String, ?> before = preferences.getAll();
+        applySearch("no match");
+        ((Button) field("savedSearchClear")).performClick();
+        assertSame(token, field("undoToken"));
+        assertEquals(before, preferences.getAll());
+        undoConfirmation().performClick();
+        assertFalse(catalog.isConfirmed(items.get(0)));
+        applySearch(items.get(0).title);
+        ((Button) rows.getChildAt(0)).performClick();
+        ((AlertDialog) field("activeDialog")).getButton(AlertDialog.BUTTON_NEUTRAL).performClick();
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertFalse(catalog.isSaved(items.get(0)));
+        Object deleted = field("undoDeleted");
+        applySearch("no match");
+        assertSame(deleted, field("undoDeleted"));
+        applySearch(items.get(0).title);
+        undoDeletion().performClick();
+        assertTrue(catalog.isSaved(items.get(0)));
+        assertEquals(savedRowText(items.get(0)), ((Button) rows.getChildAt(0)).getText().toString());
+    }
+
+    @Test public void savedTitleSearchDraftAndStaleCallbacksCannotApplyAfterAccessChanges() {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        applySearch(items.get(0).title);
+        String applied = field("savedQuery");
+        AlertDialog cancelled = searchDraft("discard");
+        cancelled.cancel();
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertEquals(applied, (String) field("savedQuery"));
+        for (int transition = 0; transition < 3; transition++) {
+            AlertDialog old = searchDraft("stale");
+            Button apply = old.getButton(AlertDialog.BUTTON_POSITIVE);
+            if (transition == 2) controller.pause();
+            else setAccess(transition == 0 ? AccessPolicy.State.RESTRICTED : AccessPolicy.State.UNKNOWN);
+            assertFalse(old.isShowing());
+            apply.performClick();
+            ((Button) field("savedSearchClear")).performClick();
+            searchButton(activity.getWindow().getDecorView(), "저장한 제목 검색").performClick();
+            assertNull(field("activeDialog"));
+            assertEquals(applied, (String) field("savedQuery"));
+            if (transition == 2) controller.resume();
+            else setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+            apply.performClick();
+            assertEquals(applied, (String) field("savedQuery"));
+            assertNull(field("activeDialog"));
+        }
+        controller.recreate();
+        activity = controller.get();
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        assertEquals("", (String) field("savedQuery"));
+        assertTrue(((Button) field("savedAll")).isSelected());
+        assertNull(field("activeDialog"));
+    }
+
     private List<ContentCatalog.Item> saveNavigationItems() {
         setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
         ContentCatalog catalog = field("catalog");

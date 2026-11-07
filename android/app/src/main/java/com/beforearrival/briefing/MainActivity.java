@@ -38,6 +38,7 @@ import android.widget.TextView;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 
 import com.beforearrival.briefing.ContentCatalog.Item;
 import com.beforearrival.briefing.ContentCatalog.Source;
@@ -71,6 +72,9 @@ public final class MainActivity extends Activity {
     private boolean transcriptVisible;
     private enum SavedFilter { ALL, UNREAD, CONFIRMED }
     private SavedFilter savedFilter = SavedFilter.ALL;
+    private String savedQuery = "";
+    private TextView savedSearchStatus;
+    private Button savedSearchClear;
     private ContentCatalog.DeletedItem undoDeleted;
     private Item undoConfirmed;
     private Object undoToken;
@@ -305,6 +309,12 @@ public final class MainActivity extends Activity {
         savedUnread = button("미확인만", false, () -> selectSavedFilter(SavedFilter.UNREAD));
         savedConfirmed = button("확인 완료만", false, () -> selectSavedFilter(SavedFilter.CONFIRMED));
         add(savedPanel, buttonRow(savedAll, savedUnread, savedConfirmed), 8);
+        add(savedPanel, button(getString(R.string.saved_search), false, this::showSavedSearch), 8);
+        savedSearchClear = button(getString(R.string.saved_search_clear), false, this::clearSavedSearch);
+        add(savedPanel, savedSearchClear, 4);
+        savedSearchStatus = label("", 14, MUTED, false);
+        savedSearchStatus.setTag("saved-search-status");
+        add(savedPanel, savedSearchStatus, 4);
         savedUndo = column();
         add(savedPanel, savedUndo, 8);
         savedRows = column();
@@ -451,7 +461,15 @@ public final class MainActivity extends Activity {
     private void dismissDialog() {
         AlertDialog dialog = activeDialog;
         activeDialog = null;
-        if (dialog != null) dialog.dismiss();
+        if (dialog != null) {
+            if (dialog.getWindow() != null) {
+                android.view.inputmethod.InputMethodManager ime =
+                        (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+                if (ime != null) ime.hideSoftInputFromWindow(
+                        dialog.getWindow().getDecorView().getWindowToken(), 0);
+            }
+            dialog.dismiss();
+        }
     }
 
     private void togglePlayback() {
@@ -598,12 +616,45 @@ public final class MainActivity extends Activity {
         renderSaved();
     }
 
+    private static String normalizeSavedTitle(String value) {
+        return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private void clearSavedSearch() {
+        if (!canInteract()) return;
+        savedQuery = "";
+        renderSaved();
+    }
+
+    private void showSavedSearch() {
+        if (!canInteract()) return;
+        int generation = lifecycleGeneration;
+        EditText input = new EditText(this);
+        input.setTag("saved-search-input");
+        input.setSingleLine(true);
+        input.setContentDescription(getString(R.string.saved_search));
+        input.setHint(R.string.saved_search);
+        input.setText(savedQuery);
+        input.setSelection(input.length());
+        showDialog(new AlertDialog.Builder(this)
+                .setTitle(R.string.saved_search)
+                .setView(input)
+                .setNegativeButton(R.string.saved_search_close, null)
+                .setPositiveButton(R.string.saved_search_apply, (dialog, which) -> {
+                    if (!canInteract() || generation != lifecycleGeneration || activeDialog != dialog
+                            || !((AlertDialog) dialog).isShowing()) return;
+                    savedQuery = input.getText().toString().trim();
+                    renderSaved();
+                }));
+    }
+
     private boolean hasCapacityConfirmed() {
         return catalog.savedAtCapacity() && catalog.savedItems.size() - catalog.unreadCount() > 0;
     }
 
     private void showCapacityConfirmed() {
         if (!canInteract() || !hasCapacityConfirmed()) return;
+        savedQuery = "";
         selectSavedFilter(SavedFilter.CONFIRMED);
     }
 
@@ -709,16 +760,24 @@ public final class MainActivity extends Activity {
         if (catalog.savedItems.isEmpty()) {
             add(savedRows, label("저장한 소식이 없어요.", 14, MUTED, false), 4);
         }
-        if (!catalog.savedItems.isEmpty()
+        if (savedQuery.isEmpty() && !catalog.savedItems.isEmpty()
                 && ((savedFilter == SavedFilter.UNREAD && catalog.unreadCount() == 0)
                 || (savedFilter == SavedFilter.CONFIRMED && catalog.unreadCount() == catalog.savedItems.size()))) {
             add(savedRows, label(savedFilter == SavedFilter.CONFIRMED
                     ? "확인 완료한 소식이 없어요." : "미확인 소식이 없어요.", 14, MUTED, false), 4);
-            add(savedRows, button("전체 보기", false, () -> selectSavedFilter(SavedFilter.ALL)), 6);
+            add(savedRows, button("전체 보기", false, () -> {
+                if (!canInteract()) return;
+                savedQuery = "";
+                selectSavedFilter(SavedFilter.ALL);
+            }), 6);
         }
+        int visibleCount = 0;
+        String query = normalizeSavedTitle(savedQuery);
         for (Item item : catalog.savedItems) {
+            if (!normalizeSavedTitle(item.title).contains(query)) continue;
             if (savedFilter == SavedFilter.UNREAD && catalog.isConfirmed(item)) continue;
             if (savedFilter == SavedFilter.CONFIRMED && !catalog.isConfirmed(item)) continue;
+            visibleCount++;
             String text = getString(R.string.saved_row, item.title,
                     getString(catalog.isConfirmed(item) ? R.string.saved_status_confirmed : R.string.saved_status_unread),
                     getString(R.string.saved_source, savedSourceName(item)));
@@ -729,6 +788,14 @@ public final class MainActivity extends Activity {
             entry.setEllipsize(null);
             entry.setContentDescription(text);
             add(savedRows, entry, 6);
+        }
+        boolean searching = !savedQuery.isEmpty();
+        savedSearchClear.setVisibility(searching ? View.VISIBLE : View.GONE);
+        savedSearchStatus.setVisibility(searching ? View.VISIBLE : View.GONE);
+        savedSearchStatus.setText(getString(R.string.saved_search_status, savedQuery, visibleCount)
+                + "\n" + getString(R.string.saved_search_navigation));
+        if (searching && visibleCount == 0 && !catalog.savedItems.isEmpty()) {
+            add(savedRows, label(getString(R.string.saved_search_empty), 14, MUTED, false), 4);
         }
     }
 
