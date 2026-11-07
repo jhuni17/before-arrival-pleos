@@ -593,6 +593,9 @@ public final class MainActivity extends Activity {
         Button confirm = button(target ? "확인 완료" : "미확인으로 되돌리기", false, () -> {});
         confirm.setTag("confirm-saved");
         add(actions, confirm, 8);
+        Button confirmNext = button("확인하고 다음", false, () -> {});
+        confirmNext.setTag("confirm-next");
+        if (target) add(actions, confirmNext, 8);
         Button next = button("다음 미확인", false, () -> {});
         next.setTag("next-unread");
         add(actions, next, 8);
@@ -610,6 +613,19 @@ public final class MainActivity extends Activity {
         if (catalog.canOpen(item)) detail.setPositiveButton("공식 원문 열기", (dialog, which) -> openOriginal(item));
         showDialog(detail);
         AlertDialog shown = activeDialog;
+        confirmNext.setOnClickListener(view -> {
+            if (!canInteract() || generation != lifecycleGeneration || activeDialog != shown
+                    || shown == null || !shown.isShowing() || !catalog.isSaved(item)
+                    || catalog.isConfirmed(item)) return;
+            if (!catalog.setConfirmed(item, true, preferences)) {
+                confirmNext.setText("저장 실패 · 다시 시도");
+                return;
+            }
+            Item candidate = nextUnread(item);
+            renderSaved();
+            if (candidate == null) dismissDialog();
+            else showSavedDetail(candidate);
+        });
         next.setOnClickListener(view -> {
             if (!canInteract() || generation != lifecycleGeneration || activeDialog != shown
                     || shown == null || !shown.isShowing() || !catalog.isSaved(item)) return;
