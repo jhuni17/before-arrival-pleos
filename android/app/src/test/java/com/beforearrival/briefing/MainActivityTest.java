@@ -676,10 +676,11 @@ public class MainActivityTest {
         java.util.Map<String, ?> stored = preferences.getAll();
         ContentCatalog.Plan plan = field("plan");
         String narration = plan.narration();
-        for (boolean unread : new boolean[]{false, true}) {
-            ((Button) field(unread ? "savedUnread" : "savedAll")).performClick();
+        for (String filter : new String[]{"savedAll", "savedUnread", "savedConfirmed"}) {
+            ((Button) field(filter)).performClick();
             showDetail(items.get(0));
             assertDetail(items.get(0));
+            assertPreview(items.get(2));
             Button staleNext = detailAction("next-unread");
             Button staleConfirm = detailAction("confirm-saved");
             AlertDialog old = field("activeDialog");
@@ -693,9 +694,11 @@ public class MainActivityTest {
                 detailAction("next-unread").performClick();
                 assertDetail(items.get(i));
             }
+            assertPreview(items.get(0));
             detailAction("next-unread").performClick();
             assertDetail(items.get(0));
             showDetail(items.get(1)); // A confirmed detail uses the same navigation.
+            assertPreview(items.get(2));
             detailAction("next-unread").performClick();
             assertDetail(items.get(2));
             assertEquals(items, catalog.savedItems);
@@ -708,15 +711,37 @@ public class MainActivityTest {
         }
     }
 
+    @Test public void nextUnreadPreviewPreservesFullLongTitle() throws Exception {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        ContentCatalog catalog = field("catalog");
+        String title = "다음 소식의 전체 제목을 줄임 없이 읽을 수 있어야 합니다. ";
+        title = title + title + title + title;
+        ContentCatalog.Item longItem = new ContentCatalog.Item(items.get(1).json().put("title", title));
+        catalog.savedItems.set(1, longItem);
+        showDetail(items.get(0));
+        assertPreview(longItem);
+        detailAction("next-unread").performClick();
+        assertDetail(longItem);
+    }
+
     @Test public void nextUnreadRechecksConfirmationAndDeletionAndNeverReopensSelf() {
         List<ContentCatalog.Item> items = saveNavigationItems();
         ContentCatalog catalog = field("catalog");
         android.content.SharedPreferences preferences = field("preferences");
         showDetail(items.get(0));
         Button next = detailAction("next-unread");
+        assertPreview(items.get(1));
         assertTrue(catalog.setConfirmed(items.get(1), true, preferences));
         next.performClick();
         assertDetail(items.get(2)); // Recheck at click time, rather than using the opening snapshot.
+        showDetail(items.get(0));
+        assertPreview(items.get(2));
+        assertTrue(catalog.setConfirmed(items.get(1), false, preferences));
+        catalog.toggleSaved(items.get(2));
+        detailAction("next-unread").performClick();
+        assertDetail(items.get(1));
+        catalog.toggleSaved(items.get(2));
+        assertTrue(catalog.setConfirmed(items.get(1), true, preferences));
         showDetail(items.get(0));
         next = detailAction("next-unread");
         for (int i = 1; i < items.size(); i++)
@@ -725,17 +750,20 @@ public class MainActivityTest {
         next.performClick();
         assertSame(original, field("activeDialog"));
         assertFalse(next.isEnabled());
+        assertPreview(null);
         assertTrue(descendants(original.getWindow().getDecorView(), TextView.class).stream()
                 .anyMatch(view -> view.getVisibility() == View.VISIBLE
                         && view.getText().toString().equals("다른 미확인 소식이 없어요.")));
         showDetail(items.get(0));
         assertFalse(detailAction("next-unread").isEnabled());
+        assertPreview(null);
         assertTrue(catalog.setConfirmed(items.get(1), false, preferences));
         showDetail(items.get(0));
         next = detailAction("next-unread");
         catalog.toggleSaved(items.get(1)); // Deleted candidates must also be skipped.
         next.performClick();
         assertFalse(next.isEnabled());
+        assertPreview(null);
         assertTrue(catalog.setConfirmed(items.get(2), false, preferences));
         showDetail(items.get(0));
         next = detailAction("next-unread");
@@ -1093,6 +1121,17 @@ public class MainActivityTest {
     private Button detailAction(String tag) {
         AlertDialog dialog = field("activeDialog");
         return dialog.findViewById(android.R.id.custom).findViewWithTag(tag);
+    }
+
+    private void assertPreview(ContentCatalog.Item expected) {
+        AlertDialog dialog = field("activeDialog");
+        TextView preview = dialog.findViewById(android.R.id.custom).findViewWithTag("next-unread-preview");
+        assertEquals(expected == null ? View.GONE : View.VISIBLE, preview.getVisibility());
+        assertEquals(expected == null ? "" : "다음 미확인 · " + expected.title, preview.getText().toString());
+        assertNull(preview.getEllipsize());
+        assertEquals(Integer.MAX_VALUE, preview.getMaxLines());
+        assertFalse(preview.isClickable());
+        assertNull(preview.getContentDescription()); // Accessibility reads the full TextView text.
     }
 
     private void assertDetail(ContentCatalog.Item item) {

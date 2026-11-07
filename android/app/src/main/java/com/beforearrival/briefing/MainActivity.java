@@ -680,9 +680,15 @@ public final class MainActivity extends Activity {
         Button next = button("다음 미확인", false, () -> {});
         next.setTag("next-unread");
         add(actions, next, 8);
+        Item previewTarget = nextUnread(item);
+        TextView preview = label(previewTarget == null ? "" : "다음 미확인 · " + previewTarget.title, 14, MUTED, false);
+        preview.setTag("next-unread-preview");
+        preview.setSingleLine(false);
+        preview.setVisibility(previewTarget == null ? View.GONE : View.VISIBLE);
+        add(actions, preview, 4);
         TextView empty = label("다른 미확인 소식이 없어요.", 14, MUTED, false);
         add(actions, empty, 4);
-        boolean hasNext = nextUnread(item) != null;
+        boolean hasNext = previewTarget != null;
         enableButton(next, hasNext);
         empty.setVisibility(hasNext ? View.GONE : View.VISIBLE);
         AlertDialog.Builder detail = new AlertDialog.Builder(this)
@@ -723,6 +729,8 @@ public final class MainActivity extends Activity {
             Item candidate = nextUnread(item);
             if (candidate == null) {
                 enableButton(next, false);
+                preview.setText("");
+                preview.setVisibility(View.GONE);
                 empty.setVisibility(View.VISIBLE);
                 return;
             }
