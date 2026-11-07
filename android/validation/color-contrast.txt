@@ -1,0 +1,12 @@
+values: text/background 15.28:1
+values: text/surface 17.44:1
+values: text_secondary/background 6.28:1
+values: text_secondary/surface 7.17:1
+values: button/surface 15.40:1
+values: on_button/button 15.40:1
+values-night: text/background 17.32:1
+values-night: text/surface 15.25:1
+values-night: text_secondary/background 10.01:1
+values-night: text_secondary/surface 8.81:1
+values-night: button/surface 15.25:1
+values-night: on_button/button 16.43:1

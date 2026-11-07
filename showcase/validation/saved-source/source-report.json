@@ -1,0 +1,179 @@
+{
+  "candidateSha": "1ddc8abc90b7c92d6d7c90323b701198540cabac",
+  "workingTreeDirty": true,
+  "ime": "Synthetic composition events only; physical Korean IME remains a manual check.",
+  "scope": "Browser sample only; no APK installation, emulator or actual Pleos SDK evidence.",
+  "captures": [
+    {
+      "path": "day-320-next-title.png",
+      "sha256": "5625780d67b2b7eb1092685f1f3f85818ee2f9fbe0ca5bd0bf58e385f3753d25"
+    },
+    {
+      "path": "day-320-source.png",
+      "sha256": "330aeba344ea994cadac60ee50131274fb2b9bd47cc41a12cfc8a8e32348f0d5"
+    },
+    {
+      "path": "day-320-empty.png",
+      "sha256": "b1ab01e45169a3ede19e25b4ce60b11333b1ef5714501661072b492fd3386c4c"
+    },
+    {
+      "path": "day-390-next-title.png",
+      "sha256": "d0ad80dc2ee7cc51037695f299c73d56fa11d366a7d568151431899f9addcea2"
+    },
+    {
+      "path": "day-390-source.png",
+      "sha256": "3b9fe6169f69f02060161f874e9e41eb9027778d785c6408c70592ba3022cb90"
+    },
+    {
+      "path": "day-390-empty.png",
+      "sha256": "d49bdeba7143ec9b6733070be0b5f1a5338e60549b744ec24affc6e51e1c4c78"
+    },
+    {
+      "path": "night-320-next-title.png",
+      "sha256": "2b35ac81408a03117207fea655f3c4304b0dc58d61a4651fe68efa51940dae7b"
+    },
+    {
+      "path": "night-320-source.png",
+      "sha256": "4ef4698babda92815cd6b78b1353cebf91caf8e6c37a4b0e50980b4fb8b6962c"
+    },
+    {
+      "path": "night-320-empty.png",
+      "sha256": "2cd096f49534b7c95f03c35b2cec57da0399575f71fc82d59bb9612ef07376c0"
+    },
+    {
+      "path": "night-390-next-title.png",
+      "sha256": "d1859dd739c4edf1f46e543def5e5caaa82745e21e1d710893e468207188f903"
+    },
+    {
+      "path": "night-390-source.png",
+      "sha256": "65a2f2b8d961f27987ab3c00ad27a5e8931e5d17c1a6ab68099328a4c164384a"
+    },
+    {
+      "path": "night-390-empty.png",
+      "sha256": "a2e9c2cb4eb2f7123059447e0c6363c2243557801c43e34ade9f8d1ea202172c"
+    }
+  ],
+  "checkedAt": "2026-11-06T07:55:10.359Z",
+  "htmlSha256": "b4b3ddf8f3e277d7ebd2a3b9f40a5f392ce516bac4c0ccb4797b2a059746663a",
+  "sourceSha256": {
+    "examples/before-arrival/index.tsx": "80dc1c99897ebf24c8f5e3afdbed2f41296feee4405d3025124067b16f316fff",
+    "examples/before-arrival/catalog.ts": "57aefceacc87c3a67dfa3965ca4a01cf641504d6a6059a6e370caf757f704ca6",
+    "examples/before-arrival/saved-undo.ts": "35dc0a2985755d5e31e489bd741906e1b93691021c0e7392044734aa252c026e",
+    "examples/before-arrival/showcase.css": "2318df466b03a302a953d8ae4605f6e31bd87122ba5ac83bb664d30556457c2e",
+    "examples/before-arrival/verify.tsx": "0bdc4913398f97b1138493f38a6435de3d554b819cf801c6f33dd265754fb71c",
+    "saved-source-browser-verify.mjs": "95017ba0065935a0f14bbb552cce09202c3f890e70c3e33217aa60e1390ed952",
+    "package.json": "5532ad9f1cc27eed70c5e65408e978b2f17368d2323c2c4eb2623a66da4450fa"
+  },
+  "upstream": "official snapshots registered through UI; no external network",
+  "checks": [
+    "Next unread: zero/one/multiple intersections, Enter/Space, wrap, manually focused reviewed title, unchanged filters/order/URLs/storage, stale handlers during restriction and after return, no popup or automatic playback.",
+    "32 fixed saved articles: persisted source/unread intersection, session-only search, orphan source retention, missing source fallback, malformed values, read denial, write failure and retry, all/reset persistence, unchanged canonical registry/position, hidden position reason, stale source handlers blocked during restriction and after parking.",
+    "Reset all filter combinations including whitespace/empty results; Enter/Space and search focus; stale reset closures blocked; Three source IDs; duplicate long names; exact counts/order; source/search/unread intersection; unchanged storage; empty reset; last deletion/undo; review undo; persisted source; stale blocked handlers; stopped playback; keyboard, contrast and overflow at 320/390 day/night."
+  ],
+  "readability": [
+    {
+      "theme": "day",
+      "width": 320,
+      "contrast": 17.442218774298816,
+      "fontSize": 16,
+      "pageOverflow": false
+    },
+    {
+      "theme": "day",
+      "width": 320,
+      "target": {
+        "outline": "solid",
+        "outlineWidth": 2,
+        "fontSize": 23,
+        "visible": true,
+        "pageOverflow": false
+      }
+    },
+    {
+      "theme": "day",
+      "width": 320,
+      "next": {
+        "fontSize": 16,
+        "overflow": false
+      }
+    },
+    {
+      "theme": "day",
+      "width": 390,
+      "contrast": 17.442218774298816,
+      "fontSize": 16,
+      "pageOverflow": false
+    },
+    {
+      "theme": "day",
+      "width": 390,
+      "target": {
+        "outline": "solid",
+        "outlineWidth": 2,
+        "fontSize": 23,
+        "visible": true,
+        "pageOverflow": false
+      }
+    },
+    {
+      "theme": "day",
+      "width": 390,
+      "next": {
+        "fontSize": 16,
+        "overflow": false
+      }
+    },
+    {
+      "theme": "night",
+      "width": 320,
+      "contrast": 15.251694958229084,
+      "fontSize": 16,
+      "pageOverflow": false
+    },
+    {
+      "theme": "night",
+      "width": 320,
+      "target": {
+        "outline": "solid",
+        "outlineWidth": 2,
+        "fontSize": 23,
+        "visible": true,
+        "pageOverflow": false
+      }
+    },
+    {
+      "theme": "night",
+      "width": 320,
+      "next": {
+        "fontSize": 16,
+        "overflow": false
+      }
+    },
+    {
+      "theme": "night",
+      "width": 390,
+      "contrast": 15.251694958229084,
+      "fontSize": 16,
+      "pageOverflow": false
+    },
+    {
+      "theme": "night",
+      "width": 390,
+      "target": {
+        "outline": "solid",
+        "outlineWidth": 2,
+        "fontSize": 23,
+        "visible": true,
+        "pageOverflow": false
+      }
+    },
+    {
+      "theme": "night",
+      "width": 390,
+      "next": {
+        "fontSize": 16,
+        "overflow": false
+      }
+    }
+  ]
+}

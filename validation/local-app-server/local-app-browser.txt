@@ -1,0 +1,5 @@
+
+> verify:local-app
+> node local-app-browser-verify.mjs
+
+PASS: actual loopback app server → same-origin browser refresh →5 captured records →save/reload/ETA; repeat/error/empty and standalone guidance. Upstream is replay, NOT live network.

@@ -1,0 +1,76 @@
+{
+  "appnews": {
+    "appid": 570,
+    "newsitems": [
+      {
+        "gid": "1846018067924633",
+        "title": "Inside the Trove of Terror",
+        "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1846018067924633",
+        "is_external_url": true,
+        "author": "eugenep",
+        "contents": "Some time ago, a time now none of us can quite recall, we began to set our minds on matters of the monstrous. Our work has always concerned itself with the manufacture of frightening things, so there was no reason at that time for alarm.Until we began to fill a new treasure chest with item sets themed around eldritch and otherworldly designs.As each horrific creation took more defined shape, unsettling yet tantalizing inspirations took hold of us. Fantastical and Immortal glamours coalesced around each and every set; they grew more spellbinding, a vision that would remain, stuck fast in the mi...",
+        "feedlabel": "Community Announcements",
+        "date": 1791332561,
+        "feedname": "steam_community_announcements",
+        "feed_type": 1,
+        "appid": 570
+      },
+      {
+        "gid": "1843481262705400",
+        "title": "7.41f Gameplay Patch",
+        "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1843481262705400",
+        "is_external_url": true,
+        "author": "flynnch",
+        "contents": "Patch 7.41f is out now and you can check out the patch notes here. In addition, we've recently addressed the following issues: Fixed spot on map near the top Roshan Pit where a hero could hide within the geometry of the cave Fixed being able to mark items for sale that are normally unsellable during their initial sellback period Fixed Tranquil Boots not going on cooldown when disassembled from stash Fixed Bane's Nightmare removing vision from debuff immune targets Fixed Bounty Hunter's Big Game Hunter not granting any bonus gold Fixed Elder Titan's Astral Spirit being able to Echo Stomp while ...",
+        "feedlabel": "Community Announcements",
+        "date": 1789497865,
+        "feedname": "steam_community_announcements",
+        "feed_type": 1,
+        "appid": 570,
+        "tags": [
+          "patchnotes"
+        ]
+      },
+      {
+        "gid": "1842212951298513",
+        "title": "The International 2026 Grand Champions",
+        "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1842212951298513",
+        "is_external_url": true,
+        "author": "krAnk0r",
+        "contents": "Congratulations to Team Spirit, Grand Champions at The International 2026. After enduring a challenging year, Team Spirit regained their ultimate form just in time to take a five-game Grand Finals slugfest and claim the Aegis of Champions in Shanghai.Spirit's Group Stage started strong, with 2-0 victories over both Xtreme Gaming and Aurora Gaming. They followed with 2-1 win over Team Liquid that put Spirit just one series win away from qualifying for the main stage. They wouldn't get it. Instead, they served as a stepping stone. First to Team Vision, who dropped Spirit in just two games to sec...",
+        "feedlabel": "Community Announcements",
+        "date": 1787792862,
+        "feedname": "steam_community_announcements",
+        "feed_type": 1,
+        "appid": 570
+      },
+      {
+        "gid": "1841579228661427",
+        "title": "The International Main Event",
+        "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1841579228661427",
+        "is_external_url": true,
+        "author": "krAnk0r",
+        "contents": "The sixteen best Dota teams in the world spent the last week battling through an intense Group Stage, and now only eight contenders remain. In a matter of hours Team Vision, Team Liquid, Nigma Galaxy, Team Falcons, BoomBoys, Team Spirit, Iron Wing, and Team Yandex will begin the final push to claim the Aegis of Champions as they all fight to be the last team standing at The International 2026.The double elimination bracket that will crown our champions kicks off at SPD Bank Oriental Sports Center in Shanghai on Thursday, August 20 and will culminate in a best-of-five Grand Finals on Sunday, Au...",
+        "feedlabel": "Community Announcements",
+        "date": 1787107564,
+        "feedname": "steam_community_announcements",
+        "feed_type": 1,
+        "appid": 570
+      },
+      {
+        "gid": "1840944183772671",
+        "title": "The International: Streams, Secret Shop, and More",
+        "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1840944183772671",
+        "is_external_url": true,
+        "author": "krAnk0r",
+        "contents": "It's the final countdown: Players and talent have landed, and all of the pieces are falling into place to make Shanghai the center of the Dota universe for the next two weeks. It's time to finish crafting your fantasy rosters, lock in your first round of predictions, and get ready to tune in because The International 2026 is almost underway.Whether you're looking to watch online, find Dota activities in Shanghai to keep you busy until streams start, or looking for merch you can wear while you're out in Shanghai waiting for games to start, we've got you covered below.The International Group Sta...",
+        "feedlabel": "Community Announcements",
+        "date": 1786494519,
+        "feedname": "steam_community_announcements",
+        "feed_type": 1,
+        "appid": 570
+      }
+    ],
+    "count": 772
+  }
+}

@@ -1,0 +1,24 @@
+(node:9) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> verify:saved-undo
+> node saved-undo-browser-verify.mjs && node saved-search-browser-verify.mjs && node saved-source-browser-verify.mjs && npm run verify:review-undo
+
+(node:22) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS: one successful saved-delete undo; original item/position, intervening changes, latest-only, failed delete/restore, missing/re-saved targets, restriction/reload guards and320/390 keyboard/readability. No upstream network.
+(node:157) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS: saved title search
+(node:232) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS: saved source filter
+(node:302) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> verify:review-undo
+> node review-undo-browser-verify.mjs
+
+(node:315) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS: review undo

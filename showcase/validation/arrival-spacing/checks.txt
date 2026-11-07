@@ -1,0 +1,119 @@
+(node:10) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> verify
+> node verify.mjs
+
+(node:23) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS: shared catalog, legacy migration, add/order/enable→ETA plan,3 official snapshots provenance,date precision,local saved dedup,official URL allowlist,runtime Steam fixture dedup/failure/empty/size bounds. Fixtures do not establish live connection.
+PASS: captured real Steam HTTP200 response replay:5 official CDN articles → ordered 18-minute briefing → 4-minute schedule priority → saved/reload original URL; strict host/path/gid/uint64/response+item-appid negatives. Replay is not live browser refresh.
+PASS: saved undo merges only removed item at original relative position, preserves intervening state, missing targets and newer canonical duplicate copies.
+PASS: existing saved items unread; explicit review 2→1, reload, revert, unchanged content/order, duplicate save, delete undo preserves review and missing target no-op.
+(node:43) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> verify:server
+> python3 -m unittest -v test_app_server.py
+
+test_client_disconnect_kills_blocked_upstream (test_app_server.CurlTransportTests.test_client_disconnect_kills_blocked_upstream) ... ok
+test_curl_is_fixed_https_without_shell_redirects_or_tls_bypass (test_app_server.CurlTransportTests.test_curl_is_fixed_https_without_shell_redirects_or_tls_bypass) ... ok
+test_curl_timeout_and_size_errors_are_reported (test_app_server.CurlTransportTests.test_curl_timeout_and_size_errors_are_reported) ... ok
+test_deadline_kills_blocked_upstream (test_app_server.CurlTransportTests.test_deadline_kills_blocked_upstream) ... ok
+test_streaming_byte_cap_kills_upstream (test_app_server.CurlTransportTests.test_streaming_byte_cap_kills_upstream) ... ok
+test_transport_rejects_redirect_and_failed_tls_metadata (test_app_server.CurlTransportTests.test_transport_rejects_redirect_and_failed_tls_metadata) ... ok
+test_unavailable_curl_has_a_safe_bridge_error (test_app_server.CurlTransportTests.test_unavailable_curl_has_a_safe_bridge_error) ... ok
+test_api_uses_only_appid_and_returns_valid_empty_news (test_app_server.LocalServerTests.test_api_uses_only_appid_and_returns_valid_empty_news) ... ok
+test_arbitrary_paths_and_files_are_unavailable (test_app_server.LocalServerTests.test_arbitrary_paths_and_files_are_unavailable) ... ok
+test_binds_only_ipv4_loopback (test_app_server.LocalServerTests.test_binds_only_ipv4_loopback) ... ok
+test_both_document_routes_have_local_app_marker (test_app_server.LocalServerTests.test_both_document_routes_have_local_app_marker) ... ok
+test_cross_site_fetch_is_rejected_even_without_origin (test_app_server.LocalServerTests.test_cross_site_fetch_is_rejected_even_without_origin) ... ok
+test_foreign_null_and_malformed_origins_never_reach_upstream (test_app_server.LocalServerTests.test_foreign_null_and_malformed_origins_never_reach_upstream) ... ok
+test_host_must_be_loopback_and_actual_bound_port (test_app_server.LocalServerTests.test_host_must_be_loopback_and_actual_bound_port) ... ok
+test_invalid_queries_never_reach_upstream (test_app_server.LocalServerTests.test_invalid_queries_never_reach_upstream) ... ok
+test_localhost_host_is_accepted (test_app_server.LocalServerTests.test_localhost_host_is_accepted) ... ok
+test_only_exact_loopback_origins_on_this_port_are_accepted (test_app_server.LocalServerTests.test_only_exact_loopback_origins_on_this_port_are_accepted) ... ok
+test_post_is_not_an_upstream_proxy (test_app_server.LocalServerTests.test_post_is_not_an_upstream_proxy) ... ok
+test_same_origin_and_navigation_fetches_are_accepted (test_app_server.LocalServerTests.test_same_origin_and_navigation_fetches_are_accepted) ... ok
+test_socket_disconnect_is_visible_to_fetcher (test_app_server.LocalServerTests.test_socket_disconnect_is_visible_to_fetcher) ... ok
+test_upstream_errors_have_json_and_no_cache_or_cors_grant (test_app_server.LocalServerTests.test_upstream_errors_have_json_and_no_cache_or_cors_grant) ... ok
+test_canonical_appids_target_only_fixed_steam_endpoint (test_app_server.SteamInputTests.test_canonical_appids_target_only_fixed_steam_endpoint) ... ok
+test_rejects_noncanonical_out_of_range_and_url_inputs (test_app_server.SteamInputTests.test_rejects_noncanonical_out_of_range_and_url_inputs) ... ok
+test_document_requires_matching_appid_and_bounded_news_array (test_app_server.UpstreamValidationTests.test_document_requires_matching_appid_and_bounded_news_array) ... ok
+test_empty_news_is_a_valid_upstream_result (test_app_server.UpstreamValidationTests.test_empty_news_is_a_valid_upstream_result) ... ok
+test_json_charset_and_fifty_items_are_accepted (test_app_server.UpstreamValidationTests.test_json_charset_and_fifty_items_are_accepted) ... ok
+test_malformed_json_and_invalid_utf8_are_rejected (test_app_server.UpstreamValidationTests.test_malformed_json_and_invalid_utf8_are_rejected) ... ok
+test_non_json_content_types_are_rejected_even_for_json_looking_body (test_app_server.UpstreamValidationTests.test_non_json_content_types_are_rejected_even_for_json_looking_body) ... ok
+test_redirects_and_non_success_statuses_are_rejected (test_app_server.UpstreamValidationTests.test_redirects_and_non_success_statuses_are_rejected) ... ok
+test_response_size_boundary (test_app_server.UpstreamValidationTests.test_response_size_boundary) ... ok
+
+----------------------------------------------------------------------
+Ran 30 tests in 1.264s
+
+OK
+(node:121) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> verify:local-app
+> node local-app-browser-verify.mjs
+
+(node:134) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS: actual loopback app server → same-origin browser refresh →5 captured records →save/reload/ETA; repeat/error/empty and standalone guidance. Upstream is replay, NOT live network.
+(node:209) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> verify:arrival
+> node arrival-browser-verify.mjs
+
+(node:222) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS: official deferred save→arrival heading/title on first screen at390x1080 and320x960, both themes; URL/provenance/reload/removal/empty/desktop/restrictions preserved.
+(node:451) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> verify:refresh-feedback
+> node refresh-feedback-browser-verify.mjs
+
+(node:464) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS: per-source cache additions/repeat/dedup/empty/failure feedback, storage and stale-response guards, session-only reload,320/390 both themes. Upstream responses are fixtures.
+(node:533) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> verify:saved-undo
+> node saved-undo-browser-verify.mjs && node saved-search-browser-verify.mjs && node saved-source-browser-verify.mjs && npm run verify:review-undo
+
+(node:546) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS: one successful saved-delete undo; original item/position, intervening changes, latest-only, failed delete/restore, missing/re-saved targets, restriction/reload guards and320/390 keyboard/readability. No upstream network.
+(node:683) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS: saved title search
+(node:757) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS: saved source filter
+(node:832) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> verify:review-undo
+> node review-undo-browser-verify.mjs && node saved-item-next-browser-verify.mjs && node saved-position-browser-verify.mjs
+
+(node:845) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS: review undo
+(node:918) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS: saved item next unread
+(node:991) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS: saved position
+(node:1064) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> verify:browser
+> node browser-verify.mjs
+
+(node:1077) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS: 37 screenshots, 14 behavioral checks; minimum contrast 5.95:1

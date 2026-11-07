@@ -1,0 +1,33 @@
+[
+  {
+    "name": "com.beforearrival.briefing.SpeechPlaybackTest",
+    "tests": "7",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.149",
+    "cases": [
+      "focusLossStopsAndNeverRestartsOnGain",
+      "speakFailureAndPrerollErrorReleaseFocus",
+      "focusGrantedThenDoneReleasesTheSameRequest",
+      "oldTtsAndFocusCallbacksCannotStopNewPlayback",
+      "unknownOrRestrictedUseDoesNotRequestFocus",
+      "realTimeBudgetStopsLongSpeech",
+      "deniedFocusDoesNotSpeak"
+    ]
+  },
+  {
+    "name": "com.beforearrival.briefing.MainActivityTest",
+    "tests": "4",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "18.261",
+    "cases": [
+      "sampleSelectionRefreshesBudgetAndDeadlineOrderAndPersistsPriority",
+      "unknownAndRestrictedHideControlsAndCloseDialog",
+      "savedItemSurvivesActivityRecreation",
+      "switchingToUnavailableLiveModeNeverFallsBackToSample"
+    ]
+  }
+]

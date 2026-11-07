@@ -1,0 +1,71 @@
+{
+  "candidateSha": "e2964d7c97872b55bbcfc75f9f1d19ebe52ccbaa",
+  "workingTreeDirty": true,
+  "ime": "Synthetic composition events only; physical Korean IME remains a manual check.",
+  "scope": "Browser sample only; no APK installation, emulator or actual Pleos SDK evidence.",
+  "captures": [
+    {
+      "path": "validation/reviewed-filter/day-320.png",
+      "sha256": "fe39bf74a83bbd499764ccf6e8b84b41a9f6bdde8b1b230d0207e779594b2977"
+    },
+    {
+      "path": "validation/reviewed-filter/day-390.png",
+      "sha256": "068836eee6e5e35eb8b032ad258c7820bab14fef2c9919f1431ce372835c6781"
+    },
+    {
+      "path": "validation/reviewed-filter/night-320.png",
+      "sha256": "65cbd5ccc4a09ee378c6740148523f61b6a010939cef9f158ed043b9e56e511a"
+    },
+    {
+      "path": "validation/reviewed-filter/night-390.png",
+      "sha256": "f508f0e57b9e5b2b8f1a577a4268c97eeb9c415080beead6f7dd815ad22c618a"
+    }
+  ],
+  "checkedAt": "2026-11-06T12:09:20.252Z",
+  "htmlSha256": "49ec594777fb0617d19c4d9f7799fd53cbb3b33b34e463602c80c65081b6cd64",
+  "sourceSha256": {
+    "examples/before-arrival/index.tsx": "febef6247a83fc496216a997a3665370c9bee87dc4c11f43a2b2b17fd0a20ad6",
+    "examples/before-arrival/saved-undo.ts": "35dc0a2985755d5e31e489bd741906e1b93691021c0e7392044734aa252c026e",
+    "examples/before-arrival/showcase.css": "0ab118717c32e87b58797e214d80fde25182fe22dfbf4ff73fe4199124216131",
+    "reviewed-filter-browser-verify.mjs": "18348aa4b6851a1c3761e2ce36ea088be0958de000d522cda7c8ccaedf08b04c",
+    "package.json": "fe40d207eb1e32741d7d8497e961940c0543588fea38a2b4447b4dfd51dec6e1"
+  },
+  "upstream": "official snapshots registered through UI; no external network",
+  "checks": [
+    "Reviewed filter: 0/1/32, original order and URLs, source/search intersection, reset and keyboard, persistence, failed save retains item/state/focus and retry, successful revert moves to next heading or empty guidance, review undo, restricted/unknown stale handlers, no auto writes/playback/popups, narrow day/night title and overflow."
+  ],
+  "readability": [
+    {
+      "theme": "day",
+      "width": 320,
+      "height": 960,
+      "overflow": false,
+      "titleOverflow": false,
+      "text": "리그 오브 레전드 26.22 패치 노트"
+    },
+    {
+      "theme": "day",
+      "width": 390,
+      "height": 1080,
+      "overflow": false,
+      "titleOverflow": false,
+      "text": "리그 오브 레전드 26.22 패치 노트"
+    },
+    {
+      "theme": "night",
+      "width": 320,
+      "height": 960,
+      "overflow": false,
+      "titleOverflow": false,
+      "text": "리그 오브 레전드 26.22 패치 노트"
+    },
+    {
+      "theme": "night",
+      "width": 390,
+      "height": 1080,
+      "overflow": false,
+      "titleOverflow": false,
+      "text": "리그 오브 레전드 26.22 패치 노트"
+    }
+  ]
+}

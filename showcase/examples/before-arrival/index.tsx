@@ -1,137 +1,325 @@
-import { useState } from 'react'
-import { Stage } from '../../kit/stage'
-import { Phone } from '../../kit/phone'
-import { Count } from '../../kit/motion/Count'
-import type { Act } from '../../kit/act'
-import './showcase.css'
-
-type Scene = { minutes: number; urgent: boolean; sent: boolean; received: boolean }
-const opening: Scene = { minutes: 18, urgent: false, sent: false, received: false }
-const priority: Scene = { ...opening, minutes: 4, urgent: true }
-const ending: Scene = { ...priority, sent: true, received: true }
-
-export async function sequence(act: Act<Scene>) {
-  act.mark('overview')
-  await act.wait(2700)
-  await act.move('save', { duration: 580 })
-  await act.click('save')
-  await act.set({ sent: true })
-  await act.wait(460)
-  await act.set({ received: true })
-  act.mark('phone-received')
-  await act.wait(2100)
-  act.mark('eta-update')
-  await act.set({ minutes: 4 })
-  await act.wait(420)
-  await act.set({ urgent: true })
-  act.mark('meeting-first')
-  await act.wait(4000)
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+import {completedRefreshFeedback,failedRefreshFeedback} from "./refresh-feedback";
+import {savedIdentity,toggleSavedReview,prepareSavedRemoval,prepareSavedRestore,type SavedRemoval} from "./saved-undo";
+import { Stage } from "../../kit/stage";
+import type { Act } from "../../kit/act";
+import { savedItemLimit,providers,defaults,registryKey,readRegistry,addSource,moveSource,toggleSource,planRegistry,saveItem,statusText,sourceName,refreshSteam,applyFeed,officialUrl,localSteamConnectionAvailable,type Registry,type ContentItem,type RegisteredSource } from "./catalog";
+import "./showcase.css";
+export type Frame = "opening"|"saved"|"priority"|"arrived"|"settings"|"restricted"|"unknown";
+export type Scene = {frame:Frame};
+export const frames:Frame[]=["opening","saved","priority","arrived","settings","restricted","unknown"];
+export async function sequence(act:Act<Scene>) {
+ act.mark("18-minutes-game");await act.wait(5000);await act.set({frame:"saved"});
+ act.mark("save-simulation");await act.wait(3500);await act.set({frame:"priority"});
+ act.mark("4-minutes-meeting");await act.wait(5000);await act.set({frame:"arrived"});
+ act.mark("arrival-review");await act.wait(4500);
 }
-
-function RouteMap({ urgent }: { urgent: boolean }) {
-  return <svg className="ba-map" viewBox="0 0 220 146" aria-hidden="true">
-    <path className="ba-water" d="M0 111C42 119 76 98 102 68S166 15 220 20"/>
-    <g className="ba-streets">
-      <path d="M-10 20H75L109 52H233M-12 53H64L98 87H227M0 91H41L68 118H227M0 126H22L46 151"/>
-      <path d="M22-6V153M50-6V42L84 77V152M82-6V20L120 57V146M146-6V149M174-6V149M202-6V149"/>
-      <path d="M-6 145 141-7M76 146 218-5"/>
-    </g>
-    <path className="ba-route-base" d="M35 110H74Q85 110 85 98V83Q85 72 96 72H136Q148 72 148 60V41Q148 30 159 30H184"/>
-    <path className="ba-route-run" data-urgent={urgent} pathLength="1" d="M35 110H74Q85 110 85 98V83Q85 72 96 72H136Q148 72 148 60V41Q148 30 159 30H184"/>
-    <circle cx="184" cy="30" r="8" className="ba-destination-ring"/>
-    <circle cx="184" cy="30" r="3" className="ba-destination"/>
-  </svg>
+const RefreshFeedbackContext=createContext<Record<string,string>>({});
+const SavedNavigationContext=createContext<()=>boolean>(()=>false);
+const SavedFilterContext=createContext<{sourceId:string;selectSource:(value:string)=>void;query:string;search:(value:string)=>void;mode:"all"|"unread"|"reviewed";select:(value:"all"|"unread"|"reviewed")=>void;reset:()=>boolean;notice:string;retry:()=>void}>({sourceId:"",selectSource:()=>{},query:"",search:()=>{},mode:"all",select:()=>{},reset:()=>false,notice:"",retry:()=>{}});
+const SavedUndoContext=createContext<{reviewPending:boolean;reviewNotice:string;undoReview:()=>void;pending:SavedRemoval|null;notice:string;focusKey:string|null;review:(item:ContentItem)=>boolean;remove:(item:ContentItem)=>void;restore:()=>void;focusDone:()=>void}>({reviewPending:false,reviewNotice:"",undoReview:()=>{},pending:null,notice:"",focusKey:null,review:()=>false,remove:()=>{},restore:()=>{},focusDone:()=>{}});
+const sampleTime=(short:boolean)=>short?"2026-11-04T23:54:00Z":"2026-11-04T23:40:00Z";
+function Glyph({kind}:{kind:"play"|"save"|"check"|"pause"}) {return <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">{kind==="play"?<path d="m9 5 11 7-11 7V5Z" fill="currentColor"/>:kind==="check"?<path d="m4 12 5 5L20 6" stroke="currentColor" strokeWidth="2.5"/>:kind==="pause"?<path d="M8 5v14M16 5v14" stroke="currentColor" strokeWidth="4"/>:<path d="M6 3h12v18l-6-4-6 4V3Z" stroke="currentColor" strokeWidth="2"/>}</svg>}
+function Published({item}:{item:ContentItem}) {
+ return <span className="item-provenance">{item.provenance==="demo_sample"?"예시 콘텐츠 · 게시 시각 없음":<>{item.provenance==="official_runtime"?"실제로 가져온 공식 소식 · 원문 발췌":"가져온 공식 소식 · 자동 갱신 아님"}<br/>게시 {item.publishedAt||"시각 미제공"}{item.publishedPrecision==="date"?" · 날짜만 제공":""}<br/>확인 {item.fetchedAt||"시각 미확인"}</>}</span>;
 }
-
-function Vehicle({ minutes, urgent, sent }: Scene) {
-  return <section className="ba-vehicle" aria-label="차량 브리핑" data-urgent={urgent} data-sent={sent}>
-    <header className="ba-vehicle-bar">
-      <div className="ba-vehicle-name">도착 전에</div>
-      <div className="ba-parked"><b>P</b><span>주차 중</span></div>
-    </header>
-    <div className="ba-vehicle-content">
-      <section className="ba-route" aria-label="남은 이동 시간">
-        <div className="ba-kicker">목적지 · 회사</div>
-        <div className="ba-eta"><Count value={minutes} duration={650}/><span>분</span></div>
-        <div className="ba-route-label">도착까지</div>
-        <RouteMap urgent={urgent}/>
-      </section>
-      <section className="ba-brief" aria-label="도착 전 브리핑">
-        <div className="ba-brief-top">
-          <div className="ba-kicker">도착 전 브리핑</div>
-          <div className="ba-count">{urgent ? '우선 1건' : '오늘 3건'}</div>
-        </div>
-        <div className="ba-lead">
-          <div className="ba-meeting ba-game" aria-hidden={urgent}>
-            <div className="ba-meeting-tag">게임 패치 · 내가 정한 우선순위</div>
-            <div className="ba-meeting-title">이번 주말, 협동 모드가 열려요</div>
-            <span className="ba-save" data-target="save" data-cursor="pointer">
-              <span aria-hidden="true">{sent ? '✓' : '↗'}</span>
-              <span>{sent ? '휴대폰에 저장됨' : '휴대폰에 저장'}</span>
-            </span>
-          </div>
-          <div className="ba-meeting ba-schedule" aria-hidden={!urgent}>
-            <div className="ba-meeting-tag">일정 변경</div>
-            <div className="ba-meeting-title">9시 팀 회의 3층 라운지로 변경</div>
-            <div className="ba-urgent-note">도착 직후 확인할 일정</div>
-          </div>
-        </div>
-        <div className="ba-secondary" aria-hidden={urgent}>
-          <div>
-            <div className="ba-secondary-row"><span>일정 변경</span><b>9시 회의 · 3층 라운지</b></div>
-            <div className="ba-secondary-row"><span>커뮤니티</span><b>출근길 팟캐스트 추천</b></div>
-          </div>
-        </div>
-        <div className="ba-deferred" aria-hidden={!urgent}><span>게임 패치 · 커뮤니티</span><b>나중에 보기</b></div>
-      </section>
-    </div>
-  </section>
-}
-
-function Pocket({ received, compact }: { received: boolean; compact: boolean }) {
-  return <Phone className="ba-phone" width={compact ? 236 : 270} frame="pro" wallpaper="#f0f2e9" time="8:56" aria-label="휴대폰 보관함">
-    <div className="ba-pocket" data-received={received}>
-      <div className="ba-pocket-kicker">도착 전에</div>
-      <div className="ba-pocket-title">도착해서 보기</div>
-      <div className="ba-pocket-list">
-        <div className="ba-pocket-empty" aria-hidden={received}>차량에서 저장한 소식이<br/>여기에 모여요.</div>
-        <div className="ba-pocket-item" aria-hidden={!received}>
-          <span>✓&nbsp; 차량에서 저장됨</span>
-          <b>주말 협동 모드 오픈</b>
-          <div>즐겨찾는 게임 · 패치 노트</div>
-        </div>
-      </div>
-    </div>
-  </Phone>
-}
-
-export function Showcase({ state }: { state: string | null }) {
-  const still = state === 'opening' ? opening : state === 'priority' ? priority : state === 'saved' ? ending : undefined
-  const [replay, setReplay] = useState(0)
-  return <main className="ba-page">
-    <header className="ba-masthead">
-      <span>PLEOS APP CHALLENGE</span>
-      <span>콘셉트 데모</span>
-    </header>
-    <section className="ba-intro" aria-labelledby="title">
-      <h1 id="title">도착 전에<span>.</span></h1>
-      <p>남은 시간에 맞춰,<br/>먼저 챙길 소식만.</p>
+function Vehicle({frame,state,save,long}:{frame:Frame;state:Registry;save:(item:ContentItem)=>void;long:boolean}) {
+ const blocked=frame==="restricted"||frame==="unknown",short=frame==="priority",arrived=frame==="arrived";
+ const plan=planRegistry(arrived?0:short?240:1080,sampleTime(short),state.sources),lead=plan.selected[0];
+ const [playing,setPlaying]=useState(false);
+ useEffect(()=>setPlaying(false),[frame,state]);
+ useEffect(()=>{if(!playing)return;const timer=setTimeout(()=>setPlaying(false),4000);return()=>clearTimeout(timer);},[playing]);
+ const title=lead?(long?`${lead.title} · 오늘 확인할 주요 변경 사항과 출근 전에 알아둘 소식`:lead.title):"";
+ const isSaved=lead&&state.savedItems.some(i=>(i.originalUrl||i.id)===(lead.originalUrl||lead.id));
+ return <section className="vehicle" aria-label="차량 화면" data-blocked={blocked}>
+  <div className="system-bar"><span>PLEOS CONNECT <small>시스템 UI 예시</small></span><span>{arrived?"09:00":short?"08:54":"08:40"} · {frame==="unknown"?"?":blocked?"D":"P"}</span></div>
+  <div className="application-window" aria-label="애플리케이션 영역">
+   <header className="app-bar"><b>도착 전에</b><span className="status">{frame==="unknown"?"차량 상태 미확인 · 조작·음성 중지":blocked?"주행 제한 · 조작·음성 중지":"주차 상태 · 샘플"}</span></header>
+   <div className="vehicle-content">
+    <section className="eta-panel" aria-label="남은 시간"><span className="eyebrow">목적지 · 회사</span><div className="eta">{arrived?"도착":<><strong>{short?4:18}</strong><span>분</span></>}</div><p>{arrived?"저장한 소식을 확인하세요":"도착까지 남은 시간"}</p><div className="route-track" aria-hidden="true"><i/><span/><i/></div><span className="route-caption">경로·시간·주차 상태는 샘플</span></section>
+    <section className="brief" aria-label="이번 브리핑">
+     <div className="brief-meta"><span className="eyebrow">{blocked?"이용 일시 중지":short?"도착 전에 먼저 확인":"오늘의 대표 소식"}</span><span>{blocked?"안전 상태":arrived?"재생 종료":`예상 ${plan.seconds}초 · 예산 ${plan.budget}초`}</span></div>
+     <div className="lead-card"><span className="category">{blocked?"주차 후 다시 이용":arrived?"도착 후 확인 · 연출":lead?sourceName(state,lead):"편성할 소식 없음"}</span>
+      <h1>{blocked?frame==="unknown"?"차량 상태를 확인해 주세요":"안전하게 주차한 뒤 이용해 주세요":arrived?"저장한 소식을 확인하세요":lead?title:"설정한 출처와 듣기 예산을 확인해 주세요"}</h1>
+      {!blocked&&!arrived&&lead&&<><Published item={lead}/>{lead.originalUrl&&officialUrl(state.sources.find(s=>s.id===lead.sourceId)!.provider,lead.originalUrl)&&<a className="original-link" href={lead.originalUrl} target="_blank" rel="noreferrer">공식 원문 확인 ↗</a>}</>}
+      <button className="primary" disabled={blocked||!lead} onClick={()=>setPlaying(!playing)} aria-pressed={playing}><Glyph kind={playing?"pause":"play"}/>{playing?"시연 중지":"듣기 시연"}</button>
+      <span className="play-status" role="status">{playing?"재생 상태 연출 · 실제 음성 없음":frame==="saved"?"저장 완료 장면 · 실제 저장은 버튼을 눌러요":"상태 연출만 제공 · 실제 음성 없음"}</span>
+      <p>{blocked?"브리핑 화면 조작과 음성을 중지했어요.":arrived?"도착 후 보관함에서 저장한 항목을 확인하세요.":lead?lead.summary:"켜 둔 출처에 확인된 소식이 없거나 남은 듣기 예산을 넘었어요. 예시로 대체하지 않아요."}</p>
+      <button className="secondary" disabled={blocked||!lead} onClick={()=>save(lead)}><Glyph kind={isSaved||frame==="saved"?"check":"save"}/>{isSaved?"이 브라우저에 저장됨":frame==="saved"?"저장 완료 · 연출":"이 브라우저 보관함에 저장"}</button>
+     </div>
+     <div className="next-up">{blocked?"제한 상태에서는 목록 전환과 재생을 중지해요.":arrived?"브라우저 보관함 · Android 앱과 동기화 안 됨":<>{short?"나중에 확인":"다음 소식"} · {(short?plan.deferred:plan.selected.slice(1)).map(i=>i.title).join(" · ")||"없음"}</>}</div>
+     {!blocked&&!arrived&&plan.deferred.length>0&&<section className="deferred-items" aria-label="도착 후 이어볼 소식"><h2>나중에 볼 소식</h2>{plan.deferred.map(item=>{
+      const saved=state.savedItems.some(i=>(i.originalUrl||i.sourceId+":"+i.id)===(item.originalUrl||item.sourceId+":"+item.id));
+      return <article className="deferred-card" key={item.originalUrl||item.sourceId+item.id}><span className="category">{sourceName(state,item)}</span><h3>{item.title}</h3><Published item={item}/><button className="deferred-save" aria-label={`${item.title} 나중에 보기 저장`} disabled={saved} onClick={()=>save(item)}>{saved?"이 브라우저에 저장됨":"나중에 보기로 저장"}</button></article>;
+     })}</section>}
     </section>
-    <div id="example">
-      <Stage key={replay} width={1080} height={417} compact={{ below: 810, width: 358, height: 680 }}
-        className="ba-scene" theme="dark" accent="#d5ed9a" play="once"
-        initial={still || opening} poster={still || ending} script={still ? undefined : sequence}
-        cursor={still ? undefined : { at: { wide: { x: 735, y: 160 }, compact: { x: 319, y: 167 } }, style: 'arrow', ripple: true, idle: 1100 }}>
-        {(scene, _, layout) => <>
-          <Vehicle {...scene}/>
-          <Pocket received={scene.received} compact={layout === 'compact'}/>
-        </>}
-      </Stage>
-    </div>
-    <footer className="ba-foot">
-      <span>주차 상태와 기기 간 저장을 연출한 시연 · 실제 동기화 미구현</span>
-      {!still && <button type="button" onClick={() => setReplay(current => current + 1)}><span aria-hidden="true">↻</span> 다시 보기</button>}
-    </footer>
-  </main>
+   </div><div className="app-boundary">현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨</div>
+  </div><div className="system-nav" aria-label="시스템 내비게이션 예시"><span>앱 라이브러리</span><span>내비게이션</span><span>공조 22°</span><small>시스템 GNB 예시</small></div>
+ </section>;
 }
+function SourceSettings({state,update,refresh,busy}:{state:Registry;update:(next:Registry)=>void;refresh:(source:RegisteredSource)=>void;busy:string[]}) {
+ const feedback=useContext(RefreshFeedbackContext);
+ const [provider,setProvider]=useState("lol"),[name,setName]=useState("리그 오브 레전드"),[url,setUrl]=useState(providers.find(p=>p.id==="lol")!.suggestedUrl),[error,setError]=useState("");
+ return <><p>켜 둔 출처를 위에서부터 편성해요. 마감이 가까운 일정은 먼저예요.</p><ol className="source-list">{state.sources.map((source,index)=><li className="registered-source" key={source.id} data-source-id={source.id}>
+  <label className="source"><span>{source.name}</span><input type="checkbox" aria-label={`${source.name} 사용`} checked={source.enabled} onChange={e=>update(toggleSource(state,source.id,e.target.checked))}/></label>
+  <p className="source-status">{statusText(source)}{source.lastSuccessAt&&<><br/>마지막 확인 {source.lastSuccessAt}</>}</p>
+  {source.items[0]?.fetchedAt&&source.status==="connected_snapshot"&&<p className="source-status">확인 {source.items[0].fetchedAt}</p>}
+  {source.provider==="steam"&&<>{feedback[source.id]&&<span className="refresh-feedback-label">이 출처의 소식 목록</span>}<p className="refresh-feedback" role="status" aria-live="polite" aria-atomic="true" aria-label={`${source.name} 소식 목록 확인 결과`}>{feedback[source.id]||""}</p></>}
+  <div className="source-actions"><button disabled={index===0} aria-label={`${source.name} 위로`} onClick={()=>update(moveSource(state,source.id,-1))}>위로</button><button disabled={index===state.sources.length-1} aria-label={`${source.name} 아래로`} onClick={()=>update(moveSource(state,source.id,1))}>아래로</button>{source.provider==="steam"&&<button disabled={!source.enabled||busy.includes(source.id)||!localSteamConnectionAvailable()} aria-label={`${source.name} 새 소식 확인`} onClick={()=>refresh(source)}>{busy.includes(source.id)?"확인 중…":"새 소식 확인"}</button>}</div>
+  {source.registrationUrl&&<a href={source.registrationUrl} target="_blank" rel="noreferrer">등록한 공식 페이지 ↗</a>}
+ </li>)}</ol>
+ <form className="source-form" onSubmit={e=>{e.preventDefault();try{update(addSource(state,provider,name,url));setError("");}catch(error){setError((error as Error).message);}}}>
+  <h3>내 출처 추가</h3><label>서비스<select aria-label="출처 서비스" value={provider} onChange={e=>{const next=providers.find(p=>p.id===e.target.value)!;setProvider(next.id);setUrl(next.suggestedUrl);setName(next.label);}}>{providers.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}</select></label>
+  <label>내가 부를 이름<input aria-label="출처 이름" maxLength={80} value={name} onChange={e=>setName(e.target.value)} required/></label>
+  <label>공식 채널·게임·게시판 주소<input aria-label="출처 공식 주소" type="url" value={url} onChange={e=>setUrl(e.target.value)} required maxLength={512}/></label>
+  <button type="submit">출처 추가</button>{error&&<p role="alert">{error}</p>}
+  <p className="sample-note">공식 링크만 등록해요. 가져온 소식이 없는 출처는 연결 상태를 표시하고 브리핑을 만들지 않아요.</p>
+ </form></>;
+}
+function Pocket({frame,state,update,refresh,busy}:{frame:Frame;state:Registry;update:(next:Registry)=>void;refresh:(source:RegisteredSource)=>void;busy:string[]}) {
+ const filter=useContext(SavedFilterContext),filterButton=useRef<HTMLButtonElement>(null),reviewFocus=useRef<string|null>(null);
+ const canNavigate=useContext(SavedNavigationContext),navigationLive=useRef(true),lastUnread=useRef<string|null>(null);
+ useEffect(()=>{navigationLive.current=true;return ()=>{navigationLive.current=false;};},[]);
+ useEffect(()=>{lastUnread.current=null;},[filter.sourceId,filter.query,filter.mode]);
+ const advanceFocus=useRef<string|null>(null),[advanceNotice,setAdvanceNotice]=useState("");
+ const positionKey="before-arrival-saved-position-v1";
+ const [position,setPosition]=useState<string|null>(()=>{try{return localStorage.getItem(positionKey);}catch{return null;}});
+ const [positionNotice,setPositionNotice]=useState("");
+ const positionButton=useRef<HTMLButtonElement>(null),pendingPosition=useRef<string|null>(null);
+ function clearPosition() {
+  if(!navigationLive.current||!canNavigate()||frame!=="arrived"||position===null)return;
+  try{localStorage.removeItem(positionKey);setPosition(null);setPositionNotice("");positionButton.current?.focus({preventScroll:true});}
+  catch{setPositionNotice("위치를 지우지 못했어요. 다시 눌러 재시도해 주세요.");}
+ }
+ function rememberPosition(item:ContentItem) {
+  if(!navigationLive.current||!canNavigate()||frame!=="arrived")return;
+  try{const key=savedIdentity(item);localStorage.setItem(positionKey,key);setPosition(key);setPositionNotice(`「${item.title}」까지 위치를 저장했어요.`);}
+  catch{setPositionNotice("위치를 저장하지 못했어요. 브라우저 저장 공간을 확인하고 다시 눌러 주세요.");}
+ }
+ function returnToPosition() {
+  if(!navigationLive.current||!canNavigate()||frame!=="arrived"||!visible.some(item=>savedIdentity(item)===position))return;
+  const article=[...(pocket.current?.querySelectorAll<HTMLElement>(".saved-article")||[])].find(node=>node.dataset.savedKey===position);
+  const title=article?.querySelector<HTMLElement>("h3");
+  title?.focus({preventScroll:true});title?.scrollIntoView({block:"center",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"});
+ }
+ function clearFiltersAndReturn() {
+  if(!navigationLive.current||!canNavigate()||frame!=="arrived"||!positionTarget||visible.includes(positionTarget))return;
+  if(filter.reset())pendingPosition.current=savedIdentity(positionTarget);
+ }
+ useEffect(()=>{
+  const key=pendingPosition.current;pendingPosition.current=null;
+  if(!key||!navigationLive.current||!canNavigate()||frame!=="arrived"||key!==position)return;
+  returnToPosition();
+ },[filter.sourceId,filter.query,filter.mode]);
+ const searchInput=useRef<HTMLInputElement>(null),query=filter.query.trim().toLowerCase();
+ const filtered=state.savedItems.filter(item=>filter.mode==="all"||(filter.mode==="reviewed"?item.reviewed===true:item.reviewed!==true));
+ const visible=filtered.filter(item=>(!filter.sourceId||item.sourceId===filter.sourceId)&&item.title.toLowerCase().includes(query));
+ const positionTarget=state.savedItems.find(item=>savedIdentity(item)===position);
+ const positionReason=!position?"":!positionTarget?"저장한 위치의 항목이 삭제되어 이동할 수 없어요.":!visible.includes(positionTarget)?"현재 필터가 저장한 위치를 숨겨 이동할 수 없어요.":`지난 위치: ${positionTarget.title}`;
+ const positionIndex=state.savedItems.findIndex(item=>savedIdentity(item)===position);
+ const positionNext=positionIndex<0?undefined:[...state.savedItems.slice(positionIndex+1),...state.savedItems.slice(0,positionIndex)].find(item=>item.reviewed!==true&&visible.includes(item));
+ const positionNextReason=position===null?"저장한 위치가 없어요. 먼저 여기까지 봤어요를 눌러 주세요.":!positionTarget?"저장한 위치의 항목이 삭제되어 이동할 수 없어요.":!positionNext?"지난 위치를 제외하면 현재 조건에 맞는 미확인 소식이 없어요.":"";
+ function continueFromPosition() {
+  if(!navigationLive.current||!canNavigate()||frame!=="arrived"||!positionNext)return;
+  const article=[...(pocket.current?.querySelectorAll<HTMLElement>(".saved-article")||[])].find(node=>node.dataset.savedKey===savedIdentity(positionNext));
+  const title=article?.querySelector<HTMLElement>("h3");
+  title?.focus({preventScroll:true});title?.scrollIntoView({block:"center",behavior:"instant"});
+ }
+ const sourceIds=[...new Set([...state.savedItems.map(item=>item.sourceId),...(filter.sourceId?[filter.sourceId]:[])])];
+ const unreadCounts=new Map<string,number>();
+ for(const item of state.savedItems)if(item.reviewed!==true)unreadCounts.set(item.sourceId,(unreadCounts.get(item.sourceId)||0)+1);
+ const unreadTotal=[...unreadCounts.values()].reduce((sum,count)=>sum+count,0);
+ const reviewedTotal=state.savedItems.length-unreadTotal;
+ function showReviewedForSpace() {
+  if(!navigationLive.current||!canNavigate()||frame!=="arrived")return;
+  pendingPosition.current=null;
+  if(filter.reset())filter.select("reviewed");
+ }
+ const sourceOptions=sourceIds.map(id=>({id,name:sourceName(state,{sourceId:id} as ContentItem)}));
+ const undo=useContext(SavedUndoContext),undoButton=useRef<HTMLButtonElement>(null),pocket=useRef<HTMLElement>(null);
+ useEffect(()=>{if(frame==="arrived"&&undo.pending)undoButton.current?.focus();},[frame,undo.pending]);
+ useEffect(()=>{
+  if(frame!=="arrived"||!undo.focusKey)return;
+  const article=[...(pocket.current?.querySelectorAll<HTMLElement>(".saved-article")||[])].find(node=>node.dataset.savedKey===undo.focusKey);
+  (article?.querySelector<HTMLElement>("h3")||filterButton.current)?.focus();undo.focusDone();
+ },[frame,undo.focusKey]);
+ useEffect(()=>{
+  if(reviewFocus.current===null)return;
+  const article=[...(pocket.current?.querySelectorAll<HTMLElement>(".saved-article")||[])].find(node=>node.dataset.savedKey===reviewFocus.current);
+  (article?.querySelector<HTMLButtonElement>(".saved-review")||filterButton.current)?.focus();reviewFocus.current=null;
+ },[state.savedItems]);
+ useEffect(()=>{
+  if(advanceFocus.current===null||!navigationLive.current||!canNavigate()||frame!=="arrived")return;
+  const key=advanceFocus.current;advanceFocus.current=null;
+  const article=[...(pocket.current?.querySelectorAll<HTMLElement>(".saved-article")||[])].find(node=>node.dataset.savedKey===key);
+  const target=key?article?.querySelector<HTMLElement>("h3"):pocket.current?.querySelector<HTMLElement>(filter.mode==="reviewed"?".empty-saved":"#saved-next-help");
+  if(!target)return;
+  lastUnread.current=key||null;target.focus({preventScroll:true});
+  target.scrollIntoView({block:"center",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"});
+ },[state.savedItems]);
+ function reviewAndNext(item:ContentItem) {
+  if(!navigationLive.current||!canNavigate()||frame!=="arrived"||item.reviewed===true)return;
+  const index=visible.findIndex(candidate=>savedIdentity(candidate)===savedIdentity(item));
+  if(index<0)return;
+  const target=[...visible.slice(index+1),...visible.slice(0,index)].find(candidate=>candidate.reviewed!==true);
+  if(!undo.review(item)){setAdvanceNotice("저장하지 못했어요. 확인하고 다음 미확인을 다시 눌러 주세요.");return;}
+  setAdvanceNotice("");advanceFocus.current=target?savedIdentity(target):"";
+ }
+ function nextUnread(anchor?:string) {
+  if(!navigationLive.current||!canNavigate()||frame!=="arrived")return;
+  const focused=(document.activeElement as HTMLElement)?.closest<HTMLElement>(".saved-article")?.dataset.savedKey;
+  const index=visible.findIndex(item=>savedIdentity(item)===(anchor||focused||lastUnread.current));
+  const target=[...visible.slice(index+1),...visible.slice(0,index+1)].find(item=>item.reviewed!==true);
+  if(!target)return;
+  const article=[...(pocket.current?.querySelectorAll<HTMLElement>(".saved-article")||[])].find(node=>node.dataset.savedKey===savedIdentity(target));
+  const title=article?.querySelector<HTMLElement>("h3");
+  if(!title)return;
+  lastUnread.current=savedIdentity(target);title.focus({preventScroll:true});
+  title.scrollIntoView({block:"center",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"});
+ }
+ function review(item:ContentItem) {
+  const index=visible.findIndex(candidate=>savedIdentity(candidate)===savedIdentity(item));
+  const neighbor=visible[index+1]||visible[index-1];
+  if(!navigationLive.current||!canNavigate()||frame!=="arrived"||index<0)return;
+  if(!undo.review(item)){setAdvanceNotice("저장하지 못했어요. 상태를 바꾸려면 같은 버튼을 다시 눌러 주세요.");return;}
+  setAdvanceNotice("");
+  if(filter.mode==="reviewed")advanceFocus.current=neighbor?savedIdentity(neighbor):"";
+  else if(filter.mode==="unread")reviewFocus.current=neighbor?savedIdentity(neighbor):"";
+ }
+ return <aside className="phone" ref={pocket} aria-label={frame==="settings"?"이 브라우저 출처 설정":"이 브라우저 도착 후 확인"}><div className="phone-system">{frame==="settings"?"8:30":"9:00"}<span>휴대폰 모형 · 브라우저에서 동작</span></div><div className="phone-app"><span className="eyebrow">도착 전에</span><h2>{frame==="settings"?"내 출근길 출처":"도착해서 보기"}</h2><p className="local-only">현재 주소의 브라우저에만 저장 · Android 앱/다른 기기와 동기화 안 됨</p>
+ {frame==="arrived"&&<p className="saved-capacity" role="status">보관 {state.savedItems.length}/{savedItemLimit}건 · 전체 용량 · <span className="saved-count">미확인 {unreadTotal}건</span>{state.savedItems.length>=savedItemLimit&&<span> · 항목 직접 삭제 후 저장을 재시도해 주세요.</span>}{state.savedItems.length>=savedItemLimit&&reviewedTotal>0&&<button className="saved-capacity-reviewed" onClick={showReviewedForSpace}>확인 완료 항목 보기 · 전체 {reviewedTotal}건</button>}</p>}
+ {frame==="arrived"&&<div className="saved-source"><div><label htmlFor="saved-source-filter">저장한 출처</label><small id="saved-source-count-help">전체 저장 기준 · 검색/필터 무관</small></div><select id="saved-source-filter" aria-describedby="saved-source-count-help" value={filter.sourceId} onChange={e=>filter.selectSource(e.target.value)}><option value="">전체 출처 · 미확인 {unreadTotal}건</option>{sourceOptions.map(source=><option key={source.id} value={source.id}>{source.name}{sourceOptions.filter(other=>other.name===source.name).length>1?` (${source.id})`:""} · 미확인 {unreadCounts.get(source.id)||0}건</option>)}</select></div>}
+ {frame==="arrived"&&filter.notice&&<p className="saved-source-notice" role="status">{filter.notice} <button onClick={filter.retry}>출처 필터 저장 재시도</button></p>}
+ {frame==="arrived"&&<div className="saved-search"><div className="saved-search-heading"><label htmlFor="saved-title-search">저장한 제목 검색</label> <span role="status">{query?"검색 결과 · ":""}표시 {visible.length}건</span></div><input ref={searchInput} id="saved-title-search" type="search" value={filter.query} onChange={e=>filter.search(e.target.value)}/><button onClick={()=>{filter.search("");searchInput.current?.focus();}}>검색 지우기</button></div>}
+ {frame==="arrived"&&<div className="saved-filters" role="group" aria-label="보관함 필터"><button ref={filterButton} aria-pressed={filter.mode==="all"} onClick={()=>filter.select("all")}>전체</button><button aria-pressed={filter.mode==="unread"} onClick={()=>filter.select("unread")}>미확인만</button><button aria-pressed={filter.mode==="reviewed"} onClick={()=>filter.select("reviewed")}>확인 완료만</button>{(filter.sourceId||filter.query||filter.mode!=="all")&&<button className="saved-reset" onClick={()=>{if(filter.reset())searchInput.current?.focus();}}>조건 모두 지우기</button>}<button className="saved-next" onClick={()=>nextUnread()} disabled={!visible.some(item=>item.reviewed!==true)} aria-describedby={!visible.some(item=>item.reviewed!==true)?"saved-next-help":undefined} title="현재 표시 순서로 이동 · 마지막에서는 처음으로 돌아가요.">다음 미확인 소식</button></div>}
+ {frame==="arrived"&&<div className="saved-position"><button ref={positionButton} className="saved-next" onClick={returnToPosition} aria-disabled={!positionTarget||!visible.includes(positionTarget)} aria-describedby="saved-position-help">지난 위치로 이동</button>{positionTarget&&!visible.includes(positionTarget)&&<button onClick={clearFiltersAndReturn}>조건 지우고 지난 위치로 이동</button>}{position!==null&&<button onClick={clearPosition}>지난 위치 지우기</button>}<button className="saved-position-continue" onClick={continueFromPosition} aria-disabled={!positionNext} aria-describedby="saved-position-continue-help">지난 위치 다음 미확인부터 이어보기</button><p id="saved-position-continue-help">{positionNextReason}</p><p id="saved-position-help">{positionReason}</p><p role="status">{positionNotice}</p></div>}
+ {frame==="arrived"&&advanceNotice&&<p role="alert">{advanceNotice}</p>}
+ {frame==="arrived"&&<section className="saved-review-undo" data-active={Boolean(undo.reviewNotice)} aria-label="최근 확인 실행 취소"><p role="status" aria-live="polite" aria-atomic="true">{undo.reviewNotice}</p>{undo.reviewPending&&<button className="saved-undo-button" onClick={undo.undoReview}>확인 실행 취소</button>}</section>}
+ {frame==="arrived"&&<section className="saved-undo" data-active={Boolean(undo.notice||undo.pending)} aria-label="최근 삭제 실행 취소"><p className="saved-undo-status" role="status" aria-live="polite" aria-atomic="true">{undo.notice}</p>{undo.pending&&<button className="saved-undo-button" ref={undoButton} onClick={undo.restore}>삭제 실행 취소</button>}</section>}
+ {frame==="settings"?<SourceSettings state={state} update={update} refresh={refresh} busy={busy}/>:visible.length?visible.map(item=><article className="saved-article" data-saved-key={savedIdentity(item)} key={item.originalUrl||item.sourceId+item.id}><span className="category" title={sourceName(state,item)}>{sourceName(state,item)}</span><h3 tabIndex={-1}>{item.title}</h3><p>{item.summary}</p><Published item={item}/>{item.originalUrl&&<a href={item.originalUrl} target="_blank" rel="noreferrer">공식 원문 확인 ↗</a>}<p className="saved-review-status">{item.reviewed===true?"확인 완료":"미확인"}</p><button className="saved-review" aria-label={`${item.title} ${item.reviewed===true?"미확인으로 되돌리기":"확인 완료"}`} onClick={()=>review(item)}>{item.reviewed===true?"미확인으로 되돌리기":"확인 완료"}</button><button aria-label={`${item.title} 저장 취소`} onClick={()=>undo.remove(item)}>저장 취소</button>{frame==="arrived"&&item.reviewed!==true&&<button className="saved-next saved-review-next" aria-label={`${item.title} 확인하고 다음 미확인`} onClick={()=>reviewAndNext(item)}>확인하고 다음 미확인</button>}{frame==="arrived"&&<button className="saved-position-save" aria-label={`${item.title} 여기까지 봤어요`} onClick={()=>rememberPosition(item)}>여기까지 봤어요</button>}{frame==="arrived"&&<button className="saved-next saved-item-next" aria-label={`${item.title} 다음 미확인 소식`} onClick={()=>nextUnread(savedIdentity(item))} disabled={!visible.some(candidate=>candidate.reviewed!==true)} aria-describedby={!visible.some(candidate=>candidate.reviewed!==true)?"saved-next-help":undefined}>다음 미확인 소식</button>}</article>):filter.sourceId?<p className="empty-saved" tabIndex={-1}>조건에 맞는 항목이 없어요. <button className="saved-source-reset" onClick={()=>filter.selectSource("")}>전체 출처로 돌아가기</button></p>:state.savedItems.length&&query&&filtered.length?<p className="empty-saved" tabIndex={-1}>검색 결과가 없어요. 제목 검색어를 바꾸거나 지워 주세요.</p>:state.savedItems.length?<p className="empty-saved" tabIndex={-1}>{filter.mode==="reviewed"?"확인 완료한 소식이 없어요. ":"미확인 소식이 없어요. "}<button onClick={()=>filter.select("all")}>전체 보기로 돌아가기</button></p>:<p className="empty-saved" tabIndex={-1}>저장한 소식이 없어요. 차량 모형에서 저장 버튼을 누르면 이 브라우저 보관함에 남아요. 자동 시연은 실제 저장을 만들지 않아요.</p>}
+ {frame==="arrived"&&!visible.some(item=>item.reviewed!==true)&&<p id="saved-next-help" role="status" tabIndex={-1}>{filter.mode==="reviewed"?"확인 완료만에서는 다음 미확인 이동을 사용할 수 없어요. 전체 또는 미확인만을 선택해 주세요.":!state.savedItems.length?"저장한 소식이 없어요.":unreadTotal?`현재 조건에 맞는 미확인 소식이 없어요. 전체 미확인 ${unreadTotal}건 · 조건 모두 지우기로 확인해 주세요.`:"현재 조건에 맞는 미확인 소식이 없어요. 모두 확인했어요."}</p>}
+ <div className="phone-scope">브라우저 보관함 · 기기 간 동기화 미구현</div></div><div className="phone-home" aria-hidden="true"/></aside>;
+}
+function SceneView({scene,state,update,save,refresh,busy,long}:{scene:Scene;state:Registry;save:(item:ContentItem)=>void;update:(next:Registry)=>void;refresh:(source:RegisteredSource)=>void;busy:string[];long:boolean}) {
+ return <><div className="scene-composition" data-phone={scene.frame==="settings"||scene.frame==="arrived"} data-arrived={scene.frame==="arrived"}>{scene.frame==="arrived"&&<Pocket frame={scene.frame} state={state} update={update} refresh={refresh} busy={busy}/>}<Vehicle frame={scene.frame} state={state} save={save} long={long}/>{scene.frame==="settings"&&<Pocket frame={scene.frame} state={state} update={update} refresh={refresh} busy={busy}/>}</div><div className="scene-caption" role="status">{scene.frame==="saved"?"02 / 저장 · 자동 시연은 저장 완료 장면만 연출합니다.":scene.frame==="priority"?"03 / 4분 · 남은 듣기 예산과 일정 마감으로 다시 편성합니다.":scene.frame==="arrived"?"04 / 도착 · 이 브라우저 보관함을 확인합니다.":scene.frame==="settings"?"설정 / 출처와 순서는 이 브라우저에서만 보존됩니다.":scene.frame==="restricted"||scene.frame==="unknown"?"안전 / 화면 조작과 음성을 중지합니다.":"01 / 18분 · 켜 둔 출처와 순서대로 브리핑을 준비합니다."}</div></>;
+}
+export function Showcase({state:initialState}:{state:string|null}) {
+ const params=typeof location==="undefined"?new URLSearchParams():new URLSearchParams(location.search);
+ const [theme,setTheme]=useState(params.get("theme")==="day"?"day":"night"),[manual,setManual]=useState<Frame|null>(frames.includes(initialState as Frame)?initialState as Frame:null),[state,setState]=useState<Registry>(defaults),[replay,setReplay]=useState(0),[error,setError]=useState(""),[busy,setBusy]=useState<string[]>([]),[feedback,setFeedback]=useState<Record<string,string>>({}),[pendingUndo,setPendingUndo]=useState<SavedRemoval|null>(null),[undoNotice,setUndoNotice]=useState(""),[undoFocusKey,setUndoFocusKey]=useState<string|null>(null);
+ const [reviewNotice,setReviewNotice]=useState(""),[reviewPending,setReviewPending]=useState(false);
+ const reviewUndoRef=useRef<Registry["savedItems"][number]|null>(null);
+ const current=useRef(state);current.current=state;
+ const filterKey="before-arrival-saved-filter-v1",sourceKey="before-arrival-saved-source-v1";
+ const [sourceNotice,setSourceNotice]=useState("");
+ const [mode,setMode]=useState<"all"|"unread"|"reviewed">("all"),[query,setQuery]=useState(""),[sourceId,setSourceId]=useState("");
+ useEffect(()=>{try{const value=localStorage.getItem(filterKey);setMode(value==="unread"||value==="reviewed"?value:"all");}catch{/* Storage access can be denied; default to all. */}},[]);
+ function selectSavedFilter(value:"all"|"unread"|"reviewed") {
+  if(!allowedRef.current||sourceVersion!==sourceEpoch.current.version)return;
+  setMode(value);
+  try{localStorage.setItem(filterKey,value);setError("");}
+  catch{setError("필터를 저장하지 못했어요. 현재 화면에만 적용되며 다음 방문에는 유지되지 않을 수 있어요.");}
+ }
+ function resetSavedFilter() {
+  if(!allowedRef.current||sourceVersion!==sourceEpoch.current.version)return false;
+  selectSource("");setQuery("");selectSavedFilter("all");return true;
+ }
+ const pendingUndoRef=useRef<SavedRemoval|null>(null);
+ const restoreWaitingForSpace=useRef(false);
+ const jobs=useRef(new Map<string,AbortController>());
+ const allowed=manual!=="restricted"&&manual!=="unknown";
+ const allowedRef=useRef(allowed);allowedRef.current=allowed;
+ const sourceEpoch=useRef({allowed,version:0});
+ if(sourceEpoch.current.allowed!==allowed)sourceEpoch.current={allowed,version:sourceEpoch.current.version+1};
+ const sourceVersion=sourceEpoch.current.version;
+ function selectSource(value:string) {
+  if(!allowedRef.current||sourceVersion!==sourceEpoch.current.version)return;
+  setSourceId(value);
+  try{localStorage.setItem(sourceKey,JSON.stringify(value));setSourceNotice("");}
+  catch{setSourceNotice("출처 필터를 저장하지 못했어요. 현재 화면에만 적용되며 다음 방문에는 유지되지 않을 수 있어요.");}
+ }
+ useEffect(()=>{
+  try{
+   const raw=localStorage.getItem(sourceKey);
+   if(raw===null)return;
+   const value=JSON.parse(raw);
+   if(typeof value!=="string")throw new Error("invalid source filter");
+   const registry=readRegistry(localStorage);
+   if(value&&!registry.sources.some(s=>s.id===value)&&!registry.savedItems.some(i=>i.sourceId===value)){
+    setSourceNotice("저장한 출처가 등록 목록과 보관함에 없어 전체 출처로 돌아왔어요.");return;
+   }
+   setSourceId(value);
+  }catch{setSourceNotice("출처 필터를 읽지 못했거나 저장값이 올바르지 않아 전체 출처로 돌아왔어요.");}
+ },[]);
 
+ useEffect(()=>{try{const restored=readRegistry(localStorage);current.current=restored;setState(restored);}catch{/* Storage access can be denied; defaults remain visible. */}},[]);
+ useEffect(()=>{
+  for(const [id,job] of jobs.current) if(!allowed||!state.sources.some(s=>s.id===id&&s.enabled)){job.abort();jobs.current.delete(id);setBusy(old=>old.filter(v=>v!==id));}
+  setFeedback(old=>{const kept=Object.fromEntries(Object.entries(old).filter(([id])=>allowed&&state.sources.some(s=>s.id===id&&s.enabled)));return Object.keys(kept).length===Object.keys(old).length?old:kept;});
+ },[allowed,state.sources]);
+ useEffect(()=>{if(!allowed){reviewUndoRef.current=null;setReviewPending(false);setReviewNotice("");pendingUndoRef.current=null;restoreWaitingForSpace.current=false;setPendingUndo(null);setUndoNotice("");setUndoFocusKey(null);}},[allowed]);
+ useEffect(()=>()=>{for(const job of jobs.current.values())job.abort();},[]);
+ function update(next:Registry) {
+  if(!allowedRef.current)return false;
+  try{localStorage.setItem(registryKey,JSON.stringify(next));current.current=next;setState(next);setError("");if(reviewUndoRef.current&&!next.savedItems.includes(reviewUndoRef.current)){reviewUndoRef.current=null;setReviewPending(false);setReviewNotice("");}return true;}catch{setError("저장하지 못했어요. 브라우저 저장 공간을 확인해 주세요.");return false;}
+ }
+ function save(item:ContentItem) {
+  if(!allowedRef.current||sourceVersion!==sourceEpoch.current.version)return;
+  try{const next=saveItem(current.current,item);if(next!==current.current)update(next);else setError("");}
+  catch(error){setError((error as Error).message);}
+ }
+ function reviewSaved(item:ContentItem) {
+  if(!allowedRef.current)return false;
+  const next=toggleSavedReview(current.current,item);
+  if(next===current.current||!update(next))return false;
+  const reviewed=next.savedItems.find(saved=>savedIdentity(saved)===savedIdentity(item));
+  if(reviewed?.reviewed===true){reviewUndoRef.current=reviewed;setReviewPending(true);setReviewNotice(`「${reviewed.title}」 확인 완료했어요.`);}
+  return true;
+ }
+ function undoReview() {
+  const target=reviewUndoRef.current;
+  if(!allowedRef.current||!target||!current.current.savedItems.includes(target))return;
+  const next={...current.current,savedItems:current.current.savedItems.map(item=>item===target?{...item,reviewed:false}:item)};
+  if(!update(next))return;
+  setReviewNotice(`「${target.title}」을 미확인으로 되돌렸어요.`);setUndoFocusKey(savedIdentity(target));
+ }
+ function removeSaved(item:ContentItem) {
+  if(!allowedRef.current||sourceVersion!==sourceEpoch.current.version)return;
+  const deletion=prepareSavedRemoval(current.current,item);
+  if(!deletion||!update(deletion.next))return;
+  if(restoreWaitingForSpace.current&&pendingUndoRef.current){setUndoNotice("공간을 확보했어요. 삭제 실행 취소를 다시 눌러 복원해 주세요.");return;}
+  pendingUndoRef.current=deletion.removal;setPendingUndo(deletion.removal);setUndoFocusKey(null);
+  setUndoNotice(`「${deletion.removal.item.title}」을 보관함에서 뺐어요.`);
+ }
+ function restoreSaved() {
+  if(!allowedRef.current||sourceVersion!==sourceEpoch.current.version||!pendingUndoRef.current)return;
+  const removal=pendingUndoRef.current;
+  let restored:ReturnType<typeof prepareSavedRestore>;
+  try{restored=prepareSavedRestore(current.current,removal);}
+  catch(error){restoreWaitingForSpace.current=true;setUndoNotice(`복원하지 못했어요. ${(error as Error).message}`);return;}
+  if(!restored.alreadyPresent&&!update(restored.next))return;
+  pendingUndoRef.current=null;restoreWaitingForSpace.current=false;setPendingUndo(null);setUndoFocusKey(savedIdentity(removal.item));
+  setUndoNotice(restored.alreadyPresent?"이미 보관함에 있는 소식이에요.":`「${removal.item.title}」을 다시 보관했어요.`);
+ }
+ async function refresh(source:RegisteredSource) {
+  if(!allowed||!source.enabled||jobs.current.has(source.id))return;
+  const job=new AbortController();jobs.current.set(source.id,job);setBusy(old=>[...old,source.id]);
+  setFeedback(old=>{const next={...old};delete next[source.id];return next;});
+  const timer=setTimeout(()=>job.abort(),6000),attemptedAt=new Date().toISOString();
+  try{
+   const result=await refreshSteam(source,job.signal);
+   if(allowedRef.current&&jobs.current.get(source.id)===job&&!job.signal.aborted&&current.current.sources.some(s=>s.id===source.id&&s.enabled)) {
+    const previous=current.current.sources.find(s=>s.id===source.id)!;
+    const next=applyFeed(current.current,source.id,{items:result.items},result.fetchedAt);
+    const accepted=next.sources.find(s=>s.id===source.id)!;
+    if(update(next))setFeedback(old=>({...old,[source.id]:accepted.refreshError?failedRefreshFeedback(previous.items):completedRefreshFeedback(previous.items,accepted.items)}));
+   }
+  } catch {
+   if(allowedRef.current&&jobs.current.get(source.id)===job&&current.current.sources.some(s=>s.id===source.id&&s.enabled)) {
+    const previous=current.current.sources.find(s=>s.id===source.id)!;
+    if(update(applyFeed(current.current,source.id,{error:"failed"},attemptedAt)))setFeedback(old=>({...old,[source.id]:failedRefreshFeedback(previous.items)}));
+   }
+  } finally {clearTimeout(timer);if(jobs.current.get(source.id)===job){jobs.current.delete(source.id);setBusy(old=>old.filter(id=>id!==source.id));}}
+ }
+ const render=(scene:Scene)=><SceneView scene={scene} state={state} update={update} save={save} refresh={refresh} busy={busy} long={params.get("long")==="1"}/>;
+ return <SavedNavigationContext.Provider value={()=>allowedRef.current}><SavedFilterContext.Provider value={{sourceId,selectSource,notice:sourceNotice,retry:()=>selectSource(sourceId),query,search:value=>{if(allowedRef.current&&sourceVersion===sourceEpoch.current.version)setQuery(value);},mode,select:selectSavedFilter,reset:resetSavedFilter}}><RefreshFeedbackContext.Provider value={feedback}><SavedUndoContext.Provider value={{reviewPending,reviewNotice,undoReview,pending:pendingUndo,notice:undoNotice,focusKey:undoFocusKey,review:reviewSaved,remove:removeSaved,restore:restoreSaved,focusDone:()=>setUndoFocusKey(null)}}><main className="ba-page" data-theme={theme}><div className="page-inner"><header className="masthead"><span>도착 전에 <small>PLEOS CONNECT · 샘플 경로 시연</small></span><button onClick={()=>setTheme(theme==="night"?"day":"night")}>{theme==="night"?"주간으로 보기":"야간으로 보기"}</button></header><div className="intro"><span className="eyebrow">내가 고른 출처, 남은 시간에 맞게</span><h2>남은 시간만큼,<br/>필요한 소식부터.</h2></div><nav className="scene-controls" aria-label="시연 장면">{([['opening','01 18분'],['saved','02 저장'],['priority','03 4분'],['arrived','04 도착'],['settings','출처 설정'],['restricted','주행 제한'],['unknown','상태 미확인']] as const).map(([frame,label])=><button key={frame} aria-pressed={manual===frame} onClick={()=>setManual(frame)}>{label}</button>)}<button onClick={()=>{setManual(null);setReplay(replay+1);}}>자동 시연 다시 보기</button></nav>{error&&<p className="storage-error" role="alert">{error}</p>}<Stage key={`${manual}-${replay}`} width={1440} height={680} className="ba-scene" theme={theme==="night"?"dark":"light"} play="once" initial={{frame:manual||"opening"} as Scene} poster={{frame:manual||"arrived"} as Scene} script={manual?undefined:sequence}>{render}</Stage><footer className="evidence-note">경로·차량 상태·재생은 샘플 · 소식마다 실제/예시와 확인 시각을 표시<br/>출처·저장은 이 브라우저에만 보존 · Android 앱/다른 기기와 동기화 안 됨</footer></div></main></SavedUndoContext.Provider></RefreshFeedbackContext.Provider></SavedFilterContext.Provider></SavedNavigationContext.Provider>;
+}

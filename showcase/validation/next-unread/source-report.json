@@ -1,0 +1,176 @@
+{
+  "candidateSha": "1b17033b02956a58e219b40e88fc9a74c2ef2650",
+  "workingTreeDirty": true,
+  "ime": "Synthetic composition events only; physical Korean IME remains a manual check.",
+  "scope": "Browser sample only; no APK installation, emulator or actual Pleos SDK evidence.",
+  "captures": [
+    {
+      "path": "day-320-next-title.png",
+      "sha256": "f4b6141bb5605fcf6edbabbe5dae82af244102aeb01f45f9e2d151ff5ae4a221"
+    },
+    {
+      "path": "day-320-source.png",
+      "sha256": "54cfff9a143d68918ac574eb3254cede2407029a88ae2416119a03c6f4258451"
+    },
+    {
+      "path": "day-320-empty.png",
+      "sha256": "2857f2f43898c02b3ad0a0c88f652e1b5dfbd24bf5b3a00ad590c03321b4f9d0"
+    },
+    {
+      "path": "day-390-next-title.png",
+      "sha256": "ae46c7f3258d46a6c565ef6081b49da693e5f5777afc72c25e7dd1a7591174e4"
+    },
+    {
+      "path": "day-390-source.png",
+      "sha256": "265ef59c00f23faa8562f4e27c6ca580f65a82a8a105f09af164cef8976b0c9f"
+    },
+    {
+      "path": "day-390-empty.png",
+      "sha256": "2a18dce946fb47a7ee14c3a7afcc1498263b6308e86679c475532d25a150abaf"
+    },
+    {
+      "path": "night-320-next-title.png",
+      "sha256": "8557a89e17a78725766255c43d3e35e5c114e8479621bc6d086cfcf1c1290571"
+    },
+    {
+      "path": "night-320-source.png",
+      "sha256": "4d487c0acb9c3ff8a10df68a22c672d06ea250ee63ae9fb47a69d0da279b0fbd"
+    },
+    {
+      "path": "night-320-empty.png",
+      "sha256": "d54ea66a29b581247c75651204230089f24000b93de29f3ad05ec6404c2cc59c"
+    },
+    {
+      "path": "night-390-next-title.png",
+      "sha256": "2814e459eb011ab688bfe70a57b6b0cd4103527e5077cb02fb15f17ffeaffa3c"
+    },
+    {
+      "path": "night-390-source.png",
+      "sha256": "32aa3283b3f71b1b94b51fabb2c5f92236fdbe18a40429fdeb692f66bf04c534"
+    },
+    {
+      "path": "night-390-empty.png",
+      "sha256": "74245ee85e585d21b838886b7ad2d78b5bfa504e7a99f71dbb47baaafb3d9019"
+    }
+  ],
+  "checkedAt": "2026-11-06T06:13:14.006Z",
+  "htmlSha256": "13411fa3b9e33a2b6f09f90757b57db5d883fcf699a58e4545212353aa8dab5e",
+  "sourceSha256": {
+    "examples/before-arrival/index.tsx": "b36976d05a9e55b631fb5acbcd09d2917ecda4b9075d95e90a7649d6846e003c",
+    "examples/before-arrival/saved-undo.ts": "35dc0a2985755d5e31e489bd741906e1b93691021c0e7392044734aa252c026e",
+    "examples/before-arrival/showcase.css": "a7db760435ed396cb21f1ce977faf43c203ebc42be0dd7e2459fa56ffcd2efe9",
+    "saved-source-browser-verify.mjs": "d9bc6238e0b1904fdc45fbfa924ed076ca790303fc0e31c6d2a7a3cf6d1aa5e3",
+    "package.json": "d837067a79339c6e2fc91d5399e95ff8cbd970909ac320be579c0caff6cbbd75"
+  },
+  "upstream": "official snapshots registered through UI; no external network",
+  "checks": [
+    "Next unread: zero/one/multiple intersections, Enter/Space, wrap, manually focused reviewed title, unchanged filters/order/URLs/storage, stale handlers during restriction and after return, no popup or automatic playback.",
+    "Reset all filter combinations including whitespace/empty results; Enter/Space and search focus; stale reset closures blocked; Three source IDs; duplicate long names; exact counts/order; source/search/unread intersection; unchanged storage; empty reset; last deletion/undo; review undo; session reset; stale blocked handlers; stopped playback; keyboard, contrast and overflow at 320/390 day/night."
+  ],
+  "readability": [
+    {
+      "theme": "day",
+      "width": 320,
+      "contrast": 17.442218774298816,
+      "fontSize": 16,
+      "pageOverflow": false
+    },
+    {
+      "theme": "day",
+      "width": 320,
+      "target": {
+        "outline": "solid",
+        "outlineWidth": 2,
+        "fontSize": 23,
+        "visible": true,
+        "pageOverflow": false
+      }
+    },
+    {
+      "theme": "day",
+      "width": 320,
+      "next": {
+        "fontSize": 16,
+        "overflow": false
+      }
+    },
+    {
+      "theme": "day",
+      "width": 390,
+      "contrast": 17.442218774298816,
+      "fontSize": 16,
+      "pageOverflow": false
+    },
+    {
+      "theme": "day",
+      "width": 390,
+      "target": {
+        "outline": "solid",
+        "outlineWidth": 2,
+        "fontSize": 23,
+        "visible": true,
+        "pageOverflow": false
+      }
+    },
+    {
+      "theme": "day",
+      "width": 390,
+      "next": {
+        "fontSize": 16,
+        "overflow": false
+      }
+    },
+    {
+      "theme": "night",
+      "width": 320,
+      "contrast": 15.251694958229084,
+      "fontSize": 16,
+      "pageOverflow": false
+    },
+    {
+      "theme": "night",
+      "width": 320,
+      "target": {
+        "outline": "solid",
+        "outlineWidth": 2,
+        "fontSize": 23,
+        "visible": true,
+        "pageOverflow": false
+      }
+    },
+    {
+      "theme": "night",
+      "width": 320,
+      "next": {
+        "fontSize": 16,
+        "overflow": false
+      }
+    },
+    {
+      "theme": "night",
+      "width": 390,
+      "contrast": 15.251694958229084,
+      "fontSize": 16,
+      "pageOverflow": false
+    },
+    {
+      "theme": "night",
+      "width": 390,
+      "target": {
+        "outline": "solid",
+        "outlineWidth": 2,
+        "fontSize": 23,
+        "visible": true,
+        "pageOverflow": false
+      }
+    },
+    {
+      "theme": "night",
+      "width": 390,
+      "next": {
+        "fontSize": 16,
+        "overflow": false
+      }
+    }
+  ]
+}

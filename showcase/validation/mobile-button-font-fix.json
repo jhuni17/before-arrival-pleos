@@ -1,0 +1,22 @@
+{
+  "baseCandidateSha": "4885a3bf6505e8189ad032f08963a8df23e1713a",
+  "workingTreeDirty": true,
+  "change": "Mobile saved-filter and saved-position buttons: 14px to 16px; regenerated HTML. No spacing, logic or verification changes.",
+  "scope": "Browser sample only. No Android build, installation, emulator or actual Pleos SDK evidence. Full regression left to GitHub CI.",
+  "checks": {
+    "npm run build": "PASS",
+    "git diff --check": "PASS",
+    "node saved-source-browser-verify.mjs": "PASS output received, but existing report hashes differ from current files; not accepted as current-candidate evidence. Explicit evidence-directory retry timed out after 180 seconds during page.reload at line 101.",
+    "npm run verify:saved-undo": "FAIL: page.reload timeout (30000ms) at saved-undo-browser-verify.mjs:39; retry interrupted without completion. Downstream review/position/filter checks not verified.",
+    "npm run verify:arrival": "Initial run interrupted without completion; retry timed out after 180 seconds at line 42.",
+    "GitHub CI": "Not run locally; acceptance remains unverified."
+  },
+  "sourceSha256": {
+    "showcase/examples/before-arrival/showcase.css": "f763e108d86f7a3e4975c1e25f37c4d499b89d1b1f6bc9982f2feaf77a00cf08",
+    "showcase/before-arrival-showcase.html": "c01295f8e81cd1161b39bfd1fa0912847b58aede6dbf04f309942fb4eaf929af",
+    "showcase/saved-source-browser-verify.mjs": "cf28ee484479446c1773f8a3f3b12e83566b23000ec9554f08726cf212458386",
+    "showcase/arrival-browser-verify.mjs": "43f3e3ab731e092d48b7eedac9749bae91a0151b8f56bf36e9bd0b29badcf2ba",
+    "showcase/package.json": "fe40d207eb1e32741d7d8497e961940c0543588fea38a2b4447b4dfd51dec6e1"
+  },
+  "captures": "No current-candidate completed captures retained; pre-existing reports are not evidence for this change."
+}

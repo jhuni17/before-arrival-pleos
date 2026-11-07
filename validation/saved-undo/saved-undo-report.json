@@ -1,0 +1,92 @@
+{
+  "checkedAt": "2026-11-05T15:43:49.756Z",
+  "htmlSha256": "ab387a8caa5e3b2e4c07b26aec0b1d1edd8c96671f5d0a433144dd984776185e",
+  "sourceSha256": {
+    "examples/before-arrival/index.tsx": "116191f126a162d4ee894f8d896db3755ae98261d52321b614c3836ef5890c53",
+    "examples/before-arrival/saved-undo.ts": "020b7c4dc8b9e92cda7caf6ec957e0538d8f25a7292504ca6f15a38e6caaa7ac",
+    "examples/before-arrival/showcase.css": "48340d25da29a6dde29d5f12e68b502f416ab6fbb9e08f4a6d60e3eb9fca88e4",
+    "saved-undo-browser-verify.mjs": "09cec38a4546b4bd786693740557cf17ab7820425b409910a9268d332bb5f8eb"
+  },
+  "upstream": "official snapshots registered through UI; no external network",
+  "checks": [
+    "Real Tab/Enter delete→focused undo→restored title; exact original item returns between neighbors, while intervening save/source order/toggle remain. Missing-target stale button performs no write.",
+    "Two successful deletes retain only the newest successful removal; undo cannot restore the older deletion.",
+    "Failed delete keeps prior successful undo; failed restore keeps the offer and state, announces no success, and keyboard retry succeeds.",
+    "An already re-saved item is not duplicated, rewritten or moved; current copy/order is preserved.",
+    "Restricted/unknown state hides actions and clears the offer; stale undo callbacks cannot restore, including after returning to allowed state.",
+    "Reload retains the successful deletion but never resurrects a session undo offer or adds persisted schema fields."
+  ],
+  "readability": [
+    {
+      "theme": "day",
+      "viewport": {
+        "width": 390,
+        "height": 1080
+      },
+      "undoButton": {
+        "x": 70,
+        "y": 515.796875,
+        "width": 110.984375,
+        "height": 48
+      },
+      "contrast": 17.442218774298816,
+      "overflow": false,
+      "documentOverflow": false,
+      "keyboardFocusRestoredTitle": "발로란트 13.09 패치 노트"
+    },
+    {
+      "theme": "day",
+      "viewport": {
+        "width": 320,
+        "height": 960
+      },
+      "undoButton": {
+        "x": 52,
+        "y": 226.796875,
+        "width": 110.984375,
+        "height": 48
+      },
+      "contrast": 17.442218774298816,
+      "overflow": false,
+      "documentOverflow": false,
+      "keyboardFocusRestoredTitle": "발로란트 13.09 패치 노트"
+    },
+    {
+      "theme": "night",
+      "viewport": {
+        "width": 390,
+        "height": 1080
+      },
+      "undoButton": {
+        "x": 70,
+        "y": 515.796875,
+        "width": 110.984375,
+        "height": 48
+      },
+      "contrast": 15.251694958229084,
+      "overflow": false,
+      "documentOverflow": false,
+      "keyboardFocusRestoredTitle": "발로란트 13.09 패치 노트"
+    },
+    {
+      "theme": "night",
+      "viewport": {
+        "width": 320,
+        "height": 960
+      },
+      "undoButton": {
+        "x": 52,
+        "y": 226.796875,
+        "width": 110.984375,
+        "height": 48
+      },
+      "contrast": 15.251694958229084,
+      "overflow": false,
+      "documentOverflow": false,
+      "keyboardFocusRestoredTitle": "발로란트 13.09 패치 노트"
+    }
+  ],
+  "pageErrors": [],
+  "externalRequests": [],
+  "popups": 0
+}

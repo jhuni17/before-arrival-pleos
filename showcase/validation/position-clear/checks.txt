@@ -1,0 +1,8 @@
+PASS: npm run build (showcase/)
+PASS: node --check saved-position-browser-verify.mjs
+PASS: EVIDENCE_DIR=validation/position-clear node saved-position-browser-verify.mjs (showcase/)
+CHROMIUM_PATH: runner-provided value, falling back to ~/.local/share/before-arrival-runner/bin/chromium when absent.
+PASS: source, generated HTML and all 16 capture SHA-256 values verified against report.
+Candidate/base SHA: fa7e113b02bf3261d2a2ab349a296ec90a756d2c; working tree changes tested, no commit created.
+Full showcase regression suite: left to GitHub CI, not run locally; CI result pending.
+Browser sample evidence only; no APK, emulator, actual Pleos SDK callback or submission-readiness claim.

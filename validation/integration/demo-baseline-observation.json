@@ -1,0 +1,16 @@
+{
+  "sourceCommit": "3ff697d261e417fa6a2ff18ddcb91ebd83c32a6a",
+  "observedAt": "2026-11-05T11:42:33.926Z",
+  "openingDurationText": "이번에 들을 브리핑\n약 2분",
+  "communityOnlyAt4Minutes": {
+    "title": "출근길 팟캐스트 추천",
+    "durationText": "도착 전에 먼저 확인\n약 2분",
+    "playEnabled": true
+  },
+  "androidBaseExpected": {
+    "gameEstimatedSeconds": 11,
+    "communityEstimatedSeconds": 13,
+    "shortTripBudgetSeconds": 12,
+    "communityDeferred": true
+  }
+}

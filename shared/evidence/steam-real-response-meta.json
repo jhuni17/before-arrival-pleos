@@ -1,0 +1,17 @@
+{
+  "sourceThread": "https://chatgpt.com/local/01a1abbf-48e0-708c-aed9-bbd76b20f09b",
+  "reviewedSha": "df7b545fb6ef8b3531b4e55718626086e73a93c0",
+  "observedAt": "2026-11-05T12:47:21Z",
+  "note": "Time is initial direct request; exact application-query response logged during same verification turn ending 12:50:17Z. Extracted untruncated APP_RESPONSE JSON from official read_thread command output; this is cross-environment captured response, not live request from integration environment.",
+  "request": "https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=570&count=5&maxlength=600&format=json&feeds=steam_community_announcements",
+  "options": {
+    "signal": {},
+    "redirect": "error",
+    "credentials": "omit",
+    "referrerPolicy": "no-referrer",
+    "cache": "no-store"
+  },
+  "transport": "existing proxy/CA, TLS verified, no key/login/cookie; initial direct GET CONNECT200 HTTP200; exact query curl exit0 parsed JSON",
+  "directApiSuccess": true,
+  "applicationRefreshSuccess": false
+}

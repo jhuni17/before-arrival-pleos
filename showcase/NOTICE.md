@@ -15,8 +15,10 @@ study includes two local photographs dedicated under CC0 1.0 (also used
 in the Finder, Telegram and annotation studies); their authors,
 original source pages and modifications are recorded in
 [`examples/wikipedia/PHOTOS.md`](examples/wikipedia/PHOTOS.md). Other scenes
-use CSS and vector illustrations. No third-party fonts are bundled, and the
-playground does not fetch fonts or photographs from external services at runtime.
+use CSS and vector illustrations. This showcase bundles the unmodified Asta Sans font under the SIL OFL 1.1;
+see `assets/fonts/OFL.txt`, `assets/fonts/SOURCES.md`, and `DESIGN-SOURCES.md`.
+The generated HTML embeds the font and its license and does not fetch fonts or
+photographs from external services at runtime.
 
 The local brand registry in `kit/brands/` includes SVG artwork from SVGL (MIT), payment-icons (Apache 2.0), Cryptocurrency Icons (CC0 1.0), and official Linear, American Express and Circle assets. Per-file sources, hashes and license files are listed in [`kit/brands/SOURCES.md`](kit/brands/SOURCES.md). The original artwork and brand usage terms remain with their respective owners.
 

@@ -14,11 +14,14 @@ import java.util.Comparator;
 import java.util.Locale;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.BooleanSupplier;
 
 final class SpeechPlayback {
     private final Handler main = new Handler(Looper.getMainLooper());
     private final AudioManager audio;
     private final Consumer<String> onStateChanged;
+    private final BooleanSupplier canPlay;
+    private final Runnable budgetExpired = this::stopAtBudget;
     private final AudioAttributes attributes = new AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_MEDIA)
             .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
@@ -32,9 +35,10 @@ final class SpeechPlayback {
     private boolean ready;
     private String unavailableMessage = "한국어 음성을 준비하고 있어요.";
 
-    SpeechPlayback(Context context, Consumer<String> onStateChanged) {
+    SpeechPlayback(Context context, BooleanSupplier canPlay, Consumer<String> onStateChanged) {
         this.audio = context.getSystemService(AudioManager.class);
         this.onStateChanged = onStateChanged;
+        this.canPlay = canPlay;
         engine = new TextToSpeech(context, status -> main.post(() -> initialize(status)));
     }
 
@@ -55,7 +59,9 @@ final class SpeechPlayback {
         }
 
         UtteranceProgressListener progress = new UtteranceProgressListener() {
-            @Override public void onStart(String id) {}
+            @Override public void onStart(String id) {
+                main.post(() -> { if (id.equals(currentId) && !canPlay.getAsBoolean()) stop(); });
+            }
             @Override public void onDone(String id) { main.post(() -> finish(id, "")); }
             @SuppressWarnings("deprecation")
             @Override public void onError(String id) { reportError(id); }
@@ -71,8 +77,8 @@ final class SpeechPlayback {
         return currentId != null;
     }
 
-    void play(String narration) {
-        if (closed || narration.isEmpty()) return;
+    void play(String narration, int budgetSeconds) {
+        if (closed || !canPlay.getAsBoolean() || narration.isEmpty() || budgetSeconds <= 0) return;
         if (!ready) {
             onStateChanged.accept(unavailableMessage);
             return;
@@ -89,46 +95,71 @@ final class SpeechPlayback {
                     }
                 }, main)
                 .build();
-        if (audio == null || audio.requestAudioFocus(request) != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-            onStateChanged.accept("오디오를 사용할 수 없어요. 대본을 읽을 수 있어요.");
-            return;
+        try {
+            if (audio == null || audio.requestAudioFocus(request) != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                onStateChanged.accept("오디오를 사용할 수 없어요. 대본을 읽을 수 있어요.");
+                return;
+            }
+            focus = request;
+            currentId = id;
+            if (!canPlay.getAsBoolean()) { stop(); return; }
+            main.postDelayed(budgetExpired, budgetSeconds * 1000L);
+            // Queue actual silence, rather than delaying speak() on the UI thread.
+            if (engine.playSilentUtterance(200, TextToSpeech.QUEUE_FLUSH, id + "-preroll") != TextToSpeech.SUCCESS
+                    || engine.speak(narration, TextToSpeech.QUEUE_ADD, null, id) != TextToSpeech.SUCCESS) {
+                stop();
+                onStateChanged.accept("음성 재생을 시작하지 못했어요. 대본을 읽을 수 있어요.");
+                return;
+            }
+            onStateChanged.accept("");
+        } catch (RuntimeException error) {
+            stop();
+            onStateChanged.accept("음성 재생을 시작하지 못했어요. 대본을 읽을 수 있어요.");
         }
-        focus = request;
-        currentId = id;
-        if (engine.speak(narration, TextToSpeech.QUEUE_FLUSH, null, id) != TextToSpeech.SUCCESS) {
-            finish(id, "음성 재생을 시작하지 못했어요. 대본을 읽을 수 있어요.");
-            return;
-        }
-        onStateChanged.accept("");
     }
 
     void stop() {
         if (currentId == null) return;
         currentId = null;
-        engine.stop();
-        releaseFocus();
+        main.removeCallbacks(budgetExpired);
+        try { engine.stop(); }
+        catch (RuntimeException ignored) { /* Still release focus when the engine dies. */ }
+        finally { releaseFocus(); }
         onStateChanged.accept("");
+    }
+
+    private void stopAtBudget() {
+        if (currentId == null) return;
+        stop();
+        onStateChanged.accept("듣기 예산에 맞춰 브리핑을 멈췄어요.");
     }
 
     void close() {
         stop();
         closed = true;
-        engine.shutdown();
+        main.removeCallbacksAndMessages(null);
+        try { engine.shutdown(); }
+        catch (RuntimeException ignored) { /* Engine may already be disconnected. */ }
     }
 
     private void reportError(String id) {
-        main.post(() -> finish(id, "음성 재생을 마치지 못했어요. 대본을 읽을 수 있어요."));
+        main.post(() -> {
+            if (currentId != null && (id.equals(currentId) || id.equals(currentId + "-preroll"))) {
+                finish(currentId, "음성 재생을 마치지 못했어요. 대본을 읽을 수 있어요.");
+            }
+        });
     }
 
     private void finish(String id, String message) {
         if (!id.equals(currentId)) return;
-        currentId = null;
-        releaseFocus();
+        stop();
         onStateChanged.accept(message);
     }
 
     private void releaseFocus() {
-        if (focus != null) audio.abandonAudioFocusRequest(focus);
+        AudioFocusRequest previous = focus;
         focus = null;
+        try { if (previous != null) audio.abandonAudioFocusRequest(previous); }
+        catch (RuntimeException ignored) { /* No held request remains in this session. */ }
     }
 }

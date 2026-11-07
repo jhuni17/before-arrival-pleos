@@ -1,0 +1,186 @@
+{
+  "checkedAt": "2026-11-05",
+  "apkBuiltFromSource": "27d297b2981826be52ee360c21c999379c82f776",
+  "artifactCommit": "9bef7b49a0b88154d1f57fea8d8de47eb0df8554",
+  "apkSha256": "ae3118ea2a235d50d36e74b6f563071eca4ff37f178bc023b3d773f6d9fa7f4e",
+  "inputCount": 41,
+  "inputManifestSha256": "7d0479747d5ead81d1ecad1bf18ef2c3b5c0359b25d6d9667640ab43e6c931e2",
+  "allCurrentInputsMatchBuiltSource": true,
+  "apkRebuiltForDocumentationChange": false,
+  "codeOrSharedAssetChanges": false,
+  "verification": "Each of41 current file bytes and manifest entry was independently compared with gitshow source27 bytes; only Markdown documents changed. This file is validation documentation, not an APK input.",
+  "changedDocuments": [
+    "README.md",
+    "android/README.md",
+    "android/VALIDATION.md",
+    "contest-brief.md",
+    "review-notes.md",
+    "sources-notes.md"
+  ],
+  "entries": [
+    {
+      "path": "android/app/build.gradle",
+      "sha256": "4090ff8cd7108330964cc9f1aff75d8421b0da37a946a612e7e126f9021204e5"
+    },
+    {
+      "path": "android/app/src/main/AndroidManifest.xml",
+      "sha256": "573035b044f5e0f6aa401b62872275c4193b376eedb819e6d243079f62e236cb"
+    },
+    {
+      "path": "android/app/src/main/assets/licenses/AstaSans-OFL.txt",
+      "sha256": "2448ea782a6364d571a4848c34db8a042311f44c78cf00265888db19ea10d5a4"
+    },
+    {
+      "path": "android/app/src/main/java/com/beforearrival/briefing/AccessPolicy.java",
+      "sha256": "4e4f3c792642d7c4ec787de8cc75ed246c21da2fbd5442d06ef44f7435547f77"
+    },
+    {
+      "path": "android/app/src/main/java/com/beforearrival/briefing/Briefing.java",
+      "sha256": "95b060ef1feb4bcdb0307e15bc74416e7e36940d8737748e931b90431678cfbf"
+    },
+    {
+      "path": "android/app/src/main/java/com/beforearrival/briefing/CarRestrictions.java",
+      "sha256": "a8e5f756c5c4a9aedc1370273fad9dd1812ae7a96370a754fe5205b7a2383b7f"
+    },
+    {
+      "path": "android/app/src/main/java/com/beforearrival/briefing/ContentCatalog.java",
+      "sha256": "3ff6df3e7770e3071ed1b71f3ab044298b344dfddf19be9d3920858a29d20e0a"
+    },
+    {
+      "path": "android/app/src/main/java/com/beforearrival/briefing/ContentFeedClient.java",
+      "sha256": "114d77e6817ea914a6da6a2579f0a5ddc96ae2912cd7b49eccc7f910d28710c1"
+    },
+    {
+      "path": "android/app/src/main/java/com/beforearrival/briefing/MainActivity.java",
+      "sha256": "b6e035776cf2d7ee8a300a2a13cc5b0262b1919e079df98af6164e8b5fad9d32"
+    },
+    {
+      "path": "android/app/src/main/java/com/beforearrival/briefing/NaviTimeContract.java",
+      "sha256": "387489b74fc19d2849c93ed6f58b9c7f2eb1032ccdcddf89ce6a8c61466132f9"
+    },
+    {
+      "path": "android/app/src/main/java/com/beforearrival/briefing/NavigationRouteInput.java",
+      "sha256": "7aaf03d14729c3149d8ef6ca6a564e7ea9a61c198722bc40bf02f7dd1c63c40c"
+    },
+    {
+      "path": "android/app/src/main/java/com/beforearrival/briefing/RouteConnection.java",
+      "sha256": "e40cc3e39df31621e30062485c43da678c52a13d4fc52303312578ae67b7324b"
+    },
+    {
+      "path": "android/app/src/main/java/com/beforearrival/briefing/RouteInput.java",
+      "sha256": "18683d291680cb3946189e3d9f12b9ba4eb1900472a1270429969d7aa776c360"
+    },
+    {
+      "path": "android/app/src/main/java/com/beforearrival/briefing/SampleRouteInput.java",
+      "sha256": "dfce3f21beb87de10c001f227d7f2efbde4755ce7342bbe7835f2c0148971727"
+    },
+    {
+      "path": "android/app/src/main/java/com/beforearrival/briefing/SpeechPlayback.java",
+      "sha256": "067807e38c5a2e4e362db7b92afe58bd70599394d1592ad63efa8a974efd6c5d"
+    },
+    {
+      "path": "android/app/src/main/res/font/asta_sans.ttf",
+      "sha256": "f68410bf7d04deb992097758640145c72ddcf234070794237fc4994e18991c33"
+    },
+    {
+      "path": "android/app/src/main/res/values/colors.xml",
+      "sha256": "d5abb21693e185cf70ae3a53b851d916f60e1f3fb55a548c0fabeb865af739b8"
+    },
+    {
+      "path": "android/app/src/main/res/values/strings.xml",
+      "sha256": "9f4e110ff98327564d4d7ddd9a179ea80b9930d930bbfbc02cad0517e4a2184b"
+    },
+    {
+      "path": "android/app/src/main/res/values/styles.xml",
+      "sha256": "c7dadc8e3be42e92a204d466d9fe8efa380cdf782111070dd5d227e8fd292649"
+    },
+    {
+      "path": "android/app/src/main/res/values-night/colors.xml",
+      "sha256": "222c664098e7426d288bc902e14bab39b3c56330663001d241728695e1421762"
+    },
+    {
+      "path": "android/app/src/main/res/values-night/styles.xml",
+      "sha256": "1d1917550bf82719ad0a7294470500cfa1141d90015bf25f2f4dc12c5524fb7f"
+    },
+    {
+      "path": "android/app/src/pleos/AndroidManifest.xml",
+      "sha256": "024508c92f79875384428324e83fcd27851d3deeeedf9898e1f66b5a031c052c"
+    },
+    {
+      "path": "android/app/src/pleos/java/com/beforearrival/briefing/LiveConnectionFactory.java",
+      "sha256": "b6703faaeb029cbafbbe430dd37f0ca4e915bfe7c8afa1d3bef8c23546b24235"
+    },
+    {
+      "path": "android/app/src/pleos/java/com/beforearrival/briefing/PleosRouteConnection.java",
+      "sha256": "91c529c94cc8967aea246db218ab8f92cc049b613fb88b10d42616021a65d4f9"
+    },
+    {
+      "path": "android/app/src/sample/java/com/beforearrival/briefing/LiveConnectionFactory.java",
+      "sha256": "2b2f417bdee2c922dce2baa4f1757d6e9ed2e807fe3e704aafff6de18db3815b"
+    },
+    {
+      "path": "android/app/src/test/java/com/beforearrival/briefing/CatalogTest.java",
+      "sha256": "e6f95080eab039efc32bc7666f3c87a635a29940f7d6b80ef2fc70e92055ca6d"
+    },
+    {
+      "path": "android/app/src/test/java/com/beforearrival/briefing/MainActivityTest.java",
+      "sha256": "53b401d2e3d1a7e6edc536330b03c18999031016bb05b0c58471a60527c9f999"
+    },
+    {
+      "path": "android/app/src/test/java/com/beforearrival/briefing/SpeechPlaybackTest.java",
+      "sha256": "85ca6d67a4facc30e4235ea5ea696e7ea6f845e39b693273cca5806161bbaeea"
+    },
+    {
+      "path": "android/build.gradle",
+      "sha256": "8c3e116b0b5ecbd35917d5cfa08dc6445759d70903fcb1a09183f7a539b4bc15"
+    },
+    {
+      "path": "android/gradle/wrapper/gradle-wrapper.jar",
+      "sha256": "2db75c40782f5e8ba1fc278a5574bab070adccb2d21ca5a6e5ed840888448046"
+    },
+    {
+      "path": "android/gradle/wrapper/gradle-wrapper.properties",
+      "sha256": "1b9cd6961ee86eea17b2f912bddb22030492db23fc6dff07da6c30eccaaab0c4"
+    },
+    {
+      "path": "android/gradle.properties",
+      "sha256": "dc0a9c12649cfa326f96f22f5acc5d94eebbd7839ae4aa2655b98346d67e7ddc"
+    },
+    {
+      "path": "android/gradlew",
+      "sha256": "9cbbb4d68ff7fb5211c4d58f598ac9d8664c05fdcd1e5f59b7f2c3ac1ee00af0"
+    },
+    {
+      "path": "android/gradlew.bat",
+      "sha256": "0f3ed8f03b50934cb8c48b15a470d5c20a30a5385825e48b55bcc8ea3d8f8e18"
+    },
+    {
+      "path": "android/settings.gradle",
+      "sha256": "c91442b790becfecf6a101f8b22f2d668ef20c4e599f0c9435c2db9dc04aa1dc"
+    },
+    {
+      "path": "shared/README.md",
+      "sha256": "05b760d073c65a6f7180fa0d1f35290c75c1f5dbfc153abc6e25339d5fe50623"
+    },
+    {
+      "path": "shared/catalog.json",
+      "sha256": "47ad03885c746770d381f2bcdcbbbde9f9e9bf1394df220133e082b029982595"
+    },
+    {
+      "path": "shared/evidence/official-observations.json",
+      "sha256": "004800aef4dd59912f940fa652f214efa09484128267640a5bcb9fa3128726e7"
+    },
+    {
+      "path": "shared/evidence/provider-research.json",
+      "sha256": "1025150c8781bee76cde0818210b3c94445e6eced739e195c104e8cdce79d330"
+    },
+    {
+      "path": "shared/evidence/steam-real-response-meta.json",
+      "sha256": "c85ce3074aeeadd707c6efcbd830f2d3d48a81a59aae573b48c5b746ada9c01b"
+    },
+    {
+      "path": "shared/evidence/steam-real-response.json",
+      "sha256": "bb56f7c09dbbf4f0cba6862ad5f8d9719ff46a7d3f661d26a524fad869c92d5b"
+    }
+  ]
+}

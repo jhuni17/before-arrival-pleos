@@ -1,0 +1,9 @@
+PASS: npm run build
+PASS: npm run verify
+PASS: node saved-source-browser-verify.mjs (runner CHROMIUM_PATH)
+PASS: saved-undo-browser-verify.mjs and saved-search-browser-verify.mjs in regression chain
+Initial browser runs found arrival first-title visibility regression; compact source spacing fixed it, and final source browser suite passed. The full verify:saved-undo chain stopped at that earlier failure; later review/position suites were not run.
+PASS: git diff --check
+CI unchanged: verify:saved-undo already invokes saved-source-browser-verify.mjs.
+Candidate SHA is the base HEAD with working tree changes; source/HTML/capture hashes identify the checked changes.
+Browser sample only; no Android build, installation, emulator or real Pleos SDK check in this task.

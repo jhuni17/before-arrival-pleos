@@ -1,0 +1,9 @@
+(node:343) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> verify:refresh-feedback
+> node refresh-feedback-browser-verify.mjs
+
+(node:356) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS: per-source cache additions/repeat/dedup/empty/failure feedback, storage and stale-response guards, session-only reload,320/390 both themes. Upstream responses are fixtures.

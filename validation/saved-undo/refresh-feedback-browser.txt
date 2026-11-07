@@ -1,0 +1,5 @@
+
+> verify:refresh-feedback
+> node refresh-feedback-browser-verify.mjs
+
+PASS: per-source cache additions/repeat/dedup/empty/failure feedback, storage and stale-response guards, session-only reload,320/390 both themes. Upstream responses are fixtures.

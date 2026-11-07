@@ -1,0 +1,57 @@
+{
+  "observedAt": "2026-11-05T12:12:22Z",
+  "method": "official website read via connected web research tool; not application network refresh",
+  "runtimeConnectedSources": 0,
+  "researchReadOfficialSources": 3,
+  "observations": [
+    {
+      "provider": "lol",
+      "title": "리그 오브 레전드 26.22 패치 노트",
+      "originalUrl": "https://www.leagueoflegends.com/ko-kr/news/game-updates/league-of-legends-patch-26-22-notes/",
+      "publishedAt": "2026-11-03T19:00:00.000Z",
+      "datePrecision": "instant",
+      "summary": "멜의 능력과 여러 챔피언의 밸런스가 조정됐어요. 자세한 변경은 공식 패치 노트에서 확인하세요.",
+      "provenance": "official_snapshot"
+    },
+    {
+      "provider": "valorant",
+      "title": "발로란트 13.09 패치 노트",
+      "originalUrl": "https://playvalorant.com/ko-kr/news/game-updates/valorant-patch-notes-1309/",
+      "publishedAt": "2026-10-27T13:00:00.000Z",
+      "datePrecision": "instant",
+      "summary": "새 요원 허시가 추가됐고 워든 조정과 버그 수정이 포함됐어요. 전체 변경은 공식 공지를 확인하세요.",
+      "provenance": "official_snapshot"
+    },
+    {
+      "provider": "maple",
+      "title": "수정2 클라이언트 1.2.420 업데이트 안내",
+      "originalUrl": "https://maplestory.nexon.com/news/update/815",
+      "publishedAt": "2026-10-22",
+      "datePrecision": "date",
+      "summary": "가을 이벤트와 메이플 톡, 보스 신규 난이도 및 오류 수정 내용을 안내해요.",
+      "provenance": "official_snapshot"
+    }
+  ],
+  "runtimeAttempts": [
+    {
+      "at": "2026-11-05T12:10:37Z",
+      "url": "https://www.leagueoflegends.com/ko-kr/news/game-updates/",
+      "result": "Tunnel connection failed: 403 Forbidden"
+    },
+    {
+      "at": "2026-11-05T12:10:37Z",
+      "url": "https://playvalorant.com/ko-kr/news/game-updates/",
+      "result": "Tunnel connection failed: 403 Forbidden"
+    },
+    {
+      "at": "2026-11-05T12:10:37Z",
+      "url": "https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=570&count=1&maxlength=300",
+      "result": "Tunnel connection failed: 403 Forbidden"
+    },
+    {
+      "at": "2026-11-05T12:10:37Z",
+      "url": "https://nexus-playground.pleos.ai/repository/maven-releases/ai/pleos/playground/NaviHelper/3.0.5/NaviHelper-3.0.5.pom",
+      "result": "Tunnel connection failed: 403 Forbidden"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "candidateSha": "ba2a0de878a1f02be8bc1beb6797dc4e761745b2",
+  "workingTreeDirty": true,
+  "checks": {
+    "build": "PASS: npm run build (showcase/)",
+    "focused": "PASS: node review-next-browser-verify.mjs",
+    "arrival": "PASS: node arrival-browser-verify.mjs",
+    "shared": "PASS: npm run verify",
+    "diff": "PASS: git diff --check",
+    "source": "PASS: node saved-source-browser-verify.mjs (updated completion-copy assertion)",
+    "paths": "PASS: git status --porcelain=v1 --untracked-files=all; all changed paths under showcase/"
+  },
+  "scope": "Browser sample only. Full regression left to GitHub CI; no Android build, installation, emulator or actual Pleos SDK claim.",
+  "sha256": {
+    "review-next/day-320-review-next.png": "6cb3abd8a8e984b39e3ade7e83ef1f2936eadeaf70cb4d39196c3a16bb64721c",
+    "review-next/day-390-review-next.png": "0f0148c6fd17f991e04df885f431a2d33c9466a255dd81633ad5b70e3301cdd8",
+    "review-next/night-320-review-next.png": "5648417cca460aac16971ec1bdeff5b1eb75747ecc4f30e003f17495fd17d342",
+    "review-next/night-390-review-next.png": "f2b96a26759265fe8154cfe6ce51579e31044087465ee052334c70a8e3e3bcc4",
+    "review-next/review-next-report.json": "6eca542a803571cc15713baac9cd8201bdc65e892d0e0e98318d9d2e3466ea74",
+    "review-next-arrival/arrival-browser-report.json": "4ca884fa0da34e6c8e85ba4aa37065fe7c3e0f03e885a389718a570d7443ddbd",
+    "review-next-arrival/day-arrival-empty-320.png": "bdda501d65eaeacb7847e8406af9b4e2ed637c3fa305eee1a2fda435a7cf47e5",
+    "review-next-arrival/day-arrival-empty-390.png": "a2be4ebcb23742e4eb0517963b2a322b3e981e1f49eaaa1a9fd008b47eab0737",
+    "review-next-arrival/day-arrival-saved-320.png": "e5c69c1b99825a533f8bea2a1078de2b754fa6d77f10f4b6534312e3cda41459",
+    "review-next-arrival/day-arrival-saved-390.png": "ec79281d39ee38f6480205daad8f7dfc0cd3249ecee2d1d08c1fff32f6f3b956",
+    "review-next-arrival/day-opening-1440-long.png": "8ba0599c6d4548b74d20c848904d10d2195d9dea62448c21a07cc5fdfd80f923",
+    "review-next-arrival/day-opening-1440.png": "c4ee92535593def53a053ac8fcb28fdcfc1cd8acbdb4e793b4c71aa6aa5d9041",
+    "review-next-arrival/day-opening-320-long.png": "a6891e9b8b1d677c04067642934bce9bbaf2595092b746b75a3672cf9c534246",
+    "review-next-arrival/day-opening-320.png": "e9a4e30bd29085d031d7de2dc6dba1d3cd2a4bd6e42e3cb31cb3248e11317db1",
+    "review-next-arrival/day-opening-390-long.png": "4d3024345fca8f8de325bf8c58a5612118f5ec159966afcfa5cf6c79fb7f8878",
+    "review-next-arrival/day-opening-390.png": "51a8bb0db3ecba1209f2dd8e0f9d24387f8a88479ef7c172b20daf9520d97685",
+    "review-next-arrival/night-arrival-empty-320.png": "ded13adbc8f6c38f3d7617c389298a2430041e48cd2b1346b3bb417b069556f1",
+    "review-next-arrival/night-arrival-empty-390.png": "c9acce1789045e2cea767bae641696434b8a212eabfc9de42965536271d2cfc0",
+    "review-next-arrival/night-arrival-saved-320.png": "0c578e78a91c7e05af0ae4e06f1a8b64266cb19a589b9a5778dd63acf15712d9",
+    "review-next-arrival/night-arrival-saved-390.png": "c5acef7fb9c5a761956c46479665d233589834592e1373108b086b80183c6b86",
+    "review-next-arrival/night-opening-1440-long.png": "8530af4e0875df6c8c3dfc3bb118673ab4f18fee2b09ea2163d44bc22aadacbb",
+    "review-next-arrival/night-opening-1440.png": "2e30f25d955db3c97c3bf124d51b5718fb1ccd0b7f6572804269283047cab3ca",
+    "review-next-arrival/night-opening-320-long.png": "7a7f419829c53d6828ccf74e712b26d384409cc45554df294f6b5ea9d80fd1cf",
+    "review-next-arrival/night-opening-320.png": "f50bafda5e96cd14e75342af2360ffba09d9cf602c21f1a47e30ab2f0efabdba",
+    "review-next-arrival/night-opening-390-long.png": "94c5fd38745139f1a046aa0701b06543de36b79bbeaea2caa2fb1158911ea4ff",
+    "review-next-arrival/night-opening-390.png": "e093dc4b4dd5e75686473c090a508547a4ff3d932a1662259436cb8d8aaaaa60"
+  },
+  "sourceSha256": {
+    "showcase/saved-source-browser-verify.mjs": "cf28ee484479446c1773f8a3f3b12e83566b23000ec9554f08726cf212458386"
+  }
+}

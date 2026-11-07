@@ -1,0 +1,9 @@
+(node:9) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> verify:browser
+> node browser-verify.mjs
+
+(node:22) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS: 37 screenshots, 14 behavioral checks; minimum contrast 5.95:1

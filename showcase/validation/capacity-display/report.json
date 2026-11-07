@@ -1,0 +1,34 @@
+{
+  "candidate": "7063d0200907090c52f5db810cec600ecbf4c262",
+  "checks": [
+    "Model capacity, duplicate, restore, 199→200 persistence",
+    "Browser no-write refusal, keyboard delete/save/reload, duplicate no-write, full restore retry after space, failed writes preserve data/focus, restricted/unknown stale handlers and stopped playback",
+    "Day/night 320×960, 390×1080 error/focus/overflow/arrival first title"
+  ],
+  "captures": [
+    "validation/capacity-display/day-320.png",
+    "validation/capacity-display/day-320-arrival.png",
+    "validation/capacity-display/day-390.png",
+    "validation/capacity-display/day-390-arrival.png",
+    "validation/capacity-display/night-320.png",
+    "validation/capacity-display/night-320-arrival.png",
+    "validation/capacity-display/night-390.png",
+    "validation/capacity-display/night-390-arrival.png"
+  ],
+  "hashes": {
+    "examples/before-arrival/catalog.ts": "8aa4de498e138271ef0bb03dbf1431defd8a23c9374467c71c1ad1d1ace09273",
+    "examples/before-arrival/saved-undo.ts": "490487beec45fd64f3ca05f302670060bb876054413995f7a4fee9dfc2805afc",
+    "examples/before-arrival/index.tsx": "d022157d05bfd565f630609f5a2a73cc4df16c4978555cc82b366a6e0e3c329e",
+    "capacity-display-browser-verify.mjs": "5593ccafc194e122b984e33c8f7f1f3ac676b790da6b1fa7878f5b31f9cf98b8",
+    "examples/before-arrival/showcase.css": "ac70832b8bdab5bb5d2a8f696b129ac8c63585703bd13c62f5de8d15d0f5b899",
+    "before-arrival-showcase.html": "f78605b1e0773d9448e766b3a3051cab6d8736b8c2eeb5ef6cd33acea370a83b",
+    "validation/capacity-display/day-320.png": "cc47ee2d4497c9c6c736b661a57c4148a0e97ff90d04d77fc4994be02efe46cf",
+    "validation/capacity-display/day-320-arrival.png": "a6869a092be4e1d1a8e8bff8e6900b1a0d069c8b1e102064b8a2e8f8496e7f19",
+    "validation/capacity-display/day-390.png": "4888925172ff020f41914b4a0492936c25f3009529fc8e71787af8684024bdf1",
+    "validation/capacity-display/day-390-arrival.png": "8ca9517bdd19edfd7fc53b684c49dbf3f7148d134f343a6148381f3573e1477c",
+    "validation/capacity-display/night-320.png": "89f08a6b9da1205aee4e4d123ab75c2fb0d996565f36a2d8e28eec807ea1b624",
+    "validation/capacity-display/night-320-arrival.png": "6a836ada1796230d315a337cad2ac37e2f4f3dc10c6db5de7ebfe801e714fb96",
+    "validation/capacity-display/night-390.png": "d8dbd6745b4c53881b02bfd222febac9eb2ae4ce03070ab6a37c050fb74fa231",
+    "validation/capacity-display/night-390-arrival.png": "801ab1375987a766dbee9fba3a8d0ee72b950e317c616c9f434013ccb2210859"
+  }
+}

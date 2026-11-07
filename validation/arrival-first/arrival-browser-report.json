@@ -1,0 +1,152 @@
+{
+  "checkedAt": "2026-11-05T14:43:27.102Z",
+  "htmlSha256": "71ec0853d393da0bcc5512ffe98281777ebb99810cdd83f754a5fe92276cd499",
+  "sourceSha256": {
+    "examples/before-arrival/index.tsx": "bc3c6fc69adda3c92352c91162cf2171d61a7366dea22045da901449c216a93d",
+    "examples/before-arrival/showcase.css": "7110b8508c40494a352fd55dfdbf553dd5f9095df91f11ef6be217a2cc51c1c1",
+    "arrival-browser-verify.mjs": "296b6d5022dce3ad2846c04dcfa760c49f96bfce36b94164b010085862dac5e3"
+  },
+  "upstream": "verified official LoL snapshot registered through UI; no runtime upstream request",
+  "productScrollChanges": false,
+  "cases": [
+    {
+      "theme": "day",
+      "viewport": {
+        "width": 390,
+        "height": 1080
+      },
+      "scrollY": 0,
+      "savedHeading": {
+        "x": 57,
+        "y": 446,
+        "width": 294,
+        "height": 33.796875
+      },
+      "firstSavedTitle": {
+        "x": 57,
+        "y": 641.796875,
+        "width": 294,
+        "height": 64.375
+      },
+      "emptyState": {
+        "x": 57,
+        "y": 592.796875,
+        "width": 294,
+        "height": 72
+      },
+      "screenshot": "/workspace/integration-verification/arrival-first/day-arrival-saved-390.png",
+      "originalUrl": "https://www.leagueoflegends.com/ko-kr/news/game-updates/league-of-legends-patch-26-22-notes/",
+      "provenance": "official_snapshot",
+      "savedBeforeVehicle": true,
+      "removalReloadPreserved": true,
+      "restrictedUnknownSavedActions": 0,
+      "externalRequests": 0
+    },
+    {
+      "theme": "day",
+      "viewport": {
+        "width": 320,
+        "height": 960
+      },
+      "scrollY": 0,
+      "savedHeading": {
+        "x": 39,
+        "y": 541,
+        "width": 242,
+        "height": 33.796875
+      },
+      "firstSavedTitle": {
+        "x": 39,
+        "y": 760.796875,
+        "width": 242,
+        "height": 64.375
+      },
+      "emptyState": {
+        "x": 39,
+        "y": 711.796875,
+        "width": 242,
+        "height": 96
+      },
+      "screenshot": "/workspace/integration-verification/arrival-first/day-arrival-saved-320.png",
+      "originalUrl": "https://www.leagueoflegends.com/ko-kr/news/game-updates/league-of-legends-patch-26-22-notes/",
+      "provenance": "official_snapshot",
+      "savedBeforeVehicle": true,
+      "removalReloadPreserved": true,
+      "restrictedUnknownSavedActions": 0,
+      "externalRequests": 0
+    },
+    {
+      "theme": "night",
+      "viewport": {
+        "width": 390,
+        "height": 1080
+      },
+      "scrollY": 0,
+      "savedHeading": {
+        "x": 57,
+        "y": 446,
+        "width": 294,
+        "height": 33.796875
+      },
+      "firstSavedTitle": {
+        "x": 57,
+        "y": 641.796875,
+        "width": 294,
+        "height": 64.375
+      },
+      "emptyState": {
+        "x": 57,
+        "y": 592.796875,
+        "width": 294,
+        "height": 72
+      },
+      "screenshot": "/workspace/integration-verification/arrival-first/night-arrival-saved-390.png",
+      "originalUrl": "https://www.leagueoflegends.com/ko-kr/news/game-updates/league-of-legends-patch-26-22-notes/",
+      "provenance": "official_snapshot",
+      "savedBeforeVehicle": true,
+      "removalReloadPreserved": true,
+      "restrictedUnknownSavedActions": 0,
+      "externalRequests": 0
+    },
+    {
+      "theme": "night",
+      "viewport": {
+        "width": 320,
+        "height": 960
+      },
+      "scrollY": 0,
+      "savedHeading": {
+        "x": 39,
+        "y": 541,
+        "width": 242,
+        "height": 33.796875
+      },
+      "firstSavedTitle": {
+        "x": 39,
+        "y": 760.796875,
+        "width": 242,
+        "height": 64.375
+      },
+      "emptyState": {
+        "x": 39,
+        "y": 711.796875,
+        "width": 242,
+        "height": 96
+      },
+      "screenshot": "/workspace/integration-verification/arrival-first/night-arrival-saved-320.png",
+      "originalUrl": "https://www.leagueoflegends.com/ko-kr/news/game-updates/league-of-legends-patch-26-22-notes/",
+      "provenance": "official_snapshot",
+      "savedBeforeVehicle": true,
+      "removalReloadPreserved": true,
+      "restrictedUnknownSavedActions": 0,
+      "externalRequests": 0
+    }
+  ],
+  "checks": [
+    "Official item explicitly saved from4-minute deferred list; urgent meeting order unchanged",
+    "At390x1080 and320x960 both themes, heading and entire first title are visible at scrollY0",
+    "Exact original URL/provenance/reload/removal retained; empty state is visible",
+    "Desktop remains a coherent side-by-side pair; restricted/unknown have no saved actions",
+    "No auto-open, upstream network, extra auto-save or product scroll code"
+  ]
+}

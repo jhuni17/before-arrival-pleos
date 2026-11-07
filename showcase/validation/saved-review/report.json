@@ -1,0 +1,32 @@
+{
+  "candidateBaseSha": "9e0cbf6c909fca229a19b269728314ff9216af1b",
+  "workingTreeChangesUncommitted": true,
+  "sha256": {
+    "before-arrival-showcase.html": "51b52a2a6c0f873121be99a126b9db2922430b8eff1e715f0eb1564a59b5b662",
+    "examples/before-arrival/index.tsx": "042b956a1a36b08f7e261e7bbc70dd3f7445bacf2d0887ffa66a796b9d84712f",
+    "examples/before-arrival/catalog.ts": "7f56b5cda0a271ae9dac8094017ca4a1ad9aa0d01a78fe36c4fb0b348fca75eb",
+    "examples/before-arrival/saved-undo.ts": "35dc0a2985755d5e31e489bd741906e1b93691021c0e7392044734aa252c026e",
+    "examples/before-arrival/verify.tsx": "a682befba2ed2d4b41e277d466e7711e2345577991825d40d879a08f498339d3",
+    "examples/before-arrival/showcase.css": "908ac0c6941f673375c6a77f09519fd61b5c93dceb8258f1b4755b4d20dd27ab",
+    "saved-undo-browser-verify.mjs": "7663dce705665215c55e4d8d322c5a9dc63bcba3510c0f6e1bba09063d355ce4",
+    "assets/fonts/OFL.txt": "2448ea782a6364d571a4848c34db8a042311f44c78cf00265888db19ea10d5a4",
+    "assets/fonts/AstaSans-wght.ttf": "f68410bf7d04deb992097758640145c72ddcf234070794237fc4994e18991c33"
+  },
+  "passed": [
+    "build",
+    "verify",
+    "node --check saved-undo-browser-verify.mjs",
+    "git diff --check"
+  ],
+  "blocked": {
+    "verify:server": "16 tests passed; LocalServerTests setup blocked by socket creation PermissionError (EPERM).",
+    "browserChecks": [
+      "verify:local-app",
+      "verify:arrival",
+      "verify:refresh-feedback",
+      "verify:saved-undo"
+    ],
+    "reason": "Local socket creation/listen prohibited (EPERM). Browser assertions and screenshots could not execute."
+  },
+  "captures": []
+}

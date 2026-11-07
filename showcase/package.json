@@ -4,13 +4,23 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "verify": "node verify.mjs"
+    "verify": "node verify.mjs",
+    "verify:browser": "node browser-verify.mjs",
+    "serve": "python3 app_server.py",
+    "verify:server": "python3 -m unittest -v test_app_server.py",
+    "verify:local-app": "node local-app-browser-verify.mjs",
+    "verify:arrival": "node arrival-browser-verify.mjs",
+    "verify:refresh-feedback": "node refresh-feedback-browser-verify.mjs",
+    "verify:review-undo": "node review-undo-browser-verify.mjs && node saved-item-next-browser-verify.mjs && node saved-position-browser-verify.mjs && node review-next-browser-verify.mjs && node reviewed-filter-browser-verify.mjs",
+    "verify:capacity-reviewed": "node capacity-reviewed-browser-verify.mjs",
+    "verify:saved-undo": "node saved-undo-browser-verify.mjs && node saved-search-browser-verify.mjs && node saved-source-browser-verify.mjs && npm run verify:review-undo && npm run verify:capacity-reviewed"
   },
   "dependencies": {
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
   "devDependencies": {
-    "esbuild": "0.25.12"
+    "esbuild": "0.25.12",
+    "playwright-core": "1.57.0"
   }
 }

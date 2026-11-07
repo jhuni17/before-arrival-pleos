@@ -1,0 +1,162 @@
+[
+  {
+    "theme": "day",
+    "width": 320,
+    "height": 960,
+    "hidden": false,
+    "boxes": [
+      {
+        "x": 25,
+        "y": 328,
+        "width": 270,
+        "height": 33.796875
+      },
+      {
+        "x": 25,
+        "y": 827.734375,
+        "width": 270,
+        "height": 32.1875
+      }
+    ]
+  },
+  {
+    "theme": "day",
+    "width": 320,
+    "height": 960,
+    "hidden": true,
+    "boxes": [
+      {
+        "x": 25,
+        "y": 328,
+        "width": 270,
+        "height": 33.796875
+      },
+      {
+        "x": 25,
+        "y": 919.734375,
+        "width": 270,
+        "height": 32.1875
+      }
+    ]
+  },
+  {
+    "theme": "day",
+    "width": 390,
+    "height": 1080,
+    "hidden": false,
+    "boxes": [
+      {
+        "x": 51,
+        "y": 278,
+        "width": 314,
+        "height": 33.796875
+      },
+      {
+        "x": 51,
+        "y": 729.734375,
+        "width": 314,
+        "height": 32.1875
+      }
+    ]
+  },
+  {
+    "theme": "day",
+    "width": 390,
+    "height": 1080,
+    "hidden": true,
+    "boxes": [
+      {
+        "x": 51,
+        "y": 278,
+        "width": 314,
+        "height": 33.796875
+      },
+      {
+        "x": 51,
+        "y": 869.734375,
+        "width": 314,
+        "height": 32.1875
+      }
+    ]
+  },
+  {
+    "theme": "night",
+    "width": 320,
+    "height": 960,
+    "hidden": false,
+    "boxes": [
+      {
+        "x": 25,
+        "y": 328,
+        "width": 270,
+        "height": 33.796875
+      },
+      {
+        "x": 25,
+        "y": 827.734375,
+        "width": 270,
+        "height": 32.1875
+      }
+    ]
+  },
+  {
+    "theme": "night",
+    "width": 320,
+    "height": 960,
+    "hidden": true,
+    "boxes": [
+      {
+        "x": 25,
+        "y": 328,
+        "width": 270,
+        "height": 33.796875
+      },
+      {
+        "x": 25,
+        "y": 919.734375,
+        "width": 270,
+        "height": 32.1875
+      }
+    ]
+  },
+  {
+    "theme": "night",
+    "width": 390,
+    "height": 1080,
+    "hidden": false,
+    "boxes": [
+      {
+        "x": 51,
+        "y": 278,
+        "width": 314,
+        "height": 33.796875
+      },
+      {
+        "x": 51,
+        "y": 729.734375,
+        "width": 314,
+        "height": 32.1875
+      }
+    ]
+  },
+  {
+    "theme": "night",
+    "width": 390,
+    "height": 1080,
+    "hidden": true,
+    "boxes": [
+      {
+        "x": 51,
+        "y": 278,
+        "width": 314,
+        "height": 33.796875
+      },
+      {
+        "x": 51,
+        "y": 869.734375,
+        "width": 314,
+        "height": 32.1875
+      }
+    ]
+  }
+]

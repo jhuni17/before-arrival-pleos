@@ -1,0 +1,54 @@
+{
+  "candidateSha": "8d8e9253bc3d5d5a958e15a85a6b853e5df17f48",
+  "workingTreeDirty": true,
+  "ime": "Synthetic composition events only; physical Korean IME remains a manual check.",
+  "scope": "Browser sample only; no APK installation, emulator or actual Pleos SDK evidence.",
+  "captures": [
+    {
+      "path": "day-320-arrival.png",
+      "sha256": "62165a10907563fd1554837665beef4668a2e559533f606ca86da3a298e6266f"
+    },
+    {
+      "path": "day-320-review-next.png",
+      "sha256": "1f95958b4d8f753d4a83c7b2c3966ade562b9d1da30ebf51918c5fbd2fe56ab2"
+    },
+    {
+      "path": "day-390-arrival.png",
+      "sha256": "40c93a966c423bcc552639e302bebd799d7926d31a048d37fc83a3a93e228bbe"
+    },
+    {
+      "path": "day-390-review-next.png",
+      "sha256": "51bca46107b444d08c90dcadbe9b357cfd69a00914b6161653662b188fc2bbf6"
+    },
+    {
+      "path": "night-320-arrival.png",
+      "sha256": "8f520c8d93907131878ecba35328336ec76d5f508cc5875dc2d77f85f57dd4be"
+    },
+    {
+      "path": "night-320-review-next.png",
+      "sha256": "57debf910d71d3e17ec18822e8306ca3a82e14cf6437f3e4553370e2bca63273"
+    },
+    {
+      "path": "night-390-arrival.png",
+      "sha256": "c2ffd302f20a28e6740fcf295f22a663dece81204611fdfb7a3cd6a72ec5b5b0"
+    },
+    {
+      "path": "night-390-review-next.png",
+      "sha256": "63fe5b438ed8ece077c6d88b62e872c68366e7636075d041b935324634b914d8"
+    }
+  ],
+  "checkedAt": "2026-11-06T15:06:04.366Z",
+  "htmlSha256": "9ffe015f50f26b9ecb652f087a032e1cecaf303d25f4a65f6270873000f392d7",
+  "sourceSha256": {
+    "examples/before-arrival/index.tsx": "a55d00f4ea84d56db22a5565c71fcad5fa2af5a53b45500ffce0daf6fa0789dd",
+    "examples/before-arrival/saved-undo.ts": "490487beec45fd64f3ca05f302670060bb876054413995f7a4fee9dfc2805afc",
+    "examples/before-arrival/showcase.css": "09896a44cd9f710576d6fe2e3bd9cde4fcb7b3ef2d66159a424f86480f8cac42",
+    "review-next-browser-verify.mjs": "eabe2411c4aeb9589aa55ebf59ca7e63cb57f1fc5f55911aa4d1962c1f3d4ea6",
+    "package.json": "fe40d207eb1e32741d7d8497e961940c0543588fea38a2b4447b4dfd51dec6e1"
+  },
+  "upstream": "official snapshots registered through UI; no external network",
+  "checks": [
+    "Hidden unread source/search guidance and total; reset reveals unread without registry/position changes; empty/all-reviewed/reviewed-only guidance; 0/1/32; source/search/unread combinations; wrap; exact single-item persistence; keyboard; failure/retry; reload/undo; unchanged position; restricted/unknown stale handlers; day/night 320x960 and 390x1080 focus/overflow."
+  ],
+  "readability": []
+}

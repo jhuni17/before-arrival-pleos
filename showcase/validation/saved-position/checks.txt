@@ -1,0 +1,11 @@
+PASS npm run build
+PASS npm run verify
+PASS npm run verify:arrival
+PASS saved-undo-browser-verify.mjs
+PASS saved-search-browser-verify.mjs
+PASS saved-source-browser-verify.mjs
+PASS review-undo-browser-verify.mjs
+PASS saved-item-next-browser-verify.mjs
+PASS node saved-position-browser-verify.mjs (final focused rerun after correcting ambiguous status selector in npm run verify:saved-undo)
+PASS candidate/source/HTML/12 capture SHA-256 verification
+Scope: showcase browser sample only; no APK installation, emulator, real Pleos SDK callbacks or submission-readiness claim. CI workflow unchanged; existing required verify:saved-undo reaches the new check via verify:review-undo.
