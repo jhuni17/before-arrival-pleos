@@ -2314,19 +2314,28 @@ public class MainActivityTest {
         assertSavedScopeCounts(0, 0);
     }
 
+    private static final String CLEAR_SOURCE_A = "sample-game";
+    private static final String CLEAR_SOURCE_B = "sample-schedule";
+    private static final String CLEAR_SOURCE_EMPTY = "sample-community";
+
     private List<ContentCatalog.Item> sourceClearFixture() throws Exception {
         setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
         ContentCatalog catalog = field("catalog");
-        for (String id : new String[]{"clear-a", "clear-b", "clear-empty"})
-            catalog.sources.add(new ContentCatalog.Source(new org.json.JSONObject()
-                    .put("id", id).put("name", "동명 출처").put("enabled", false)));
-        String[][] values = {{"a1", "clear-a", "  Alpha one  "},
-                {"b1", "clear-b", "ALPHA two"}, {"b2", "clear-b", "alpha three"},
-                {"a2", "clear-a", "Beta four"}, {"b3", "clear-b", "Beta five"}};
+        // Use valid sample sources so the catalog restores this fixture after recreation.
+        for (String id : new String[]{CLEAR_SOURCE_A, CLEAR_SOURCE_B, CLEAR_SOURCE_EMPTY}) {
+            ContentCatalog.Source source = catalog.source(id);
+            assertNotNull(source);
+            catalog.sources.set(catalog.sources.indexOf(source), new ContentCatalog.Source(
+                    source.json().put("name", "동명 출처").put("enabled", false)));
+        }
+        String[][] values = {{"a1", CLEAR_SOURCE_A, "  Alpha one  "},
+                {"b1", CLEAR_SOURCE_B, "ALPHA two"}, {"b2", CLEAR_SOURCE_B, "alpha three"},
+                {"a2", CLEAR_SOURCE_A, "Beta four"}, {"b3", CLEAR_SOURCE_B, "Beta five"}};
         List<ContentCatalog.Item> items = new ArrayList<>();
         for (String[] value : values) {
             ContentCatalog.Item item = new ContentCatalog.Item(new org.json.JSONObject()
-                    .put("id", value[0]).put("sourceId", value[1]).put("title", value[2]));
+                    .put("id", value[0]).put("sourceId", value[1]).put("title", value[2])
+                    .put("summary", "테스트 요약").put("estimatedSeconds", 10).put("provenance", "demo_sample"));
             catalog.toggleSaved(item);
             items.add(item);
         }
@@ -2382,7 +2391,7 @@ public class MainActivityTest {
         String[] filters = {"savedAll", "savedUnread", "savedConfirmed"};
         int[][] before = {{0}, {0}, {}}, after = {{0, 1, 2}, {0, 2}, {1}};
         for (int i = 0; i < filters.length; i++) {
-            chooseSource("clear-a");
+            chooseSource(CLEAR_SOURCE_A);
             applySearch(" aLpHa ");
             ((Button) field(filters[i])).performClick();
             assertSavedScopeCounts(1, 1);
@@ -2393,20 +2402,20 @@ public class MainActivityTest {
             assertSourceClearRows(items, after[i]);
             assertEquals(View.VISIBLE, ((TextView) field("savedSearchStatus")).getVisibility());
             assertTrue(((TextView) field("savedSearchStatus")).getText().toString().contains("필터 건수는 선택한 출처와 검색어 기준이에요."));
-            chooseSource("clear-empty");
+            chooseSource(CLEAR_SOURCE_EMPTY);
             assertSavedScopeCounts(0, 0);
             clearSourceWithoutMutations();
             assertSourceClearRows(items, after[i]);
             applySearch("missing");
-            chooseSource("clear-b");
+            chooseSource(CLEAR_SOURCE_B);
             assertSavedScopeCounts(0, 0);
             clearSourceWithoutMutations();
             assertSavedScopeCounts(0, 0);
             assertEquals("검색 결과가 없어요", ((TextView) ((LinearLayout) field("savedRows")).getChildAt(0)).getText().toString());
         }
-        chooseSource("clear-a");
+        chooseSource(CLEAR_SOURCE_A);
         ((Button) field("savedSearchClear")).performClick();
-        assertEquals("clear-a", (String) field("savedSourceId"));
+        assertEquals(CLEAR_SOURCE_A, (String) field("savedSourceId"));
         assertTrue(((Button) field("savedConfirmed")).isSelected());
         clearSourceWithoutMutations();
         assertSavedScopeCounts(5, 4);
@@ -2423,13 +2432,13 @@ public class MainActivityTest {
         ContentCatalog catalog = field("catalog");
         showDetail(items.get(0));
         detailAction("confirm-saved").performClick();
-        chooseSource("clear-a");
+        chooseSource(CLEAR_SOURCE_A);
         clearSourceWithoutMutations();
         undoConfirmation().performClick();
         assertFalse(catalog.isConfirmed(items.get(0)));
         assertTrue(catalog.isConfirmed(items.get(1)));
         deleteSaved(items.get(2));
-        chooseSource("clear-empty");
+        chooseSource(CLEAR_SOURCE_EMPTY);
         clearSourceWithoutMutations();
         undoDeletion().performClick();
         assertEquals(items, catalog.savedItems);
@@ -2437,7 +2446,7 @@ public class MainActivityTest {
 
     @Test public void savedSourceClearRejectsUnsafeClicksAndResetsOnRecreation() throws Exception {
         List<ContentCatalog.Item> items = sourceClearFixture();
-        chooseSource("clear-a");
+        chooseSource(CLEAR_SOURCE_A);
         applySearch("alpha");
         ((Button) field("savedUnread")).performClick();
         for (int transition = 0; transition < 3; transition++) {
@@ -2447,27 +2456,26 @@ public class MainActivityTest {
             if (transition == 2) controller.pause();
             else setAccess(transition == 0 ? AccessPolicy.State.RESTRICTED : AccessPolicy.State.UNKNOWN);
             retained.performClick();
-            assertEquals("clear-a", (String) field("savedSourceId"));
+            assertEquals(CLEAR_SOURCE_A, (String) field("savedSourceId"));
             assertEquals("alpha", (String) field("savedQuery"));
             assertSame(filter, field("savedFilter"));
             assertEquals(stored, ((android.content.SharedPreferences) field("preferences")).getAll());
             assertEquals(items, ((ContentCatalog) field("catalog")).savedItems);
             if (transition == 2) controller.resume();
             setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
-            assertEquals("clear-a", (String) field("savedSourceId"));
+            assertEquals(CLEAR_SOURCE_A, (String) field("savedSourceId"));
             assertNull(field("activeDialog"));
             assertFalse(((SpeechPlayback) field("speech")).isPlaying());
         }
         controller.recreate(); activity = controller.get();
         setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
-        assertEquals("", (String) field("savedQuery"));
-        assertNull(field("savedSourceId"));
-        assertTrue(((Button) field("savedAll")).isSelected());
+        assertResetDisplay(items);
+        assertTrue(((ContentCatalog) field("catalog")).isConfirmed(items.get(1)));
         assertEquals(View.GONE, ((Button) field("savedSourceClear")).getVisibility());
-        chooseSource("clear-a");
+        chooseSource(CLEAR_SOURCE_A);
         chooseSource(null);
         assertEquals(View.GONE, ((Button) field("savedSourceClear")).getVisibility());
-        chooseSource("clear-a");
+        chooseSource(CLEAR_SOURCE_A);
         applySearch("alpha");
         ((Button) field("savedConditionsClear")).performClick();
         assertResetDisplay(items);
