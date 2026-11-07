@@ -389,6 +389,7 @@ public class MainActivityTest {
         for (boolean unread : new boolean[]{false, true}) {
             ((Button) field(unread ? "savedUnread" : "savedAll")).performClick();
             showDetail(items.get(0));
+            assertDetail(items.get(0));
             Button staleNext = detailAction("next-unread");
             Button staleConfirm = detailAction("confirm-saved");
             AlertDialog old = field("activeDialog");
@@ -493,6 +494,7 @@ public class MainActivityTest {
             assertTrue(catalog.setConfirmed(items.get(1), true, preferences));
             ((Button) field(unread ? "savedUnread" : "savedAll")).performClick();
             showDetail(items.get(1));
+            assertDetail(items.get(1));
             assertNull(detailAction("confirm-next"));
             showDetail(items.get(items.size() - 1));
             Button stale = detailAction("confirm-next");
@@ -535,6 +537,7 @@ public class MainActivityTest {
         action.performClick();
         assertEquals("저장 실패 · 다시 시도", action.getText().toString());
         assertSame(original, field("activeDialog"));
+        assertDetail(items.get(0));
         assertFalse(catalog.isConfirmed(items.get(0)));
         assertEquals(items.size(), catalog.unreadCount());
         assertEquals("도착해서 보기 · " + items.size() + " · 미확인 " + items.size(),
@@ -560,6 +563,34 @@ public class MainActivityTest {
             assertEquals(stored, preferences.getAll());
             if (!deleted) assertTrue(catalog.setConfirmed(item, false, preferences));
         }
+    }
+
+    @Test public void savedDetailPositionRefreshesAfterListChangesAndRecreation() {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        ContentCatalog catalog = field("catalog");
+        android.content.SharedPreferences preferences = field("preferences");
+        ContentCatalog.Item last = items.get(items.size() - 1);
+        showDetail(last);
+        assertDetail(last);
+        catalog.toggleSaved(items.get(0));
+        assertTrue(catalog.setConfirmed(last, true, preferences));
+        showDetail(last);
+        assertDetail(last);
+        catalog.toggleSaved(items.get(0)); // Re-added items move to the end of the saved order.
+        catalog.persist(preferences);
+        showDetail(items.get(0));
+        assertDetail(items.get(0));
+        ((Button) field("savedUnread")).performClick();
+        controller.recreate(); activity = controller.get();
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        assertTrue(((Button) field("savedAll")).isSelected());
+        showDetail(last);
+        assertDetail(last);
+        catalog = field("catalog");
+        catalog.toggleSaved(last);
+        ReflectionHelpers.callInstanceMethod(activity, "dismissDialog");
+        showDetail(last);
+        assertNull(field("activeDialog"));
     }
 
     private List<ContentCatalog.Item> saveNavigationItems() {
@@ -591,6 +622,13 @@ public class MainActivityTest {
         assertTrue(texts.stream().anyMatch(view -> view.getText().toString().equals(item.summary + "\n\n"
                 + (item.originalUrl == null ? "예시 콘텐츠" : item.originalUrl) + "\n\n" + ContentCatalog.LOCAL_NOTICE)));
         ContentCatalog catalog = field("catalog");
+        int index = -1;
+        for (int i = 0; i < catalog.savedItems.size(); i++) {
+            if (catalog.savedItems.get(i).key().equals(item.key())) { index = i; break; }
+        }
+        TextView position = dialog.findViewById(android.R.id.custom).findViewWithTag("saved-detail-position");
+        assertEquals("전체 저장 " + catalog.savedItems.size() + "건 중 " + (index + 1)
+                + "번째 · 미확인 " + catalog.unreadCount() + "건", position.getText().toString());
         assertEquals(catalog.canOpen(item), dialog.getButton(AlertDialog.BUTTON_POSITIVE) != null
                 && dialog.getButton(AlertDialog.BUTTON_POSITIVE).getVisibility() == View.VISIBLE);
     }

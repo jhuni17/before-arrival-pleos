@@ -589,7 +589,15 @@ public final class MainActivity extends Activity {
         if (!canInteract() || !catalog.isSaved(item)) return;
         int generation = lifecycleGeneration;
         boolean target = !catalog.isConfirmed(item);
+        int savedIndex = -1;
+        for (int i = 0; i < catalog.savedItems.size(); i++) {
+            if (catalog.savedItems.get(i).key().equals(item.key())) { savedIndex = i; break; }
+        }
         LinearLayout actions = column();
+        TextView progress = label("전체 저장 " + catalog.savedItems.size() + "건 중 "
+                + (savedIndex + 1) + "번째 · 미확인 " + catalog.unreadCount() + "건", 14, MUTED, false);
+        progress.setTag("saved-detail-position");
+        add(actions, progress, 4);
         Button confirm = button(target ? "확인 완료" : "미확인으로 되돌리기", false, () -> {});
         confirm.setTag("confirm-saved");
         add(actions, confirm, 8);
