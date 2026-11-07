@@ -19,6 +19,10 @@ input,
 select {
   font: inherit;
 }
+/* Stage reverts native controls, so set the embedded font inside the scene. */
+.ba-scene :is(button, input, select) {
+  font-family: "Asta Sans", sans-serif;
+}
 button,
 a {
   cursor: pointer;

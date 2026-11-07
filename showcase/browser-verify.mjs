@@ -305,6 +305,21 @@ try {
   await page.unroute(steamRoute);
   report.checks.push("Intercepted Steam fixtures only: official-schema items deduped, failed refresh preserves lastSuccess/items, empty success clears content, disabled-source late response discarded. This is NOT a real public fetch.");
   await page.evaluate(()=>localStorage.clear());await open("state=priority");
+  const fontsSession = await context.newCDPSession(page);
+  try {
+    await fontsSession.send("DOM.enable");
+    await fontsSession.send("CSS.enable");
+    const { root } = await fontsSession.send("DOM.getDocument");
+    for (const selector of [".primary", ".secondary", ".deferred-save"]) {
+      const { nodeId } = await fontsSession.send("DOM.querySelector", { nodeId: root.nodeId, selector });
+      const { fonts } = await fontsSession.send("CSS.getPlatformFontsForNode", { nodeId });
+      assert(fonts.some(font => font.isCustomFont && font.familyName.startsWith("Asta Sans") && font.glyphCount > 0),
+        `Korean control should render with the embedded font: ${selector}`);
+    }
+  } finally {
+    await fontsSession.detach();
+  }
+  report.checks.push("Stage controls render Korean labels with the embedded font.");
   assert.match(await page.locator("h1").innerText(),/9시 팀 회의/);
   await page.getByRole("button",{name:"이번 주말, 협동 모드가 열려요 나중에 보기 저장",exact:true}).click();
   assert.match(await page.locator("h1").innerText(),/9시 팀 회의/);

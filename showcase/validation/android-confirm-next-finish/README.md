@@ -39,3 +39,17 @@ technology, APK build/install, emulator execution and real Pleos SDK callbacks
 remain unverified. This JVM fixture work is not evidence of device integration,
 actual Pleos execution or submission readiness. No workflow, build/toolchain,
 credentials, license acceptance or signing changes were made.
+
+## Follow-up after GitHub CI
+
+[The initial 61466f3 candidate CI](https://github.com/jhuni17/before-arrival-pleos/actions/runs/42384865534)
+ran 89 Android tests and reported one failure at the preferences comparison in
+`confirmNextFinishRejectsUnsafeAndStaleReferences`. The fixture used unregistered
+source IDs and a zero default duration, so catalog restoration removed the saved item.
+A focused Java host check reproduced removal with the old data and preservation
+with valid sample-source data. It does not exercise the activity lifecycle.
+
+The follow-up derives the test items from registered sample records. It checks
+persistence before and after stale clicks, then exercises a new explicit click.
+Use the CI run for the follow-up SHA to verify the full Android tests, lint and
+unsigned sample build.

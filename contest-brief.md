@@ -26,7 +26,7 @@ Gleo와 Gemini는 차량에서 음성 요청과 개인화된 답변을 제공한
 
 **Pleos 검증.** NaviHelper 목적지 조회와 `NAVI_ROUTE` 권한을 사용할 후보 소스를 분리했다. 실제 SDK 의존성 빌드는 아직 막혀 있고 `remainTime` 단위·범위가 확인되지 않아 실제 ETA 변환을 차단한다. Connect Emulator의 실제 콜백·권한·경로 취소·제한 전환·한국어 음성과 오디오 포커스는 검증 대상으로 남았다. 실제 입력 실패를 샘플 ETA로 대체하지 않는다.
 
-**APK와 검증.** 소스 `27d297b`의 sampleDebug APK를 전달하고 독립 다운로드·해시·기존 debug 서명을 검증했다. Android JVM24건이 모두 통과했고 lint는0오류/3경고다. 이후 문서 검토본도 동일한41개 APK 입력을 유지하며 새 문서 커밋에서 재빌드했다고 주장하지 않는다. 실제 설치·한국어 음성·차량 callback·release APK·제출 영상·기기 동기화는 남아 있다. [최신 근거와 범위별 판정](sources-notes.md)을 따른다.
+**APK와 검증.** 현재 통합 소스는 [PR #3의 커밋별 CI](https://github.com/jhuni17/before-arrival-pleos/pull/3/checks)에서 테스트·lint·브라우저 검사 및 서명 없는 sampleDebug 빌드 결과를 확인한다. `27d297b`의 서명 APK·독립 다운로드·JVM 24건은 [과거 고정 소스의 증거](sources-notes.md)다. 실제 설치·한국어 음성·차량 콜백·release APK·제출 영상·기기 동기화는 남아 있다.
 
 ## 6. 기대효과 및 발전 가능성
 

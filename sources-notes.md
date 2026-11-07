@@ -1,6 +1,6 @@
 # 사용자 출처 기능과 검증 기록
 
-2026-11-05 확인. 구현·APK의 고정 소스는 `27d297b2981826be52ee360c21c999379c82f776`, 전달 artifact 커밋은 `9bef7b49a0b88154d1f57fea8d8de47eb0df8554`다. 이후 문서와 브라우저 로컬 앱 서버를 갱신한 검토본도 아래41개 APK 입력과 동일하다. APK를 새 검토 커밋에서 다시 빌드했다고 소개하지 않는다. 브라우저 서버 수정은 별도 검증 대상이다.
+현재 통합 소스는 [PR #3의 커밋별 CI](https://github.com/jhuni17/before-arrival-pleos/pull/3/checks)에서 해당 SHA의 테스트 결과, Android 입력 해시와 서명 없는 sampleDebug APK를 확인한다. 아래 기록은 각 절의 고정 시점에 대응한다. 2026-11-05에 전달한 서명 APK의 소스는 `27d297b2981826be52ee360c21c999379c82f776`, 전달 artifact 커밋은 `9bef7b49a0b88154d1f57fea8d8de47eb0df8554`다. 아래 41개 입력과 서명 검증은 당시 소스에 적용된다.
 
 ## 현재 동작
 
@@ -55,7 +55,7 @@ Astra는 CORS 결함을 확인하기 전의 정확 소스27와 artifact9bef에 �
 
 공식1차 접수양식은 필수이고 영상/GitHub/APK는 전체 제출에서 선택 자료다. GitHub 제출을 선택할 경우 실행 가능한 release APK와 심사 접근 권한이 요구된다. 현재 sampleDebug 전달과 이를 구분하며 공식 안내에 없는 새 인증서 종류를 의무로 가정하지 않는다. main 병합·접수·공유 권한 변경은 수행하지 않았다.
 
-[41개 입력 목록](validation/sources-v2/android-input-sha256.txt)과 [현재 브라우저 서버 검토본의 APK 입력 동일성](validation/local-app-server/apk-input-identity.json)을 함께 확인한다. 공개 API35 모델 검사는 저장소 루트에서 `JAVA_HOME=/path/to/jdk17 sh validation/sources-v2/verify-model.sh /path/to/android-all-api35.jar`로 재현한다. compile-only R 검사는 APK·기기 실행을 대신하지 않는다. 초기 기록은 [과거 통합](integration-notes.md)과 [초기 Astra 기록](review-notes.md)에 보존한다.
+[41개 입력 목록](validation/sources-v2/android-input-sha256.txt)과 [당시 브라우저 서버 검토본의 APK 입력 동일성](validation/local-app-server/apk-input-identity.json)을 함께 확인한다. 공개 API35 모델 검사는 저장소 루트에서 `JAVA_HOME=/path/to/jdk17 sh validation/sources-v2/verify-model.sh /path/to/android-all-api35.jar`로 재현한다. compile-only R 검사는 APK·기기 실행을 대신하지 않는다. 초기 기록은 [과거 통합](integration-notes.md)과 [초기 Astra 기록](review-notes.md)에 보존한다.
 
 
 ## 로컬 앱 실행과 검사
@@ -73,7 +73,7 @@ Astra가 실제6db 화면에서 저장 제목이390×1080의 y1502, 320×960의 
 
 `npm run verify:arrival`은 `EVIDENCE_DIR` 아래에 측정·화면을 남기며, PR 검증 workflow의 기존 로컬 앱 검사 다음에도 실행한다. 기존37캡처·14동작의 대비/넘침 검사도 통과했다. 이 도착 검사는 가져온 공식 항목의 UI 동작을 확인하며 새 실제 네트워크 요청 결과로 소개하지 않는다. 별도로6db 로컬 서버는 허용된 외부 환경에서 실제 Steam 사용자 갱신 HTTP200·5건·저장/재로드/중복 제거를 통과했다는 후속 근거가 있다. 이번 서버·전송 소스는 그6db와 같고, 최신 도착 배치의 네트워크 재검증 여부는 독립 검토 결과를 따른다.
 
-동시에 추가된 CI 이력을 유지했고 도착 검사를 한 줄 추가했다. CI의 APK는 서명 없는 빌드 검사용이며 전달한 서명 APK를 대체하지 않는다. [입력 동일성](validation/arrival-first/unchanged-inputs.json)에 따라 Android/shared41개 입력은 여전히27과 같아9bef 서명 APK를 유지한다. 원래 저장 키·마이그레이션·출처/서버·Steam 전송은 변경하지 않았다.
+동시에 추가된 CI 이력을 유지했고 도착 검사를 한 줄 추가했다. CI의 APK는 서명 없는 빌드 검사용이며 전달한 서명 APK를 대체하지 않는다. [입력 동일성](validation/arrival-first/unchanged-inputs.json)에 따라 이 도착 화면 변경 당시의 Android/shared 41개 입력은 27d297b와 일치했다. 원래 저장 키·마이그레이션·출처/서버·Steam 전송은 변경하지 않았다.
 
 
 ## 소식 목록의 갱신 결과 표시
@@ -84,7 +84,7 @@ Astra가 실제6db 화면에서 저장 제목이390×1080의 y1502, 320×960의 
 
 [실제 브라우저7개 검사 그룹](validation/refresh-feedback/refresh-feedback-report.json)은11개 모형 응답으로 첫5개·반복/중복·추가1개·출처 구분·실패·빈 결과·저장 실패·늦은 응답·재로드를 확인했다. 320/390px 주야간에서 가로 넘침이 없고 결과 문구 대비는 주간7.17:1/야간8.81:1이었다. 기존 도착 첫 화면 검사와37캡처·14동작 검사도 통과했다. 이 검사 응답은 fixture이며 새 실제 네트워크 성공으로 소개하지 않는다.
 
-`npm run verify:refresh-feedback`을 기존 PR workflow의 도착 검사 다음에 연결해 동일 후보 커밋에서 실행하고 `EVIDENCE_DIR`에 근거를 남긴다. [입력 동일성](validation/refresh-feedback/unchanged-inputs.json)에 따라 Android/shared41개와 로컬 서버·catalog는 그대로다. 검증된27/9bef 서명 APK와 CI의 unsigned 빌드용 APK를 구분한다.
+`npm run verify:refresh-feedback`을 기존 PR workflow의 도착 검사 다음에 연결해 동일 후보 커밋에서 실행하고 `EVIDENCE_DIR`에 근거를 남긴다. [입력 동일성](validation/refresh-feedback/unchanged-inputs.json)에 따라 이 갱신 피드백 변경 당시에는 Android/shared 41개와 로컬 서버·catalog가 그대로였다. 검증된27/9bef 서명 APK와 CI의 unsigned 빌드용 APK를 구분한다.
 
 
 ## 최근 저장 삭제 한 건 되돌리기
@@ -95,4 +95,4 @@ Astra가 실제6db 화면에서 저장 제목이390×1080의 y1502, 320×960의 
 
 실제 Tab/Enter 삭제 후에는 실행 취소 버튼으로, 복원 후에는 해당 제목으로 초점을 이어 준다. [6개 브라우저 검사 그룹](validation/saved-undo/saved-undo-report.json)에서 원래 위치·정확한 원문/출처·그사이 변경·최근 한 건·실패/재시도·없어진/재저장된 대상·제한/재로드를 확인했다. 320/390px 주야간에서 가로 넘침 없이 버튼이 보였고 안내 대비는 주간17.44:1/야간15.25:1이었다. 기존 도착·갱신 결과 검사와37캡처·14동작 검사도 통과했다. 공식 스냅샷으로 검사했으며 실제 Steam을 다시 조회하지 않았다.
 
-`npm run verify:saved-undo`를 기존 PR CI의 focused 검사 뒤에 연결했다. [입력 동일성](validation/saved-undo/unchanged-inputs.json)에 따라 Android/shared41개, catalog와 서버·전송은 그대로다. 저장 schema·키·공급자 범위를 바꾸지 않아27/9bef 서명 APK를 유지하며 CI의 unsigned 빌드 산출물과 구분한다.
+`npm run verify:saved-undo`를 기존 PR CI의 focused 검사 뒤에 연결했다. [입력 동일성](validation/saved-undo/unchanged-inputs.json)에 따라 이 실행 취소 변경 당시에는 Android/shared 41개, catalog와 서버·전송이 그대로였다. 당시 27d297b의 서명 APK와 이후 CI의 서명 없는 빌드 산출물을 구분한다.

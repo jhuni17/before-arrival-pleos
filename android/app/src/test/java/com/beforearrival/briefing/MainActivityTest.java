@@ -2590,10 +2590,9 @@ public class MainActivityTest {
         catalog.savedItems.clear();
         List<ContentCatalog.Item> items = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            ContentCatalog.Item item = new ContentCatalog.Item(new org.json.JSONObject()
-                    .put("id", "finish-" + i).put("sourceId", "finish-source-" + i)
-                    .put("title", "같은 제목").put("summary", "finish summary " + i)
-                    .put("provenance", "demo_sample"));
+            ContentCatalog.Item sample = catalog.sources.get(i).items.get(0);
+            ContentCatalog.Item item = new ContentCatalog.Item(sample.json()
+                    .put("id", "finish-" + i).put("title", "같은 제목").put("summary", "finish summary " + i));
             items.add(item);
             catalog.toggleSaved(item);
         }
@@ -2680,33 +2679,49 @@ public class MainActivityTest {
         assertNull(detailAction("confirm-next"));
     }
 
+    private void assertFinishFixtureUnchanged(String stage, ContentCatalog.Item item,
+            java.util.Map<String, ?> stored) {
+        ContentCatalog catalog = field("catalog");
+        assertEquals(stage, 1, catalog.savedItems.size());
+        assertEquals(stage, item.key(), catalog.savedItems.get(0).key());
+        assertFalse(stage, catalog.isConfirmed(item));
+        assertEquals(stage, stored, ((android.content.SharedPreferences) field("preferences")).getAll());
+    }
+
     @Test public void confirmNextFinishRejectsUnsafeAndStaleReferences() throws Exception {
         ContentCatalog.Item item = confirmNextFinishFixture(1).get(0);
-        ContentCatalog catalog = field("catalog");
-        android.content.SharedPreferences preferences = field("preferences");
         for (String transition : new String[]{"restricted", "unknown", "pause", "recreate"}) {
             showDetail(item);
             assertConfirmNextFinish("확인하고 마치기", null);
             Button stale = detailAction("confirm-next");
-            java.util.Map<String, ?> stored = preferences.getAll();
+            ContentCatalog previousCatalog = field("catalog");
+            java.util.Map<String, ?> stored = ((android.content.SharedPreferences) field("preferences")).getAll();
             if (transition.equals("restricted")) setAccess(AccessPolicy.State.RESTRICTED);
             else if (transition.equals("unknown")) setAccess(AccessPolicy.State.UNKNOWN);
             else if (transition.equals("pause")) controller.pause();
             else { controller.recreate(); activity = controller.get(); }
+            assertFinishFixtureUnchanged(transition + " before stale click", item, stored);
             stale.performClick();
-            assertFalse(catalog.isConfirmed(item));
-            assertEquals(stored, preferences.getAll());
+            assertFalse(transition, previousCatalog.isConfirmed(item));
+            assertFinishFixtureUnchanged(transition + " after stale click", item, stored);
             assertNull(field("activeDialog"));
             if (transition.equals("pause")) controller.resume();
             setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+            assertFinishFixtureUnchanged(transition + " after parked transition", item, stored);
             stale.performClick();
-            catalog = field("catalog");
-            assertFalse(catalog.isConfirmed(item));
-            assertEquals(stored, preferences.getAll());
+            assertFalse(transition, previousCatalog.isConfirmed(item));
+            assertFinishFixtureUnchanged(transition + " after parked stale click", item, stored);
             assertNull(field("activeDialog"));
             assertNull(Shadows.shadowOf(activity).getNextStartedActivity());
             assertFalse(((SpeechPlayback) field("speech")).isPlaying());
         }
+        ContentCatalog catalog = field("catalog");
+        ContentCatalog.Item restored = catalog.savedItems.get(0);
+        showDetail(restored);
+        assertConfirmNextFinish("확인하고 마치기", null);
+        detailAction("confirm-next").performClick();
+        assertTrue(catalog.isConfirmed(restored));
+        assertNull(field("activeDialog"));
     }
 
     private List<ContentCatalog.Item> saveNavigationItems() {

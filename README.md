@@ -2,7 +2,7 @@
 
 현재 검토본은 공통 출처 모델로 Android 앱과 브라우저에서 출처 추가·사용 여부·순서·저장을 실제 편성에 반영한다. 공식 원문 스냅샷3개와 별도로 Steam 한 제공자는6db 로컬 앱 서버에서 실제 브라우저 갱신→공식 HTTPS→5개 항목·저장·재로드를 검증했다. Android 실기 네트워크는 미검증이며, 최신 도착 배치는 별도의 화면·독립 검토 근거를 따른다.
 
-소스 `27d297b`에서 빌드한 **sampleDebug APK를 전달하고 독립 다운로드·해시·서명을 확인했다. Android JVM24건이 모두 통과했다.** [APK 다운로드·정확한 근거와 남은 범위](sources-notes.md)를 확인한다. 이후 브라우저·문서를 갱신한 검토본도 동일한41개 APK 입력을 유지하며 새 검토 커밋에서 APK를 다시 빌드했다고 주장하지 않는다. 실제 Pleos 콜백·에뮬레이터·실기 음성·기기 간 동기화와 release 제출물은 미완료다.
+현재 통합 소스의 Android 테스트, lint, 브라우저 검사와 서명 없는 sampleDebug APK는 [PR #3의 커밋별 CI](https://github.com/jhuni17/before-arrival-pleos/pull/3/checks)에서 해당 SHA의 결과와 입력 해시로 확인한다. `27d297b`에서 전달한 서명 sampleDebug APK와 JVM 24건 결과는 [당시 소스의 기록](sources-notes.md)이다. 실제 Pleos 콜백·에뮬레이터·실기 음성·기기 간 동기화와 release 제출물은 미완료다.
 
 ## 실행
 
