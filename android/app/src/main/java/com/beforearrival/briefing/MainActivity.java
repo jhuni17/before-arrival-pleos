@@ -94,6 +94,8 @@ public final class MainActivity extends Activity {
     private TextView transcript;
     private TextView speechStatus;
     private TextView savedHeading;
+    private TextView savedCapacity;
+    private TextView savedCapacityNotice;
     private Button etaLong;
     private Button etaShort;
     private Button priorityButton;
@@ -282,6 +284,10 @@ public final class MainActivity extends Activity {
         add(content, savedPanel, 12);
         savedHeading = heading("", 21);
         add(savedPanel, savedHeading, 0);
+        savedCapacity = label("", 14, MUTED, false);
+        add(savedPanel, savedCapacity, 4);
+        savedCapacityNotice = label(ContentCatalog.SAVED_CAPACITY_NOTICE, 14, MUTED, false);
+        add(savedPanel, savedCapacityNotice, 4);
         savedFirstUnread = button("첫 미확인 보기", false, this::showFirstUnread);
         add(savedPanel, savedFirstUnread, 8);
         savedUnreadEmpty = label("미확인 소식이 없어요.", 14, MUTED, false);
@@ -668,6 +674,10 @@ public final class MainActivity extends Activity {
         savedUnread.setContentDescription("미확인만" + (savedUnread.isSelected() ? " 선택됨" : ""));
         savedConfirmed.setContentDescription("확인 완료만" + (savedConfirmed.isSelected() ? " 선택됨" : ""));
         savedHeading.setText(getString(R.string.saved_heading, catalog.savedItems.size()) + " · 미확인 " + catalog.unreadCount());
+        int savedCount = catalog.savedItems.size();
+        savedCapacity.setText(getString(R.string.saved_capacity, savedCount, ContentCatalog.SAVED_ITEM_LIMIT,
+                Math.max(0, ContentCatalog.SAVED_ITEM_LIMIT - savedCount)));
+        savedCapacityNotice.setVisibility(catalog.savedAtCapacity() ? View.VISIBLE : View.GONE);
         savedRows.removeAllViews();
         if (catalog.savedItems.isEmpty()) {
             add(savedRows, label("저장한 소식이 없어요.", 14, MUTED, false), 4);
