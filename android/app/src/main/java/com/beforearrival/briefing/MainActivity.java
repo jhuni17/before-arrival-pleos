@@ -69,6 +69,9 @@ public final class MainActivity extends Activity {
     private boolean automotive;
     private boolean resumed;
     private boolean transcriptVisible;
+    private boolean unreadOnly;
+    private Button savedAll;
+    private Button savedUnread;
 
     private LinearLayout content;
     private LinearLayout briefingRows;
@@ -269,6 +272,9 @@ public final class MainActivity extends Activity {
         add(content, savedPanel, 12);
         savedHeading = heading("", 21);
         add(savedPanel, savedHeading, 0);
+        savedAll = button("전체", false, () -> selectSavedFilter(false));
+        savedUnread = button("미확인만", false, () -> selectSavedFilter(true));
+        add(savedPanel, buttonRow(savedAll, savedUnread), 8);
         savedRows = column();
         add(savedPanel, savedRows, 4);
         add(savedPanel, label(ContentCatalog.LOCAL_NOTICE, 13, MUTED, false), 8);
@@ -538,13 +544,28 @@ public final class MainActivity extends Activity {
         button.setContentDescription(item.title + (selected ? " 저장 취소" : " 저장"));
     }
 
+    private void selectSavedFilter(boolean unread) {
+        if (!canInteract()) return;
+        unreadOnly = unread;
+        renderSaved();
+    }
+
     private void renderSaved() {
+        setRouteButton(savedAll, !unreadOnly);
+        setRouteButton(savedUnread, unreadOnly);
+        savedAll.setContentDescription("전체" + (!unreadOnly ? " 선택됨" : ""));
+        savedUnread.setContentDescription("미확인만" + (unreadOnly ? " 선택됨" : ""));
         savedHeading.setText(getString(R.string.saved_heading, catalog.savedItems.size()) + " · 미확인 " + catalog.unreadCount());
         savedRows.removeAllViews();
         if (catalog.savedItems.isEmpty()) {
             add(savedRows, label("저장한 소식이 없어요.", 14, MUTED, false), 4);
         }
+        if (unreadOnly && !catalog.savedItems.isEmpty() && catalog.unreadCount() == 0) {
+            add(savedRows, label("미확인 소식이 없어요.", 14, MUTED, false), 4);
+            add(savedRows, button("전체 보기", false, () -> selectSavedFilter(false)), 6);
+        }
         for (Item item : catalog.savedItems) {
+            if (unreadOnly && catalog.isConfirmed(item)) continue;
             Button entry = button(item.title + (catalog.isConfirmed(item) ? " · 확인 완료" : " · 미확인"), false, () -> {
                 int generation = lifecycleGeneration;
                 boolean target = !catalog.isConfirmed(item);

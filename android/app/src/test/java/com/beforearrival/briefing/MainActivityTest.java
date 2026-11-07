@@ -225,6 +225,8 @@ public class MainActivityTest {
         assertNotNull("Official action must dispatch after draining the button callback", opened);
         assertEquals(android.content.Intent.ACTION_VIEW, opened.getAction());
         assertEquals(item.originalUrl, opened.getDataString());
+        assertFalse(catalog.isConfirmed(item));
+        assertEquals(1, catalog.unreadCount());
         ((Button) rows.getChildAt(0)).performClick();
         dialog = field("activeDialog");
         Button open = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
@@ -275,6 +277,105 @@ public class MainActivityTest {
         stale.performClick(); assertFalse(catalog.isConfirmed(item));
         openConfirmation().performClick();
         assertTrue(catalog.isConfirmed(item));
+    }
+
+    @Test public void savedFilterKeepsOrderTotalsAndResetsOnlyOnRecreation() {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ContentCatalog catalog = field("catalog");
+        List<ContentCatalog.Item> items = new ArrayList<>();
+        for (ContentCatalog.Source source : catalog.sources) items.add(source.items.get(0));
+        for (ContentCatalog.Item item : items) catalog.toggleSaved(item);
+        android.content.SharedPreferences preferences = field("preferences");
+        assertTrue(catalog.setConfirmed(items.get(1), true, preferences));
+        ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
+        Button all = field("savedAll"), unread = field("savedUnread");
+        assertTrue(all.isSelected());
+        ContentCatalog.Plan plan = field("plan");
+        String narration = plan.narration();
+        unread.performClick();
+        assertTrue(unread.isSelected()); assertFalse(all.isSelected());
+        assertEquals("미확인만 선택됨", unread.getContentDescription().toString());
+        LinearLayout rows = field("savedRows");
+        assertEquals(items.size() - 1, rows.getChildCount());
+        int row = 0;
+        for (ContentCatalog.Item item : items) if (!catalog.isConfirmed(item))
+            assertEquals(item.title + " · 미확인", ((Button) rows.getChildAt(row++)).getText().toString());
+        assertEquals("도착해서 보기 · " + items.size() + " · 미확인 " + (items.size() - 1),
+                ((TextView) field("savedHeading")).getText().toString());
+        openConfirmation();
+        AlertDialog detail = field("activeDialog");
+        assertTrue(descendants(detail.getWindow().getDecorView(), TextView.class).stream()
+                .anyMatch(view -> view.getText().toString().contains(ContentCatalog.LOCAL_NOTICE)));
+        detail.dismiss();
+        assertEquals(items.size() - 1, catalog.unreadCount());
+        ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
+        assertTrue(unread.isSelected());
+        assertEquals(narration, ((ContentCatalog.Plan) field("plan")).narration());
+        assertEquals(items, catalog.savedItems);
+        controller.recreate(); activity = controller.get();
+        assertTrue(((Button) field("savedAll")).isSelected());
+        assertFalse(((Button) field("savedUnread")).isSelected());
+    }
+
+    @Test public void unreadFilterEmptyFailureRetryAndReversal() {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ((Button) field("savedUnread")).performClick();
+        LinearLayout rows = field("savedRows");
+        assertEquals(1, rows.getChildCount());
+        assertEquals("저장한 소식이 없어요.", ((TextView) rows.getChildAt(0)).getText().toString());
+        ContentCatalog catalog = field("catalog");
+        ContentCatalog.Item item = catalog.sources.get(0).items.get(0);
+        catalog.toggleSaved(item);
+        ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
+        android.content.SharedPreferences preferences = field("preferences");
+        ReflectionHelpers.setField(activity, "preferences", CatalogTest.failingCommits(preferences));
+        Button confirm = openConfirmation();
+        confirm.performClick();
+        assertEquals("저장 실패 · 다시 시도", confirm.getText().toString());
+        assertEquals(1, rows.getChildCount()); assertFalse(catalog.isConfirmed(item));
+        assertEquals("도착해서 보기 · 1 · 미확인 1", ((TextView) field("savedHeading")).getText().toString());
+        ReflectionHelpers.setField(activity, "preferences", preferences);
+        confirm.performClick();
+        assertTrue(catalog.isConfirmed(item)); assertEquals(0, catalog.unreadCount());
+        assertEquals("미확인 소식이 없어요.", ((TextView) rows.getChildAt(0)).getText().toString());
+        assertEquals("도착해서 보기 · 1 · 미확인 0", ((TextView) field("savedHeading")).getText().toString());
+        ((Button) rows.getChildAt(1)).performClick();
+        assertTrue(((Button) field("savedAll")).isSelected());
+        openConfirmation().performClick();
+        ((Button) field("savedUnread")).performClick();
+        assertEquals(1, rows.getChildCount());
+        assertEquals(item.title + " · 미확인", ((Button) rows.getChildAt(0)).getText().toString());
+    }
+
+    @Test public void savedFilterActionsStayBlockedAcrossRestrictionsAndPause() {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ContentCatalog catalog = field("catalog");
+        ContentCatalog.Item item = catalog.sources.get(0).items.get(0);
+        catalog.toggleSaved(item);
+        android.content.SharedPreferences preferences = field("preferences");
+        assertTrue(catalog.setConfirmed(item, true, preferences));
+        ((Button) field("savedUnread")).performClick();
+        LinearLayout rows = field("savedRows");
+        Button emptyAll = (Button) rows.getChildAt(1);
+        Button all = field("savedAll"), unread = field("savedUnread");
+        for (AccessPolicy.State state : new AccessPolicy.State[]{AccessPolicy.State.RESTRICTED, AccessPolicy.State.UNKNOWN}) {
+            setAccess(state);
+            emptyAll.performClick(); all.performClick();
+            assertTrue(unread.isSelected());
+            setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+            assertTrue(unread.isSelected()); assertNull(field("activeDialog"));
+            assertFalse(((SpeechPlayback) field("speech")).isPlaying());
+        }
+        controller.pause();
+        emptyAll.performClick(); all.performClick();
+        assertTrue(unread.isSelected());
+        controller.resume();
+        assertTrue(unread.isSelected()); assertNull(field("activeDialog"));
+        assertFalse(((SpeechPlayback) field("speech")).isPlaying());
+        emptyAll.performClick();
+        assertTrue(all.isSelected());
+        setAccess(AccessPolicy.State.UNKNOWN);
+        unread.performClick(); assertTrue(all.isSelected());
     }
 
     private Button openConfirmation() {
