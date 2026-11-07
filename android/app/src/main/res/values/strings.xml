@@ -30,6 +30,7 @@
     <string name="saved_search_apply">적용</string>
     <string name="saved_search_close">닫기</string>
     <string name="saved_search_status">검색어 · %1$s · 표시 %2$d건</string>
+    <string name="saved_filter_scope">필터 건수는 선택한 출처와 검색어 기준이에요.</string>
     <string name="saved_search_navigation">첫 미확인·다음 미확인·확인하고 다음은 전체 저장 순서를 따라요.</string>
     <string name="saved_search_empty">검색 결과가 없어요</string>
     <string name="saved_source_choose">저장한 출처 선택</string>

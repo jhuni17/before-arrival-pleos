@@ -804,9 +804,17 @@ public final class MainActivity extends Activity {
         savedSource.setContentDescription(savedSource.getText());
         int savedCount = catalog.savedItems.size();
         int unreadCount = catalog.unreadCount();
-        updateSavedFilter(savedAll, R.string.saved_filter_all, savedCount);
-        updateSavedFilter(savedUnread, R.string.saved_filter_unread, unreadCount);
-        updateSavedFilter(savedConfirmed, R.string.saved_filter_confirmed, savedCount - unreadCount);
+        String query = normalizeSavedTitle(savedQuery);
+        int scopedCount = 0, scopedUnread = 0;
+        for (Item item : catalog.savedItems) {
+            if (savedSourceId != null && !savedSourceId.equals(item.sourceId)) continue;
+            if (!normalizeSavedTitle(item.title).contains(query)) continue;
+            scopedCount++;
+            if (!catalog.isConfirmed(item)) scopedUnread++;
+        }
+        updateSavedFilter(savedAll, R.string.saved_filter_all, scopedCount);
+        updateSavedFilter(savedUnread, R.string.saved_filter_unread, scopedUnread);
+        updateSavedFilter(savedConfirmed, R.string.saved_filter_confirmed, scopedCount - scopedUnread);
         savedHeading.setText(getString(R.string.saved_heading, savedCount) + " · 미확인 " + unreadCount);
         savedCapacity.setText(getString(R.string.saved_capacity, savedCount, ContentCatalog.SAVED_ITEM_LIMIT,
                 Math.max(0, ContentCatalog.SAVED_ITEM_LIMIT - savedCount)));
@@ -830,7 +838,6 @@ public final class MainActivity extends Activity {
             }), 6);
         }
         int visibleCount = 0;
-        String query = normalizeSavedTitle(savedQuery);
         for (Item item : catalog.savedItems) {
             if (savedSourceId != null && !savedSourceId.equals(item.sourceId)) continue;
             if (!normalizeSavedTitle(item.title).contains(query)) continue;
@@ -855,6 +862,7 @@ public final class MainActivity extends Activity {
         savedSearchStatus.setVisibility(searching || savedSourceId != null ? View.VISIBLE : View.GONE);
         savedSearchStatus.setText((searching ? getString(R.string.saved_search_status, savedQuery, visibleCount)
                 : getString(R.string.saved_source_status, sourceLabel, visibleCount))
+                + "\n" + getString(R.string.saved_filter_scope)
                 + "\n" + getString(R.string.saved_search_navigation));
         if ((searching || savedSourceId != null) && visibleCount == 0 && !catalog.savedItems.isEmpty()) {
             add(savedRows, label(getString(searching ? R.string.saved_search_empty : R.string.saved_source_empty), 14, MUTED, false), 4);
