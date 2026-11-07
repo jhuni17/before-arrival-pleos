@@ -566,35 +566,71 @@ public final class MainActivity extends Activity {
         }
         for (Item item : catalog.savedItems) {
             if (unreadOnly && catalog.isConfirmed(item)) continue;
-            Button entry = button(item.title + (catalog.isConfirmed(item) ? " · 확인 완료" : " · 미확인"), false, () -> {
-                int generation = lifecycleGeneration;
-                boolean target = !catalog.isConfirmed(item);
-                LinearLayout actions = column();
-                Button confirm = button(target ? "확인 완료" : "미확인으로 되돌리기", false, () -> {});
-                confirm.setTag("confirm-saved");
-                add(actions, confirm, 8);
-                AlertDialog.Builder detail = new AlertDialog.Builder(this)
-                    .setTitle(item.title)
-                    .setView(actions)
-                    .setMessage(item.summary + "\n\n" + (item.originalUrl == null ? "예시 콘텐츠" : item.originalUrl) + "\n\n" + ContentCatalog.LOCAL_NOTICE)
-                    .setNegativeButton("닫기", null)
-                    .setNeutralButton("저장 취소", (dialog, which) -> toggleSaved(item));
-                if (catalog.canOpen(item)) detail.setPositiveButton("공식 원문 열기", (dialog, which) -> openOriginal(item));
-                showDialog(detail);
-                AlertDialog shown = activeDialog;
-                confirm.setOnClickListener(view -> {
-                    if (!canInteract() || generation != lifecycleGeneration || activeDialog != shown
-                            || shown == null || !shown.isShowing() || !catalog.isSaved(item)) return;
-                    if (!catalog.setConfirmed(item, target, preferences)) {
-                        confirm.setText("저장 실패 · 다시 시도");
-                        return;
-                    }
-                    renderSaved();
-                    dismissDialog();
-                });
-            });
+            Button entry = button(item.title + (catalog.isConfirmed(item) ? " · 확인 완료" : " · 미확인"),
+                    false, () -> showSavedDetail(item));
             add(savedRows, entry, 6);
         }
+    }
+
+    private Item nextUnread(Item current) {
+        int currentIndex = -1;
+        for (int i = 0; i < catalog.savedItems.size(); i++) {
+            if (catalog.savedItems.get(i).key().equals(current.key())) { currentIndex = i; break; }
+        }
+        if (currentIndex < 0) return null;
+        for (int offset = 1; offset < catalog.savedItems.size(); offset++) {
+            Item candidate = catalog.savedItems.get((currentIndex + offset) % catalog.savedItems.size());
+            if (!candidate.key().equals(current.key()) && !catalog.isConfirmed(candidate)) return candidate;
+        }
+        return null;
+    }
+
+    private void showSavedDetail(Item item) {
+        if (!canInteract() || !catalog.isSaved(item)) return;
+        int generation = lifecycleGeneration;
+        boolean target = !catalog.isConfirmed(item);
+        LinearLayout actions = column();
+        Button confirm = button(target ? "확인 완료" : "미확인으로 되돌리기", false, () -> {});
+        confirm.setTag("confirm-saved");
+        add(actions, confirm, 8);
+        Button next = button("다음 미확인", false, () -> {});
+        next.setTag("next-unread");
+        add(actions, next, 8);
+        TextView empty = label("다른 미확인 소식이 없어요.", 14, MUTED, false);
+        add(actions, empty, 4);
+        boolean hasNext = nextUnread(item) != null;
+        enableButton(next, hasNext);
+        empty.setVisibility(hasNext ? View.GONE : View.VISIBLE);
+        AlertDialog.Builder detail = new AlertDialog.Builder(this)
+            .setTitle(item.title)
+            .setView(actions)
+            .setMessage(item.summary + "\n\n" + (item.originalUrl == null ? "예시 콘텐츠" : item.originalUrl) + "\n\n" + ContentCatalog.LOCAL_NOTICE)
+            .setNegativeButton("닫기", null)
+            .setNeutralButton("저장 취소", (dialog, which) -> toggleSaved(item));
+        if (catalog.canOpen(item)) detail.setPositiveButton("공식 원문 열기", (dialog, which) -> openOriginal(item));
+        showDialog(detail);
+        AlertDialog shown = activeDialog;
+        next.setOnClickListener(view -> {
+            if (!canInteract() || generation != lifecycleGeneration || activeDialog != shown
+                    || shown == null || !shown.isShowing() || !catalog.isSaved(item)) return;
+            Item candidate = nextUnread(item);
+            if (candidate == null) {
+                enableButton(next, false);
+                empty.setVisibility(View.VISIBLE);
+                return;
+            }
+            showSavedDetail(candidate);
+        });
+        confirm.setOnClickListener(view -> {
+            if (!canInteract() || generation != lifecycleGeneration || activeDialog != shown
+                    || shown == null || !shown.isShowing() || !catalog.isSaved(item)) return;
+            if (!catalog.setConfirmed(item, target, preferences)) {
+                confirm.setText("저장 실패 · 다시 시도");
+                return;
+            }
+            renderSaved();
+            dismissDialog();
+        });
     }
 
     private void openOriginal(Item item) {

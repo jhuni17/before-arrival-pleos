@@ -378,6 +378,143 @@ public class MainActivityTest {
         unread.performClick(); assertTrue(all.isSelected());
     }
 
+    @Test public void nextUnreadUsesSavedOrderWrapsAndLeavesDataUntouched() {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        ContentCatalog catalog = field("catalog");
+        android.content.SharedPreferences preferences = field("preferences");
+        assertTrue(catalog.setConfirmed(items.get(1), true, preferences));
+        java.util.Map<String, ?> stored = preferences.getAll();
+        ContentCatalog.Plan plan = field("plan");
+        String narration = plan.narration();
+        for (boolean unread : new boolean[]{false, true}) {
+            ((Button) field(unread ? "savedUnread" : "savedAll")).performClick();
+            showDetail(items.get(0));
+            Button staleNext = detailAction("next-unread");
+            Button staleConfirm = detailAction("confirm-saved");
+            AlertDialog old = field("activeDialog");
+            staleNext.performClick();
+            assertFalse(old.isShowing());
+            assertDetail(items.get(2));
+            AlertDialog current = field("activeDialog");
+            staleNext.performClick(); staleConfirm.performClick();
+            assertSame(current, field("activeDialog"));
+            for (int i = 3; i < items.size(); i++) {
+                detailAction("next-unread").performClick();
+                assertDetail(items.get(i));
+            }
+            detailAction("next-unread").performClick();
+            assertDetail(items.get(0));
+            showDetail(items.get(1)); // A confirmed detail uses the same navigation.
+            detailAction("next-unread").performClick();
+            assertDetail(items.get(2));
+            assertEquals(items, catalog.savedItems);
+            assertEquals(items.size() - 1, catalog.unreadCount());
+            assertEquals(stored, preferences.getAll());
+            assertSame(plan, field("plan"));
+            assertEquals(narration, plan.narration());
+            assertNull(Shadows.shadowOf(activity).getNextStartedActivity());
+            assertFalse(((SpeechPlayback) field("speech")).isPlaying());
+        }
+    }
+
+    @Test public void nextUnreadRechecksConfirmationAndDeletionAndNeverReopensSelf() {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        ContentCatalog catalog = field("catalog");
+        android.content.SharedPreferences preferences = field("preferences");
+        showDetail(items.get(0));
+        Button next = detailAction("next-unread");
+        assertTrue(catalog.setConfirmed(items.get(1), true, preferences));
+        next.performClick();
+        assertDetail(items.get(2)); // Recheck at click time, rather than using the opening snapshot.
+        showDetail(items.get(0));
+        next = detailAction("next-unread");
+        for (int i = 1; i < items.size(); i++)
+            assertTrue(catalog.setConfirmed(items.get(i), true, preferences));
+        AlertDialog original = field("activeDialog");
+        next.performClick();
+        assertSame(original, field("activeDialog"));
+        assertFalse(next.isEnabled());
+        assertTrue(descendants(original.getWindow().getDecorView(), TextView.class).stream()
+                .anyMatch(view -> view.getVisibility() == View.VISIBLE
+                        && view.getText().toString().equals("다른 미확인 소식이 없어요.")));
+        showDetail(items.get(0));
+        assertFalse(detailAction("next-unread").isEnabled());
+        assertTrue(catalog.setConfirmed(items.get(1), false, preferences));
+        showDetail(items.get(0));
+        next = detailAction("next-unread");
+        catalog.toggleSaved(items.get(1)); // Deleted candidates must also be skipped.
+        next.performClick();
+        assertFalse(next.isEnabled());
+        assertTrue(catalog.setConfirmed(items.get(2), false, preferences));
+        showDetail(items.get(0));
+        next = detailAction("next-unread");
+        original = field("activeDialog");
+        catalog.toggleSaved(items.get(0));
+        next.performClick();
+        assertSame(original, field("activeDialog"));
+        assertFalse(catalog.isConfirmed(items.get(2)));
+    }
+
+    @Test public void nextUnreadAndConfirmStayStaleAfterRestrictionsPauseAndRecreation() {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        ContentCatalog catalog = field("catalog");
+        ((Button) field("savedUnread")).performClick();
+        for (int transition = 0; transition < 4; transition++) {
+            showDetail(items.get(0));
+            Button next = detailAction("next-unread"), confirm = detailAction("confirm-saved");
+            AlertDialog old = field("activeDialog");
+            if (transition < 2) {
+                setAccess(transition == 0 ? AccessPolicy.State.RESTRICTED : AccessPolicy.State.UNKNOWN);
+                setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+            } else if (transition == 2) {
+                controller.pause(); controller.resume();
+                setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+            } else {
+                controller.recreate(); activity = controller.get();
+                setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+            }
+            assertFalse(old.isShowing());
+            next.performClick(); confirm.performClick();
+            assertNull(field("activeDialog"));
+            assertFalse(catalog.isConfirmed(items.get(0)));
+            assertFalse(((SpeechPlayback) field("speech")).isPlaying());
+            assertTrue(((Button) field(transition == 3 ? "savedAll" : "savedUnread")).isSelected());
+        }
+    }
+
+    private List<ContentCatalog.Item> saveNavigationItems() {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ContentCatalog catalog = field("catalog");
+        List<ContentCatalog.Item> items = new ArrayList<>();
+        for (ContentCatalog.Source source : catalog.sources) items.add(source.items.get(0));
+        assertTrue(items.size() >= 3);
+        for (ContentCatalog.Item item : items) catalog.toggleSaved(item);
+        catalog.persist(field("preferences"));
+        ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
+        return items;
+    }
+
+    private void showDetail(ContentCatalog.Item item) {
+        ReflectionHelpers.callInstanceMethod(activity, "showSavedDetail",
+                ReflectionHelpers.ClassParameter.from(ContentCatalog.Item.class, item));
+    }
+
+    private Button detailAction(String tag) {
+        AlertDialog dialog = field("activeDialog");
+        return dialog.findViewById(android.R.id.custom).findViewWithTag(tag);
+    }
+
+    private void assertDetail(ContentCatalog.Item item) {
+        AlertDialog dialog = field("activeDialog");
+        List<TextView> texts = descendants(dialog.getWindow().getDecorView(), TextView.class);
+        assertTrue(texts.stream().anyMatch(view -> view.getText().toString().equals(item.title)));
+        assertTrue(texts.stream().anyMatch(view -> view.getText().toString().equals(item.summary + "\n\n"
+                + (item.originalUrl == null ? "예시 콘텐츠" : item.originalUrl) + "\n\n" + ContentCatalog.LOCAL_NOTICE)));
+        ContentCatalog catalog = field("catalog");
+        assertEquals(catalog.canOpen(item), dialog.getButton(AlertDialog.BUTTON_POSITIVE) != null
+                && dialog.getButton(AlertDialog.BUTTON_POSITIVE).getVisibility() == View.VISIBLE);
+    }
+
     private Button openConfirmation() {
         LinearLayout rows = field("savedRows");
         ((Button) rows.getChildAt(0)).performClick();
