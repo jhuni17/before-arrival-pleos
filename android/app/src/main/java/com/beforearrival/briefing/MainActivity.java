@@ -646,16 +646,27 @@ public final class MainActivity extends Activity {
         return duplicate ? getString(R.string.saved_source_identity, source.name, source.id) : source.name;
     }
 
+    private String savedSourceChoiceLabel(String name, String sourceId) {
+        int saved = 0;
+        int unread = 0;
+        for (Item item : catalog.savedItems) {
+            if (sourceId != null && !sourceId.equals(item.sourceId)) continue;
+            saved++;
+            if (!catalog.isConfirmed(item)) unread++;
+        }
+        return getString(R.string.saved_source_counts, name, saved, unread);
+    }
+
     private void showSavedSources() {
         if (!canInteract()) return;
         int generation = lifecycleGeneration;
         List<String> ids = new ArrayList<>();
         List<String> labels = new ArrayList<>();
         ids.add(null);
-        labels.add(getString(R.string.saved_source_all));
+        labels.add(savedSourceChoiceLabel(getString(R.string.saved_source_all), null));
         for (Source source : catalog.sources) {
             ids.add(source.id);
-            labels.add(savedSourceLabel(source));
+            labels.add(savedSourceChoiceLabel(savedSourceLabel(source), source.id));
         }
         showDialog(new AlertDialog.Builder(this)
                 .setTitle(R.string.saved_source_choose)

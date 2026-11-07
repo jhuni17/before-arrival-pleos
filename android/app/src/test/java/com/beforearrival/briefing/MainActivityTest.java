@@ -2087,8 +2087,95 @@ public class MainActivityTest {
         return dialog;
     }
 
+    private void assertSourceCounts(int saved, int unread) {
+        ContentCatalog catalog = field("catalog");
+        AlertDialog dialog = sourceChoices();
+        android.widget.ListAdapter adapter = dialog.getListView().getAdapter();
+        assertEquals("전체 출처 · 저장 " + saved + "건 · 미확인 " + unread + "건", adapter.getItem(0).toString());
+        for (int i = 0; i < catalog.sources.size(); i++) {
+            ContentCatalog.Source source = catalog.sources.get(i);
+            int sourceSaved = 0, sourceUnread = 0;
+            for (ContentCatalog.Item item : catalog.savedItems) if (source.id.equals(item.sourceId)) {
+                sourceSaved++;
+                if (!catalog.isConfirmed(item)) sourceUnread++;
+            }
+            String name = source.name;
+            if (catalog.sources.stream().filter(other -> other.name.equals(source.name)).count() > 1)
+                name += " · " + source.id;
+            assertEquals(name + " · 저장 " + sourceSaved + "건 · 미확인 " + sourceUnread + "건",
+                    adapter.getItem(i + 1).toString());
+        }
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+    }
+
+    @Test public void savedSourceCountsRefreshAfterMutationsFailuresRetriesAndRecreation() {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        ContentCatalog.Item target = items.get(0);
+        android.content.SharedPreferences preferences = field("preferences");
+        int count = items.size();
+        assertSourceCounts(count, count);
+        for (boolean throwsAfterWrite : new boolean[]{false, true}) {
+            showDetail(target);
+            ReflectionHelpers.setField(activity, "preferences", CatalogTest.failingCommits(preferences, throwsAfterWrite));
+            detailAction("confirm-saved").performClick();
+            ReflectionHelpers.callInstanceMethod(activity, "dismissDialog");
+            assertSourceCounts(count, count);
+            ReflectionHelpers.setField(activity, "preferences", preferences);
+            showDetail(target);
+            detailAction("confirm-saved").performClick();
+            assertSourceCounts(count, count - 1);
+            ReflectionHelpers.setField(activity, "preferences", CatalogTest.failingCommits(preferences, throwsAfterWrite));
+            undoConfirmation().performClick();
+            assertSourceCounts(count, count - 1);
+            ReflectionHelpers.setField(activity, "preferences", preferences);
+            undoConfirmation().performClick();
+            assertSourceCounts(count, count);
+            showDetail(target);
+            detailAction("confirm-saved").performClick();
+            showDetail(target);
+            ReflectionHelpers.setField(activity, "preferences", CatalogTest.failingCommits(preferences, throwsAfterWrite));
+            detailAction("confirm-saved").performClick();
+            assertSourceCounts(count, count - 1);
+            ReflectionHelpers.setField(activity, "preferences", preferences);
+            showDetail(target);
+            detailAction("confirm-saved").performClick();
+            assertSourceCounts(count, count);
+            ReflectionHelpers.setField(activity, "preferences", CatalogTest.failingCommits(preferences, throwsAfterWrite));
+            deleteSaved(target);
+            assertSourceCounts(count, count);
+            ReflectionHelpers.setField(activity, "preferences", preferences);
+            deleteSaved(target);
+            assertSourceCounts(count - 1, count - 1);
+            ReflectionHelpers.setField(activity, "preferences", CatalogTest.failingCommits(preferences, throwsAfterWrite));
+            undoDeletion().performClick();
+            assertSourceCounts(count - 1, count - 1);
+            ReflectionHelpers.setField(activity, "preferences", preferences);
+            undoDeletion().performClick();
+            assertSourceCounts(count, count);
+        }
+        deleteSaved(target);
+        ReflectionHelpers.setField(activity, "preferences", CatalogTest.failingCommits(preferences));
+        ReflectionHelpers.callInstanceMethod(activity, "toggleSaved",
+                ReflectionHelpers.ClassParameter.from(ContentCatalog.Item.class, target));
+        assertSourceCounts(count - 1, count - 1);
+        ReflectionHelpers.setField(activity, "preferences", preferences);
+        ReflectionHelpers.callInstanceMethod(activity, "toggleSaved",
+                ReflectionHelpers.ClassParameter.from(ContentCatalog.Item.class, target));
+        assertSourceCounts(count, count);
+        showDetail(target);
+        detailAction("confirm-saved").performClick();
+        chooseSource(target.sourceId);
+        controller.recreate(); activity = controller.get();
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        assertNull(field("savedSourceId"));
+        assertSourceCounts(count, count - 1);
+    }
+
     private void chooseSource(String id) {
         ContentCatalog catalog = field("catalog");
+        String query = field("savedQuery");
+        Object filter = field("savedFilter");
         AlertDialog dialog = sourceChoices();
         int index = 0;
         if (id != null) {
@@ -2099,6 +2186,8 @@ public class MainActivityTest {
         dialog.getListView().performItemClick(null, index, index);
         Shadows.shadowOf(Looper.getMainLooper()).idle();
         assertEquals(id, (String) field("savedSourceId"));
+        assertEquals(query, (String) field("savedQuery"));
+        assertSame(filter, field("savedFilter"));
         assertNull(field("activeDialog"));
     }
 
@@ -2128,7 +2217,7 @@ public class MainActivityTest {
         boolean playing = ((SpeechPlayback) field("speech")).isPlaying();
         AlertDialog choices = sourceChoices();
         assertEquals(catalog.sources.size() + 1, choices.getListView().getAdapter().getCount());
-        assertEquals("동명 출처 · source-fixture-0", choices.getListView().getAdapter()
+        assertEquals("동명 출처 · source-fixture-0 · 저장 2건 · 미확인 1건", choices.getListView().getAdapter()
                 .getItem(catalog.sources.size() - 2).toString());
         ReflectionHelpers.callInstanceMethod(activity, "dismissDialog");
         for (int source = 0; source < 3; source++) {
@@ -2137,6 +2226,7 @@ public class MainActivityTest {
                 applySearch(query);
                 for (String filter : new String[]{"savedAll", "savedUnread", "savedConfirmed"}) {
                     ((Button) field(filter)).performClick();
+                    assertSourceCounts(4, 2);
                     int count = source == 2 || query.equals("no match") ? 0 : filter.equals("savedAll") ? 2 : 1;
                     LinearLayout rows = field("savedRows");
                     assertEquals(count == 0 ? 2 : count, rows.getChildCount());
@@ -2205,6 +2295,7 @@ public class MainActivityTest {
         setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
         ContentCatalog catalog = field("catalog");
         String sourceId = catalog.sources.get(0).id;
+        assertSourceCounts(0, 0);
         chooseSource(sourceId);
         assertEquals(View.VISIBLE, ((Button) field("savedConditionsClear")).getVisibility());
         assertTrue(((TextView) field("savedSearchStatus")).getText().toString().contains("표시 0건"));
@@ -2235,6 +2326,7 @@ public class MainActivityTest {
             retained.performClick();
             dialog.getListView().performItemClick(null, 0, 0);
             assertNull(field("activeDialog"));
+            assertFalse(((SpeechPlayback) field("speech")).isPlaying());
             assertEquals(items.get(0).sourceId, (String) field("savedSourceId"));
             if (transition == 2) controller.resume();
             setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
