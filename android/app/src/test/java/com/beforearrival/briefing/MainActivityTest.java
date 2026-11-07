@@ -577,7 +577,11 @@ public class MainActivityTest {
             selected.performClick();
             ((Button) field("savedFirstUnread")).performClick();
             assertDetail(items.get(1));
-            ((AlertDialog) field("activeDialog")).getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+            AlertDialog shown = field("activeDialog");
+            shown.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+            Shadows.shadowOf(Looper.getMainLooper()).idle();
+            assertFalse(shown.isShowing());
+            assertNull(field("activeDialog"));
             assertTrue(selected.isSelected());
             assertEquals(items, catalog.savedItems);
             assertEquals(stored, preferences.getAll());
@@ -607,7 +611,11 @@ public class MainActivityTest {
         assertTrue(catalog.setConfirmed(items.get(1), true, preferences));
         entry.performClick();
         assertDetail(items.get(2));
-        ((AlertDialog) field("activeDialog")).getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+        AlertDialog shown = field("activeDialog");
+        shown.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertFalse(shown.isShowing());
+        assertNull(field("activeDialog"));
         for (ContentCatalog.Item item : catalog.savedItems)
             assertTrue(catalog.setConfirmed(item, true, preferences));
         entry.performClick();
@@ -627,6 +635,9 @@ public class MainActivityTest {
         assertTrue(entry.isEnabled());
         entry.performClick();
         ((AlertDialog) field("activeDialog")).getButton(AlertDialog.BUTTON_NEUTRAL).performClick();
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertFalse(catalog.savedItems.contains(items.get(2)));
+        assertNull(field("activeDialog"));
         assertFalse(entry.isEnabled());
     }
 
