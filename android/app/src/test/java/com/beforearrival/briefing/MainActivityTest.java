@@ -575,6 +575,7 @@ public class MainActivityTest {
         for (String filter : new String[]{"savedAll", "savedUnread", "savedConfirmed"}) {
             Button selected = field(filter);
             selected.performClick();
+            assertFirstUnreadPreview(items.get(1));
             ((Button) field("savedFirstUnread")).performClick();
             assertDetail(items.get(1));
             AlertDialog shown = field("activeDialog");
@@ -596,11 +597,13 @@ public class MainActivityTest {
         assertNull(field("activeDialog"));
         ((Button) field("savedFirstUnread")).performClick();
         assertDetail(items.get(1));
+        assertFirstUnreadPreview(items.get(1));
     }
 
     @Test public void firstUnreadRechecksCandidatesAndRefreshesEmptyState() {
         setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
         assertFalse(((Button) field("savedFirstUnread")).isEnabled());
+        assertFirstUnreadPreview(null);
         assertEquals(View.VISIBLE, ((TextView) field("savedUnreadEmpty")).getVisibility());
         List<ContentCatalog.Item> items = saveNavigationItems();
         ContentCatalog catalog = field("catalog");
@@ -611,6 +614,7 @@ public class MainActivityTest {
         assertTrue(catalog.setConfirmed(items.get(1), true, preferences));
         entry.performClick();
         assertDetail(items.get(2));
+        assertFirstUnreadPreview(items.get(2));
         AlertDialog shown = field("activeDialog");
         shown.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
         Shadows.shadowOf(Looper.getMainLooper()).idle();
@@ -621,15 +625,18 @@ public class MainActivityTest {
         entry.performClick();
         assertNull(field("activeDialog"));
         assertFalse(entry.isEnabled());
+        assertFirstUnreadPreview(null);
         assertEquals(View.VISIBLE, ((TextView) field("savedUnreadEmpty")).getVisibility());
         assertTrue(catalog.setConfirmed(items.get(2), false, preferences));
         ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
         assertTrue(entry.isEnabled());
         entry.performClick();
         assertDetail(items.get(2));
+        assertFirstUnreadPreview(items.get(2));
         assertFalse(detailAction("next-unread").isEnabled());
         detailAction("confirm-saved").performClick();
         assertFalse(entry.isEnabled());
+        assertFirstUnreadPreview(null);
         showDetail(items.get(2));
         detailAction("confirm-saved").performClick();
         assertTrue(entry.isEnabled());
@@ -639,6 +646,7 @@ public class MainActivityTest {
         assertFalse(catalog.savedItems.contains(items.get(2)));
         assertNull(field("activeDialog"));
         assertFalse(entry.isEnabled());
+        assertFirstUnreadPreview(null);
     }
 
     @Test public void firstUnreadRejectsDirectCallbacksOutsideParkedResumedState() {
@@ -666,6 +674,72 @@ public class MainActivityTest {
         assertNull(field("activeDialog"));
         ((Button) field("savedFirstUnread")).performClick();
         assertDetail(items.get(0));
+    }
+
+    private void assertFirstUnreadPreview(ContentCatalog.Item expected) {
+        TextView preview = field("savedFirstUnreadPreview");
+        assertEquals(expected == null ? "" : "첫 미확인 · " + expected.title,
+                preview.getText().toString());
+        assertEquals(expected == null ? View.GONE : View.VISIBLE, preview.getVisibility());
+        assertFalse(preview.isClickable());
+        assertNull(preview.getEllipsize());
+        assertEquals(Integer.MAX_VALUE, preview.getMaxLines());
+    }
+
+    @Test public void firstUnreadPreviewPreservesFullLongTitleWithoutSideEffects() throws Exception {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        ContentCatalog catalog = field("catalog");
+        String title = "첫 미확인 소식의 긴 한국어 제목 전체를 줄바꿈으로 표시합니다. ";
+        title = title + title + title + title;
+        ContentCatalog.Item longItem = new ContentCatalog.Item(items.get(0).json().put("title", title));
+        catalog.savedItems.set(0, longItem);
+        android.content.SharedPreferences preferences = field("preferences");
+        java.util.Map<String, ?> stored = preferences.getAll();
+        List<ContentCatalog.Item> order = new ArrayList<>(catalog.savedItems);
+        for (String filter : new String[]{"savedAll", "savedUnread", "savedConfirmed"}) {
+            ((Button) field(filter)).performClick();
+            ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
+            assertFirstUnreadPreview(longItem);
+            assertEquals(stored, preferences.getAll());
+            assertEquals(order, catalog.savedItems);
+            assertEquals(items.size(), catalog.unreadCount());
+            assertNull(field("activeDialog"));
+            assertNull(Shadows.shadowOf(activity).getNextStartedActivity());
+            assertFalse(((SpeechPlayback) field("speech")).isPlaying());
+        }
+    }
+
+    @Test public void firstUnreadPreviewTracksConfirmationDeletionUndoAndFailedRetries() {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        ContentCatalog catalog = field("catalog");
+        android.content.SharedPreferences preferences = field("preferences");
+        for (boolean throwsAfterWrite : new boolean[]{false, true}) {
+            assertFirstUnreadPreview(items.get(0));
+            String storage = preferences.getString(ContentCatalog.STORAGE_KEY, null);
+            List<ContentCatalog.Item> order = new ArrayList<>(catalog.savedItems);
+            ReflectionHelpers.setField(activity, "preferences",
+                    CatalogTest.failingCommits(preferences, throwsAfterWrite));
+            showDetail(items.get(0));
+            detailAction("confirm-saved").performClick();
+            assertFirstUnreadPreview(items.get(0));
+            assertFalse(catalog.isConfirmed(items.get(0)));
+            assertEquals(order, catalog.savedItems);
+            assertEquals(storage, preferences.getString(ContentCatalog.STORAGE_KEY, null));
+            ReflectionHelpers.setField(activity, "preferences", preferences);
+            detailAction("confirm-saved").performClick();
+            assertFirstUnreadPreview(items.get(1));
+            ReflectionHelpers.callInstanceMethod(activity, "dismissDialog");
+            undoConfirmation().performClick();
+            assertFirstUnreadPreview(items.get(0));
+            deleteSaved(items.get(0));
+            assertFirstUnreadPreview(items.get(1));
+            undoDeletion().performClick();
+            assertFirstUnreadPreview(items.get(0));
+        }
+        controller.recreate(); activity = controller.get();
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        assertFirstUnreadPreview(items.get(0));
+        assertTrue(((Button) field("savedAll")).isSelected());
     }
 
     @Test public void nextUnreadUsesSavedOrderWrapsAndLeavesDataUntouched() {
@@ -1183,6 +1257,7 @@ public class MainActivityTest {
             assertSavedCapacity(before.size());
             assertTrue(((Button) field(filter)).isSelected());
             assertSame(items.get(2), ReflectionHelpers.callInstanceMethod(activity, "firstUnread"));
+            assertFirstUnreadPreview(items.get(2));
             assertEquals(views.size(), rows.getChildCount());
             for (int i = 0; i < views.size(); i++) assertSame(views.get(i), rows.getChildAt(i));
             assertSame(undo, undoDeletion()); assertSame(confirmation, undoConfirmation());
@@ -1227,6 +1302,7 @@ public class MainActivityTest {
             assertEquals(ContentCatalog.SAVED_ITEM_LIMIT - 1, catalog.unreadCount());
             assertTrue(((Button) field(filter)).isSelected());
             assertSame(items.get(2), ReflectionHelpers.callInstanceMethod(activity, "firstUnread"));
+            assertFirstUnreadPreview(items.get(2));
             assertSame(confirmationToken, field("undoToken"));
             assertNull(field("activeDialog"));
             assertFalse(((SpeechPlayback) field("speech")).isPlaying());
@@ -1277,6 +1353,7 @@ public class MainActivityTest {
                 assertSavedCapacity(before.size());
                 assertTrue(((Button) field(filter)).isSelected());
                 assertSame(items.get(2), ReflectionHelpers.callInstanceMethod(activity, "firstUnread"));
+                assertFirstUnreadPreview(items.get(2));
                 assertEquals(rows.size(), savedRows.getChildCount());
                 for (int i = 0; i < rows.size(); i++) assertSame(rows.get(i), savedRows.getChildAt(i));
                 assertSame(undo, undoDeletion()); assertSame(confirmation, undoConfirmation());
@@ -1387,6 +1464,7 @@ public class MainActivityTest {
             assertEquals(items.size() - 1, catalog.savedItems.size());
             assertEquals(items.size() - 1, catalog.unreadCount());
             assertSame(items.get(1), ReflectionHelpers.callInstanceMethod(activity, "firstUnread"));
+            assertFirstUnreadPreview(items.get(1));
             assertDeletionFilterDisplay(filter, items, false);
             undoDeletion().performClick();
             assertTrue(catalog.isConfirmed(items.get(0))); assertNull(undoConfirmation());
@@ -1407,6 +1485,7 @@ public class MainActivityTest {
         assertTrue(((Button) field("savedFirstUnread")).isEnabled());
         assertEquals(View.GONE, ((TextView) field("savedUnreadEmpty")).getVisibility());
         assertSame(items.get(1), ReflectionHelpers.callInstanceMethod(activity, "firstUnread"));
+        assertFirstUnreadPreview(items.get(1));
         LinearLayout rows = field("savedRows");
         if (filter.equals("savedConfirmed") && !restored) {
             // Two empty-state views, while the other saved items remain unread.
@@ -1440,12 +1519,14 @@ public class MainActivityTest {
             assertEquals(0, catalog.unreadCount());
             assertFalse(((Button) field("savedFirstUnread")).isEnabled());
             assertNull(ReflectionHelpers.callInstanceMethod(activity, "firstUnread"));
+            assertFirstUnreadPreview(null);
             assertEquals("도착해서 보기 · " + (items.size() - 1) + " · 미확인 0",
                     ((TextView) field("savedHeading")).getText().toString());
             undoDeletion().performClick();
             assertEquals(1, catalog.unreadCount());
             assertTrue(((Button) field("savedFirstUnread")).isEnabled());
             assertSame(items.get(0), ReflectionHelpers.callInstanceMethod(activity, "firstUnread"));
+            assertFirstUnreadPreview(items.get(0));
             assertEquals(filter.equals("savedAll") ? items.size() : filter.equals("savedUnread")
                     ? 1 : items.size() - 1, ((LinearLayout) field("savedRows")).getChildCount());
         }

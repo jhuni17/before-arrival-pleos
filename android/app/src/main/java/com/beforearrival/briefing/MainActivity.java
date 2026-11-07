@@ -77,6 +77,7 @@ public final class MainActivity extends Activity {
     private LinearLayout savedUndo;
     private Button savedFirstUnread;
     private TextView savedUnreadEmpty;
+    private TextView savedFirstUnreadPreview;
     private Button savedAll;
     private Button savedUnread;
     private Button savedConfirmed;
@@ -290,6 +291,8 @@ public final class MainActivity extends Activity {
         add(savedPanel, savedCapacityNotice, 4);
         savedFirstUnread = button("첫 미확인 보기", false, this::showFirstUnread);
         add(savedPanel, savedFirstUnread, 8);
+        savedFirstUnreadPreview = label("", 14, MUTED, false);
+        add(savedPanel, savedFirstUnreadPreview, 4);
         savedUnreadEmpty = label("미확인 소식이 없어요.", 14, MUTED, false);
         add(savedPanel, savedUnreadEmpty, 4);
         savedAll = button("전체", false, () -> selectSavedFilter(SavedFilter.ALL));
@@ -664,7 +667,11 @@ public final class MainActivity extends Activity {
     private void renderSaved() {
         renderConfirmationUndo();
         renderDeletionUndo();
-        boolean hasUnread = firstUnread() != null;
+        Item candidate = firstUnread();
+        boolean hasUnread = candidate != null;
+        savedFirstUnreadPreview.setText(hasUnread
+                ? getString(R.string.saved_first_unread_preview, candidate.title) : "");
+        savedFirstUnreadPreview.setVisibility(hasUnread ? View.VISIBLE : View.GONE);
         enableButton(savedFirstUnread, hasUnread);
         savedUnreadEmpty.setVisibility(hasUnread ? View.GONE : View.VISIBLE);
         setRouteButton(savedAll, savedFilter == SavedFilter.ALL);
