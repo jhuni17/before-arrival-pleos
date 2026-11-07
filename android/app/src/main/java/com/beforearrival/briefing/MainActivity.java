@@ -69,9 +69,11 @@ public final class MainActivity extends Activity {
     private boolean automotive;
     private boolean resumed;
     private boolean transcriptVisible;
-    private boolean unreadOnly;
+    private enum SavedFilter { ALL, UNREAD, CONFIRMED }
+    private SavedFilter savedFilter = SavedFilter.ALL;
     private Button savedAll;
     private Button savedUnread;
+    private Button savedConfirmed;
 
     private LinearLayout content;
     private LinearLayout briefingRows;
@@ -272,9 +274,10 @@ public final class MainActivity extends Activity {
         add(content, savedPanel, 12);
         savedHeading = heading("", 21);
         add(savedPanel, savedHeading, 0);
-        savedAll = button("전체", false, () -> selectSavedFilter(false));
-        savedUnread = button("미확인만", false, () -> selectSavedFilter(true));
-        add(savedPanel, buttonRow(savedAll, savedUnread), 8);
+        savedAll = button("전체", false, () -> selectSavedFilter(SavedFilter.ALL));
+        savedUnread = button("미확인만", false, () -> selectSavedFilter(SavedFilter.UNREAD));
+        savedConfirmed = button("확인 완료만", false, () -> selectSavedFilter(SavedFilter.CONFIRMED));
+        add(savedPanel, buttonRow(savedAll, savedUnread, savedConfirmed), 8);
         savedRows = column();
         add(savedPanel, savedRows, 4);
         add(savedPanel, label(ContentCatalog.LOCAL_NOTICE, 13, MUTED, false), 8);
@@ -544,28 +547,34 @@ public final class MainActivity extends Activity {
         button.setContentDescription(item.title + (selected ? " 저장 취소" : " 저장"));
     }
 
-    private void selectSavedFilter(boolean unread) {
+    private void selectSavedFilter(SavedFilter filter) {
         if (!canInteract()) return;
-        unreadOnly = unread;
+        savedFilter = filter;
         renderSaved();
     }
 
     private void renderSaved() {
-        setRouteButton(savedAll, !unreadOnly);
-        setRouteButton(savedUnread, unreadOnly);
-        savedAll.setContentDescription("전체" + (!unreadOnly ? " 선택됨" : ""));
-        savedUnread.setContentDescription("미확인만" + (unreadOnly ? " 선택됨" : ""));
+        setRouteButton(savedAll, savedFilter == SavedFilter.ALL);
+        setRouteButton(savedUnread, savedFilter == SavedFilter.UNREAD);
+        setRouteButton(savedConfirmed, savedFilter == SavedFilter.CONFIRMED);
+        savedAll.setContentDescription("전체" + (savedAll.isSelected() ? " 선택됨" : ""));
+        savedUnread.setContentDescription("미확인만" + (savedUnread.isSelected() ? " 선택됨" : ""));
+        savedConfirmed.setContentDescription("확인 완료만" + (savedConfirmed.isSelected() ? " 선택됨" : ""));
         savedHeading.setText(getString(R.string.saved_heading, catalog.savedItems.size()) + " · 미확인 " + catalog.unreadCount());
         savedRows.removeAllViews();
         if (catalog.savedItems.isEmpty()) {
             add(savedRows, label("저장한 소식이 없어요.", 14, MUTED, false), 4);
         }
-        if (unreadOnly && !catalog.savedItems.isEmpty() && catalog.unreadCount() == 0) {
-            add(savedRows, label("미확인 소식이 없어요.", 14, MUTED, false), 4);
-            add(savedRows, button("전체 보기", false, () -> selectSavedFilter(false)), 6);
+        if (!catalog.savedItems.isEmpty()
+                && ((savedFilter == SavedFilter.UNREAD && catalog.unreadCount() == 0)
+                || (savedFilter == SavedFilter.CONFIRMED && catalog.unreadCount() == catalog.savedItems.size()))) {
+            add(savedRows, label(savedFilter == SavedFilter.CONFIRMED
+                    ? "확인 완료한 소식이 없어요." : "미확인 소식이 없어요.", 14, MUTED, false), 4);
+            add(savedRows, button("전체 보기", false, () -> selectSavedFilter(SavedFilter.ALL)), 6);
         }
         for (Item item : catalog.savedItems) {
-            if (unreadOnly && catalog.isConfirmed(item)) continue;
+            if (savedFilter == SavedFilter.UNREAD && catalog.isConfirmed(item)) continue;
+            if (savedFilter == SavedFilter.CONFIRMED && !catalog.isConfirmed(item)) continue;
             Button entry = button(item.title + (catalog.isConfirmed(item) ? " · 확인 완료" : " · 미확인"),
                     false, () -> showSavedDetail(item));
             add(savedRows, entry, 6);
@@ -689,12 +698,13 @@ public final class MainActivity extends Activity {
         button.setAlpha(enabled ? 1f : 0.48f);
     }
 
-    private LinearLayout buttonRow(Button first, Button second) {
+    private LinearLayout buttonRow(Button... buttons) {
         LinearLayout row = new LinearLayout(this);
-        row.addView(first, new LinearLayout.LayoutParams(0, -2, 1));
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, -2, 1);
-        params.leftMargin = dp(8);
-        row.addView(second, params);
+        for (Button button : buttons) {
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, -2, 1);
+            if (row.getChildCount() > 0) params.leftMargin = dp(8);
+            row.addView(button, params);
+        }
         return row;
     }
 

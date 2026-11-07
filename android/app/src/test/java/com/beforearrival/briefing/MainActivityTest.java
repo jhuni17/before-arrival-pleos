@@ -317,6 +317,107 @@ public class MainActivityTest {
         assertFalse(((Button) field("savedUnread")).isSelected());
     }
 
+    @Test public void confirmedFilterReopensInSavedOrderAndNavigatesWithoutChangingData() {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        ContentCatalog catalog = field("catalog");
+        android.content.SharedPreferences preferences = field("preferences");
+        assertTrue(catalog.setConfirmed(items.get(1), true, preferences));
+        assertTrue(catalog.setConfirmed(items.get(2), true, preferences));
+        java.util.Map<String, ?> stored = preferences.getAll();
+        ContentCatalog.Plan plan = field("plan");
+        String narration = plan.narration();
+        Button confirmed = field("savedConfirmed");
+        confirmed.performClick();
+        assertTrue(confirmed.isSelected());
+        assertFalse(((Button) field("savedAll")).isSelected());
+        assertFalse(((Button) field("savedUnread")).isSelected());
+        assertEquals("확인 완료만 선택됨", confirmed.getContentDescription().toString());
+        LinearLayout rows = field("savedRows");
+        assertEquals(2, rows.getChildCount());
+        for (int i = 0; i < 2; i++)
+            assertEquals(items.get(i + 1).title + " · 확인 완료", ((Button) rows.getChildAt(i)).getText().toString());
+        assertEquals("도착해서 보기 · " + items.size() + " · 미확인 " + (items.size() - 2),
+                ((TextView) field("savedHeading")).getText().toString());
+        ((Button) rows.getChildAt(0)).performClick();
+        assertDetail(items.get(1));
+        assertNull(detailAction("confirm-next"));
+        Button stale = detailAction("confirm-saved");
+        detailAction("next-unread").performClick();
+        assertDetail(items.get(3 % items.size()));
+        stale.performClick();
+        assertTrue(catalog.isConfirmed(items.get(1)));
+        assertTrue(confirmed.isSelected());
+        assertEquals(stored, preferences.getAll());
+        assertEquals(items, catalog.savedItems);
+        assertSame(plan, field("plan"));
+        assertEquals(narration, plan.narration());
+        controller.recreate(); activity = controller.get();
+        assertTrue(((Button) field("savedAll")).isSelected());
+        assertFalse(((Button) field("savedConfirmed")).isSelected());
+        assertTrue(((ContentCatalog) field("catalog")).isConfirmed(items.get(1)));
+    }
+
+    @Test public void confirmedFilterEmptyAndReversalFailureRetryPersist() {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ((Button) field("savedConfirmed")).performClick();
+        LinearLayout rows = field("savedRows");
+        assertEquals(1, rows.getChildCount());
+        assertEquals("저장한 소식이 없어요.", ((TextView) rows.getChildAt(0)).getText().toString());
+        ContentCatalog catalog = field("catalog");
+        ContentCatalog.Item item = catalog.sources.get(0).items.get(0);
+        catalog.toggleSaved(item);
+        ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
+        assertEquals("확인 완료한 소식이 없어요.", ((TextView) rows.getChildAt(0)).getText().toString());
+        ((Button) rows.getChildAt(1)).performClick();
+        assertTrue(((Button) field("savedAll")).isSelected());
+        assertNull(field("activeDialog"));
+        android.content.SharedPreferences preferences = field("preferences");
+        assertTrue(catalog.setConfirmed(item, true, preferences));
+        ((Button) field("savedConfirmed")).performClick();
+        Button revert = openConfirmation();
+        assertEquals("미확인으로 되돌리기", revert.getText().toString());
+        AlertDialog detail = field("activeDialog");
+        ReflectionHelpers.setField(activity, "preferences", CatalogTest.failingCommits(preferences));
+        revert.performClick();
+        assertEquals("저장 실패 · 다시 시도", revert.getText().toString());
+        assertSame(detail, field("activeDialog")); assertTrue(detail.isShowing());
+        assertDetail(item);
+        assertTrue(catalog.isConfirmed(item)); assertEquals(1, rows.getChildCount());
+        ReflectionHelpers.setField(activity, "preferences", preferences);
+        revert.performClick();
+        assertNull(field("activeDialog")); assertFalse(catalog.isConfirmed(item));
+        assertEquals("확인 완료한 소식이 없어요.", ((TextView) rows.getChildAt(0)).getText().toString());
+        controller.recreate(); activity = controller.get();
+        assertFalse(((ContentCatalog) field("catalog")).isConfirmed(item));
+        assertTrue(((Button) field("savedAll")).isSelected());
+    }
+
+    @Test public void confirmedFilterAndStaleDetailStayBlockedAcrossLifecycle() {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        ContentCatalog catalog = field("catalog");
+        assertTrue(catalog.setConfirmed(items.get(0), true, field("preferences")));
+        Button confirmed = field("savedConfirmed");
+        confirmed.performClick();
+        for (int transition = 0; transition < 3; transition++) {
+            Button revert = openConfirmation();
+            Button next = detailAction("next-unread");
+            AlertDialog old = field("activeDialog");
+            if (transition == 2) controller.pause();
+            else setAccess(transition == 0 ? AccessPolicy.State.RESTRICTED : AccessPolicy.State.UNKNOWN);
+            ((Button) field("savedAll")).performClick();
+            revert.performClick(); next.performClick();
+            assertFalse(old.isShowing()); assertNull(field("activeDialog"));
+            assertTrue(confirmed.isSelected()); assertTrue(catalog.isConfirmed(items.get(0)));
+            if (transition == 2) controller.resume();
+            else setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+            revert.performClick(); next.performClick();
+            assertNull(field("activeDialog")); assertTrue(confirmed.isSelected());
+            assertTrue(catalog.isConfirmed(items.get(0)));
+            assertFalse(((SpeechPlayback) field("speech")).isPlaying());
+            assertNull(Shadows.shadowOf(activity).getNextStartedActivity());
+        }
+    }
+
     @Test public void unreadFilterEmptyFailureRetryAndReversal() {
         setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
         ((Button) field("savedUnread")).performClick();
