@@ -14,7 +14,7 @@
 1. 공식 Pleos Connect AVD와 Virtual Console의 버전, 사용한 테스트 앱 SHA와 설치 APK 해시를 기록한다. 회사나 집 주소 대신 공개 시험 목적지를 사용한다. `adb devices -l`에서 대상 serial을 고정한다.
 2. 실제 경로로 전환해 NaviHelper 초기화와 목적지 조회 응답을 확인한다. 두 개 이상의 경로 상태에서 에뮬레이터 내비가 표시한 남은 시간과 `onDestinationInfo`의 원시 `remainTime`을 같은 시각에 기록한다. 단위·범위·도착 및 무효값을 SDK 버전에 묶어 확인한 뒤 변환과 테스트를 변경한다.
 3. 목적지 변경·취소 및 권한·서비스 상실 뒤, 이전 ETA가 다시 쓰이지 않는지 확인한다. 경로와 요청을 구분할 수 없는 콜백은 확인된 범위만 증거로 사용한다.
-4. 주차 상태에서 브리핑이 실제로 재생되는 것을 확인하고 Virtual Console로 제한 상태와 복귀를 재현한다. 화면 조작 중지, 재생 전후 상태와 실제 음성 중단, 복귀 후 자동 재생 없음, 상태 미확인 처리의 근거를 나눠 기록한다.
+4. 주차 상태에서 브리핑을 시작하고 Virtual Console로 주행 제한을 재현한다. Pleos 오디오 큐는 화면이 잠긴 상태에서 재생, 다음 주제, 일시정지와 이어듣기를 확인한다. 차량 상태 미확인, 내비 안내 및 통화의 오디오 우선권은 별도로 확인한다. [출근 브리핑 오디오 큐 검증](commute-audio.md)을 참고한다.
 5. SDK/AVD 버전, 소스 SHA, APK 해시, 재현 단계, 개인정보를 가린 화면·로그 및 관찰 범위를 남긴다. Astra가 같은 SHA의 근거를 수용 기준과 대조한다. 필요한 경우 실패 항목만 최대 두 차례 수정하고 다시 검증한다.
 
 테스트 AVD에서 `adb -s <serial> shell setprop log.tag.PleosValidation DEBUG`를 실행한 후 앱을 열고 `adb -s <serial> logcat -v epoch -s PleosValidation:D`로 앱 태그를 수집한다. 로그는 음성 출력 자체의 증거가 아니므로 화면 및 실제 재생 관찰과 대조한다. 완료 후 `adb -s <serial> shell setprop log.tag.PleosValidation INFO`로 진단을 끈다.
