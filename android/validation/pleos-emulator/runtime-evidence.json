@@ -1,0 +1,40 @@
+{
+  "candidateSha": "7bda357f3f6f2a286fa163aa11bf8eacfdbec3d2",
+  "testedOnKst": "2026-11-08",
+  "environment": {
+    "host": "Windows x64 with WHPX",
+    "pleosVersion": "2.1.0",
+    "androidApi": 34,
+    "emulatorVersion": "37.2.13.0",
+    "serial": "emulator-5562",
+    "fingerprint": "Pleos/crp_avd/crp_avd_x86_64:14/RELEASE.release_connect_v2.1.0/release_connect_v2.1.0:user/test-keys",
+    "imageArchiveSha1": "b4f858d5bcc6c71506d7edfc872bcb9e5a11acaa",
+    "naviHelperVersion": "3.0.5",
+    "virtualConsole": "Bundled Pleos 2.1.0 Virtual Console, localhost ADB forward, DDS ONLINE"
+  },
+  "apk": {
+    "buildRun": "https://github.com/jhuni17/before-arrival-pleos/actions/runs/42389947998",
+    "verifiedBuildInputs": 63,
+    "unsignedSha256": "f82f65faed0d31a43b615433c01c7aec437f497be0111307f8c06423352e9bd5",
+    "installedSha256": "0930eae0f961ccb0c51ad1aec26e5b13b86b1753a26e4e401e287e30ab0f3312",
+    "provenance": "Locally debug-signed for this AVD, 59 entry payloads match the CI APK and only signature entries were added. The base.apk pulled from the AVD matches the signed APK hash. NAVI_ROUTE is granted."
+  },
+  "destinationCallbacks": [
+    {"receivedAtUtc":"2026-11-07T22:41:11.200626Z","state":"Guidance active, public destination A","naviDisplayMinutes":32,"rawRemainTime":1920},
+    {"receivedAtUtc":"2026-11-07T22:42:53.019545Z","state":"Guidance cancelled in native Navi, app relaunched and queried","naviDisplayMinutes":null,"rawRemainTime":0},
+    {"receivedAtUtc":"2026-11-07T22:46:32.207332Z","state":"Guidance restarted, public destination A","naviDisplayMinutes":31,"rawRemainTime":1860},
+    {"receivedAtUtc":"2026-11-07T22:48:00.693132Z","state":"Guidance active, public destination B","naviDisplayMinutes":28,"rawRemainTime":1680}
+  ],
+  "etaConclusion": "The tested positive values equal the contemporaneous native minute display multiplied by 60 on this image and SDK. Cancellation produced zero when queried in a new session. All raw values were logged before the existing decoder intentionally invalidated the route. The app showed ETA unconfirmed; SDK value range, arrival and other sentinel values and in-session invalidation with a displayed live ETA remain unverified.",
+  "speechAndRestrictions": {
+    "routeMode": "sample briefing, separate from live ETA",
+    "testEngine": "F-Droid eSpeak NG 1.52.0, package com.reecedunn.espeak, bundled offline voices initialized from its launcher in the dedicated AVD",
+    "stockEngineObservation": "The stock Pleos image alone did not present an installed offline Korean voice usable by the app.",
+    "playback": "1794091446.690 PARKED_USE_ALLOWED resumed=true interactive=true playing=true; Android AudioTrack piid 383, speech/media, started at 22:44:07.011 UTC, 22050 Hz and unmuted.",
+    "restriction": "Virtual Console P→D, at 0 km/h. The Android track stopped at 22:44:20.275 UTC and was released at 22:44:20.276 UTC. At 1794091460.282 the app logged RESTRICTED resumed=true interactive=false playing=false. The restriction notice replaced the briefing controls.",
+    "recovery": "Virtual Console D→P. At 1794091483.474 the app logged PARKED_USE_ALLOWED resumed=true interactive=true playing=false. No active speech track was present in the post-return snapshot.",
+    "recording": "Emulator host WEBM recording has a Vorbis stereo audio stream. FFmpeg detected silence from 14.831 s to 37.638 s, a brief system sound at the Park transition, and silence again from 37.838 s to the end of the recording. The audio track events distinguish the briefing from the system sound.",
+    "recordingSha256": "22b2c7b2141317c077781becd8afe4968b636c3eeb3702119335b03856c80152"
+  },
+  "untested": ["App-rendered live ETA or real-route speech, because the decoder is gated", "Arrival and other invalid ETA values, permission loss or service loss while a valid ETA is displayed", "Audio interruption under unknown restriction while playback is active", "Physical vehicle and its built-in voice"]
+}

@@ -5,7 +5,7 @@
 ## 현재 근거
 
 - 공식 Windows/Linux 이미지 목록 요청은 HTTP 200이었다. API 34 x86_64 패키지는 `system-images;android-34;pleos_car_emulator;x86_64`이고, 목록은 약 4.09 GB 아카이브와 별도 `pleos-connect-sdk-license`를 지정한다.
-- Oracle은 x86_64, 2 vCPU, 약 1 GB RAM이다. `/dev/kvm`은 있으나 현재 러너 사용자에게 읽기·쓰기 권한이 없다. Windows에서는 Android Studio 경로는 확인했으나 설치된 Pleos AVD와 허용 기록은 확인하지 못했다.
+- Oracle은 x86_64, 2 vCPU, 약 1 GB RAM이다. `/dev/kvm`은 있으나 현재 러너 사용자에게 읽기·쓰기 권한이 없다. Windows에서는 공식 Pleos Connect 2.1.0을 전용 AVD로 설치해 검증했다. [실제 콜백, 주행 제한·음성 중단 기록](windows-pleos-2.1.0.md)을 참고한다.
 - 이전 공개 AAR 컴파일은 [별도 검증 기록](../public-sdk-javac.md) 범위다. 이번 PR의 별도 CI는 고정 SHA에서 Pleos flavor를 빌드해 unsigned APK, 로그, 입력·APK 해시를 보존한다. 설치와 실제 콜백 검증은 런타임 단계에서 한다.
 - 앱의 ETA 변환은 SDK 계약을 확인할 때까지 계속 차단한다. 진단 기록은 debug Pleos 앱에서만 별도 로그 수준 설정으로 켤 수 있다. 원시 남은 시간, 시각, 권한·세션·주행 상태와 재생 여부만 기록한다.
 
