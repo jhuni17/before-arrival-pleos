@@ -626,8 +626,17 @@ public final class MainActivity extends Activity {
             .setView(actions)
             .setMessage(item.summary + "\n\n" + (item.originalUrl == null ? "예시 콘텐츠" : item.originalUrl) + "\n\n" + ContentCatalog.LOCAL_NOTICE)
             .setNegativeButton("닫기", null)
-            .setNeutralButton("저장 취소", (dialog, which) -> toggleSaved(item));
-        if (catalog.canOpen(item)) detail.setPositiveButton("공식 원문 열기", (dialog, which) -> openOriginal(item));
+            .setNeutralButton("저장 취소", (dialog, which) -> {
+                if (!canInteract() || generation != lifecycleGeneration || activeDialog != dialog
+                        || !((AlertDialog) dialog).isShowing() || !catalog.isSaved(item)) return;
+                toggleSaved(item);
+            });
+        if (catalog.canOpen(item)) detail.setPositiveButton("공식 원문 열기", (dialog, which) -> {
+            if (!canInteract() || generation != lifecycleGeneration || activeDialog != dialog
+                    || !((AlertDialog) dialog).isShowing() || !catalog.isSaved(item)
+                    || !catalog.canOpen(item)) return;
+            openOriginal(item);
+        });
         showDialog(detail);
         AlertDialog shown = activeDialog;
         confirmNext.setOnClickListener(view -> {

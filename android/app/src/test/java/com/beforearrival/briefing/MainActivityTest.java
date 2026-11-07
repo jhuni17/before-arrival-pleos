@@ -240,6 +240,91 @@ public class MainActivityTest {
         assertNull(Shadows.shadowOf(activity).getNextStartedActivity());
     }
 
+    @Test public void savedDetailButtonsRejectQueuedAndStaleCallbacksAcrossLifecycle() {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ContentCatalog catalog = field("catalog");
+        ContentCatalog.Item item = catalog.add("공식 소식", "lol",
+                "https://www.leagueoflegends.com/ko-kr/news/game-updates/").items.get(0);
+        catalog.toggleSaved(item);
+        ContentCatalog.Item other = catalog.sources.get(0).items.get(0);
+        catalog.toggleSaved(other);
+        assertTrue(catalog.setConfirmed(item, true, field("preferences")));
+        for (int action : new int[]{AlertDialog.BUTTON_POSITIVE, AlertDialog.BUTTON_NEUTRAL}) {
+            for (int transition = 0; transition < 6; transition++) {
+                catalog = field("catalog");
+                android.content.SharedPreferences preferences = field("preferences");
+                List<String> keys = new ArrayList<>();
+                for (ContentCatalog.Item saved : catalog.savedItems) keys.add(saved.key());
+                java.util.Map<String, ?> stored = preferences.getAll();
+                showDetail(item);
+                MainActivity owner = activity;
+                AlertDialog old = field("activeDialog");
+                Button stale = old.getButton(action);
+                stale.performClick(); // Queue the DialogInterface callback without draining the Looper.
+                if (transition < 2) {
+                    ReflectionHelpers.setField(activity, "restrictionState", transition == 0
+                            ? AccessPolicy.State.RESTRICTED : AccessPolicy.State.UNKNOWN);
+                    ReflectionHelpers.callInstanceMethod(activity, "renderAccess");
+                    ReflectionHelpers.setField(activity, "restrictionState", AccessPolicy.State.PARKED_USE_ALLOWED);
+                    ReflectionHelpers.callInstanceMethod(activity, "renderAccess");
+                } else if (transition == 2) {
+                    controller.pause(); controller.resume();
+                } else if (transition == 3) {
+                    old.dismiss();
+                } else if (transition == 4) {
+                    showDetail(other);
+                } else {
+                    controller.recreate(); activity = controller.get();
+                    setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+                }
+                AlertDialog replacement = transition == 4 ? field("activeDialog") : null;
+                Shadows.shadowOf(Looper.getMainLooper()).idle();
+                stale.performClick(); // Retained button references must also stay invalid.
+                Shadows.shadowOf(Looper.getMainLooper()).idle();
+                assertFalse(old.isShowing());
+                assertSame(replacement, field("activeDialog"));
+                if (replacement != null) { assertTrue(replacement.isShowing()); assertDetail(other); }
+                assertNull(Shadows.shadowOf(owner).getNextStartedActivity());
+                if (owner != activity) assertNull(Shadows.shadowOf(activity).getNextStartedActivity());
+                catalog = field("catalog");
+                List<String> remaining = new ArrayList<>();
+                for (ContentCatalog.Item saved : catalog.savedItems) remaining.add(saved.key());
+                assertEquals(keys, remaining);
+                assertTrue(catalog.isConfirmed(item));
+                assertFalse(catalog.isConfirmed(other));
+                assertEquals(stored, preferences.getAll());
+                assertEquals(stored, ((android.content.SharedPreferences) field("preferences")).getAll());
+                assertFalse(((SpeechPlayback) field("speech")).isPlaying());
+            }
+        }
+    }
+
+    @Test public void savedDetailRemovalOnlyRemovesSavedItemAndResaveIsUnread() {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        ContentCatalog catalog = field("catalog");
+        ContentCatalog.Item item = items.get(0);
+        assertTrue(catalog.setConfirmed(item, true, field("preferences")));
+        showDetail(item);
+        AlertDialog dialog = field("activeDialog");
+        Button remove = dialog.getButton(AlertDialog.BUTTON_NEUTRAL);
+        remove.performClick();
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertFalse(catalog.isSaved(item));
+        assertEquals(items.subList(1, items.size()), catalog.savedItems);
+        java.util.Map<String, ?> stored = ((android.content.SharedPreferences) field("preferences")).getAll();
+        remove.performClick();
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertFalse(catalog.isSaved(item)); // A stale toggle must never re-save a removed item.
+        assertEquals(stored, ((android.content.SharedPreferences) field("preferences")).getAll());
+        ReflectionHelpers.callInstanceMethod(activity, "toggleSaved",
+                ReflectionHelpers.ClassParameter.from(ContentCatalog.Item.class, item));
+        assertTrue(catalog.isSaved(item));
+        assertFalse(catalog.isConfirmed(item));
+        controller.recreate(); activity = controller.get();
+        assertTrue(((ContentCatalog) field("catalog")).isSaved(item));
+        assertFalse(((ContentCatalog) field("catalog")).isConfirmed(item));
+    }
+
     @Test public void confirmationFailureRetryRecreationAndStaleHandlers() {
         setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
         ContentCatalog catalog = field("catalog");
