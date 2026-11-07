@@ -677,11 +677,12 @@ public final class MainActivity extends Activity {
         setRouteButton(savedAll, savedFilter == SavedFilter.ALL);
         setRouteButton(savedUnread, savedFilter == SavedFilter.UNREAD);
         setRouteButton(savedConfirmed, savedFilter == SavedFilter.CONFIRMED);
-        savedAll.setContentDescription("전체" + (savedAll.isSelected() ? " 선택됨" : ""));
-        savedUnread.setContentDescription("미확인만" + (savedUnread.isSelected() ? " 선택됨" : ""));
-        savedConfirmed.setContentDescription("확인 완료만" + (savedConfirmed.isSelected() ? " 선택됨" : ""));
-        savedHeading.setText(getString(R.string.saved_heading, catalog.savedItems.size()) + " · 미확인 " + catalog.unreadCount());
         int savedCount = catalog.savedItems.size();
+        int unreadCount = catalog.unreadCount();
+        updateSavedFilter(savedAll, R.string.saved_filter_all, savedCount);
+        updateSavedFilter(savedUnread, R.string.saved_filter_unread, unreadCount);
+        updateSavedFilter(savedConfirmed, R.string.saved_filter_confirmed, savedCount - unreadCount);
+        savedHeading.setText(getString(R.string.saved_heading, savedCount) + " · 미확인 " + unreadCount);
         savedCapacity.setText(getString(R.string.saved_capacity, savedCount, ContentCatalog.SAVED_ITEM_LIMIT,
                 Math.max(0, ContentCatalog.SAVED_ITEM_LIMIT - savedCount)));
         savedCapacityNotice.setVisibility(catalog.savedAtCapacity() ? View.VISIBLE : View.GONE);
@@ -703,6 +704,15 @@ public final class MainActivity extends Activity {
                     false, () -> showSavedDetail(item));
             add(savedRows, entry, 6);
         }
+    }
+
+    private void updateSavedFilter(Button button, int label, int count) {
+        String text = getString(label, count);
+        button.setText(text);
+        button.setSingleLine(false);
+        button.setEllipsize(null);
+        button.setContentDescription(button.isSelected()
+                ? getString(R.string.saved_filter_selected, text) : text);
     }
 
     private Item nextUnread(Item current) {

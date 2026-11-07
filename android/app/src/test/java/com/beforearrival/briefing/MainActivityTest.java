@@ -379,7 +379,8 @@ public class MainActivityTest {
         String narration = plan.narration();
         unread.performClick();
         assertTrue(unread.isSelected()); assertFalse(all.isSelected());
-        assertEquals("미확인만 선택됨", unread.getContentDescription().toString());
+        assertSavedFilterCounts();
+        assertEquals("미확인만 " + (items.size() - 1) + "건 선택됨", unread.getContentDescription().toString());
         LinearLayout rows = field("savedRows");
         assertEquals(items.size() - 1, rows.getChildCount());
         int row = 0;
@@ -400,6 +401,7 @@ public class MainActivityTest {
         controller.recreate(); activity = controller.get();
         assertTrue(((Button) field("savedAll")).isSelected());
         assertFalse(((Button) field("savedUnread")).isSelected());
+        assertSavedFilterCounts();
     }
 
     @Test public void confirmedFilterReopensInSavedOrderAndNavigatesWithoutChangingData() {
@@ -416,7 +418,7 @@ public class MainActivityTest {
         assertTrue(confirmed.isSelected());
         assertFalse(((Button) field("savedAll")).isSelected());
         assertFalse(((Button) field("savedUnread")).isSelected());
-        assertEquals("확인 완료만 선택됨", confirmed.getContentDescription().toString());
+        assertEquals("확인 완료만 2건 선택됨", confirmed.getContentDescription().toString());
         LinearLayout rows = field("savedRows");
         assertEquals(2, rows.getChildCount());
         for (int i = 0; i < 2; i++)
@@ -605,6 +607,14 @@ public class MainActivityTest {
         assertFalse(((Button) field("savedFirstUnread")).isEnabled());
         assertFirstUnreadPreview(null);
         assertEquals(View.VISIBLE, ((TextView) field("savedUnreadEmpty")).getVisibility());
+        for (String filter : new String[]{"savedAll", "savedUnread", "savedConfirmed"}) {
+            Button button = field(filter);
+            assertTrue(button.isEnabled());
+            button.performClick();
+            assertTrue(button.isSelected());
+            assertSavedFilterCounts();
+            assertNull(field("activeDialog"));
+        }
         List<ContentCatalog.Item> items = saveNavigationItems();
         ContentCatalog catalog = field("catalog");
         android.content.SharedPreferences preferences = field("preferences");
@@ -676,7 +686,27 @@ public class MainActivityTest {
         assertDetail(items.get(0));
     }
 
+    private void assertSavedFilterCounts() {
+        ContentCatalog catalog = field("catalog");
+        String[] fields = {"savedAll", "savedUnread", "savedConfirmed"};
+        String[] names = {"전체", "미확인만", "확인 완료만"};
+        int[] counts = {catalog.savedItems.size(), catalog.unreadCount(),
+                catalog.savedItems.size() - catalog.unreadCount()};
+        for (int i = 0; i < fields.length; i++) {
+            Button button = field(fields[i]);
+            String text = names[i] + " " + counts[i] + "건";
+            assertEquals(text, button.getText().toString());
+            assertEquals(text + (button.isSelected() ? " 선택됨" : ""),
+                    button.getContentDescription().toString());
+            assertNull(button.getEllipsize());
+            assertEquals(Integer.MAX_VALUE, button.getMaxLines());
+            assertEquals(20f * activity.getResources().getDisplayMetrics().scaledDensity,
+                    button.getTextSize(), 0.1f);
+        }
+    }
+
     private void assertFirstUnreadPreview(ContentCatalog.Item expected) {
+        assertSavedFilterCounts();
         TextView preview = field("savedFirstUnreadPreview");
         assertEquals(expected == null ? "" : "첫 미확인 · " + expected.title,
                 preview.getText().toString());
@@ -1172,6 +1202,7 @@ public class MainActivityTest {
     }
 
     private void assertSavedCapacity(int count) {
+        assertSavedFilterCounts();
         assertEquals("전체 저장 " + count + "/" + ContentCatalog.SAVED_ITEM_LIMIT
                 + "건 · 추가 저장 가능 " + Math.max(0, ContentCatalog.SAVED_ITEM_LIMIT - count) + "건",
                 ((TextView) field("savedCapacity")).getText().toString());
