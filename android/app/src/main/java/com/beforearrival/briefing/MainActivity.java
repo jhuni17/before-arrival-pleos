@@ -97,6 +97,7 @@ public final class MainActivity extends Activity {
     private TextView savedHeading;
     private TextView savedCapacity;
     private TextView savedCapacityNotice;
+    private Button savedCapacityConfirmed;
     private Button etaLong;
     private Button etaShort;
     private Button priorityButton;
@@ -289,6 +290,11 @@ public final class MainActivity extends Activity {
         add(savedPanel, savedCapacity, 4);
         savedCapacityNotice = label(ContentCatalog.SAVED_CAPACITY_NOTICE, 14, MUTED, false);
         add(savedPanel, savedCapacityNotice, 4);
+        savedCapacityConfirmed = button("", false, this::showCapacityConfirmed);
+        savedCapacityConfirmed.setSingleLine(false);
+        savedCapacityConfirmed.setMaxLines(Integer.MAX_VALUE);
+        savedCapacityConfirmed.setEllipsize(null);
+        add(savedPanel, savedCapacityConfirmed, 4);
         savedFirstUnread = button("첫 미확인 보기", false, this::showFirstUnread);
         add(savedPanel, savedFirstUnread, 8);
         savedFirstUnreadPreview = label("", 14, MUTED, false);
@@ -592,6 +598,15 @@ public final class MainActivity extends Activity {
         renderSaved();
     }
 
+    private boolean hasCapacityConfirmed() {
+        return catalog.savedAtCapacity() && catalog.savedItems.size() - catalog.unreadCount() > 0;
+    }
+
+    private void showCapacityConfirmed() {
+        if (!canInteract() || !hasCapacityConfirmed()) return;
+        selectSavedFilter(SavedFilter.CONFIRMED);
+    }
+
     private Item firstUnread() {
         for (Item item : catalog.savedItems) {
             if (!catalog.isConfirmed(item)) return item;
@@ -686,6 +701,10 @@ public final class MainActivity extends Activity {
         savedCapacity.setText(getString(R.string.saved_capacity, savedCount, ContentCatalog.SAVED_ITEM_LIMIT,
                 Math.max(0, ContentCatalog.SAVED_ITEM_LIMIT - savedCount)));
         savedCapacityNotice.setVisibility(catalog.savedAtCapacity() ? View.VISIBLE : View.GONE);
+        String capacityConfirmed = getString(R.string.saved_capacity_confirmed, savedCount - unreadCount);
+        savedCapacityConfirmed.setText(capacityConfirmed);
+        savedCapacityConfirmed.setContentDescription(capacityConfirmed);
+        savedCapacityConfirmed.setVisibility(hasCapacityConfirmed() ? View.VISIBLE : View.GONE);
         savedRows.removeAllViews();
         if (catalog.savedItems.isEmpty()) {
             add(savedRows, label("저장한 소식이 없어요.", 14, MUTED, false), 4);

@@ -1258,6 +1258,96 @@ public class MainActivityTest {
         assertTrue(notice.getMaxLines() > 1);
     }
 
+    @Test public void capacityConfirmedShortcutNavigatesWithoutMutatingSavedState() throws Exception {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ContentCatalog catalog = field("catalog");
+        android.content.SharedPreferences preferences = field("preferences");
+        for (int i = 0; i < ContentCatalog.SAVED_ITEM_LIMIT - 1; i++)
+            assertTrue(catalog.save(CatalogTest.capacityItem(catalog, i), preferences));
+        ContentCatalog.Item first = catalog.savedItems.get(0);
+        assertTrue(catalog.setConfirmed(first, true, preferences));
+        ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
+        Button shortcut = field("savedCapacityConfirmed");
+        assertEquals(View.GONE, shortcut.getVisibility());
+        shortcut.performClick();
+        assertEquals("ALL", field("savedFilter").toString());
+        assertTrue(catalog.setConfirmed(first, false, preferences));
+        ContentCatalog.Item last = CatalogTest.capacityItem(catalog, ContentCatalog.SAVED_ITEM_LIMIT - 1);
+        assertTrue(catalog.save(last, preferences));
+        ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
+        assertEquals(View.GONE, shortcut.getVisibility());
+        shortcut.performClick();
+        assertEquals("ALL", field("savedFilter").toString());
+        assertTrue(catalog.setConfirmed(first, true, preferences));
+        assertTrue(catalog.setConfirmed(last, true, preferences));
+        ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
+        assertEquals(View.VISIBLE, shortcut.getVisibility());
+        assertEquals("확인 완료 항목 보기 · 전체 2건", shortcut.getText().toString());
+        assertEquals(shortcut.getText().toString(), shortcut.getContentDescription().toString());
+        assertNull(shortcut.getEllipsize());
+        assertEquals(Integer.MAX_VALUE, shortcut.getMaxLines());
+        assertEquals(ViewGroup.LayoutParams.MATCH_PARENT, shortcut.getLayoutParams().width);
+        assertEquals(20f * activity.getResources().getDisplayMetrics().scaledDensity,
+                shortcut.getTextSize(), 0.1f);
+        assertEquals(Math.round(56 * activity.getResources().getDisplayMetrics().density), shortcut.getMinimumHeight());
+        String stored = preferences.getString(ContentCatalog.STORAGE_KEY, null);
+        List<ContentCatalog.Item> before = new ArrayList<>(catalog.savedItems);
+        String narration = ((ContentCatalog.Plan) field("plan")).narration();
+        Object token = field("undoToken");
+        Object deleted = field("undoDeleted");
+        for (String filter : new String[]{"savedAll", "savedUnread"}) {
+            ((Button) field(filter)).performClick();
+            shortcut.performClick();
+            assertEquals("CONFIRMED", field("savedFilter").toString());
+            assertSavedFilterCounts(ContentCatalog.SAVED_ITEM_LIMIT, ContentCatalog.SAVED_ITEM_LIMIT - 2);
+            LinearLayout rows = field("savedRows");
+            assertEquals(2, rows.getChildCount());
+            assertEquals(first.title + " · 확인 완료", ((Button) rows.getChildAt(0)).getText().toString());
+            assertEquals(last.title + " · 확인 완료", ((Button) rows.getChildAt(1)).getText().toString());
+            assertEquals(before, catalog.savedItems);
+            assertEquals(stored, preferences.getString(ContentCatalog.STORAGE_KEY, null));
+            assertEquals(narration, ((ContentCatalog.Plan) field("plan")).narration());
+            assertSame(token, field("undoToken"));
+            assertSame(deleted, field("undoDeleted"));
+            assertNull(field("activeDialog"));
+            assertNull(Shadows.shadowOf(activity).getNextStartedActivity());
+            assertFalse(((SpeechPlayback) field("speech")).isPlaying());
+        }
+        ((Button) field("savedUnread")).performClick();
+        for (AccessPolicy.State state : new AccessPolicy.State[]{AccessPolicy.State.RESTRICTED, AccessPolicy.State.UNKNOWN}) {
+            setAccess(state);
+            shortcut.performClick();
+            ReflectionHelpers.callInstanceMethod(activity, "showCapacityConfirmed");
+            assertEquals("UNREAD", field("savedFilter").toString());
+            assertEquals(stored, preferences.getString(ContentCatalog.STORAGE_KEY, null));
+            assertEquals(before, catalog.savedItems);
+        }
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        controller.pause();
+        shortcut.performClick();
+        ReflectionHelpers.callInstanceMethod(activity, "showCapacityConfirmed");
+        assertEquals("UNREAD", field("savedFilter").toString());
+        assertEquals(stored, preferences.getString(ContentCatalog.STORAGE_KEY, null));
+        controller.resume();
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        deleteSaved(last);
+        assertEquals(View.GONE, shortcut.getVisibility());
+        shortcut.performClick();
+        assertEquals("UNREAD", field("savedFilter").toString());
+        undoDeletion().performClick();
+        assertEquals(View.VISIBLE, shortcut.getVisibility());
+        assertEquals(before, catalog.savedItems);
+        assertEquals(stored, preferences.getString(ContentCatalog.STORAGE_KEY, null));
+        // A still-visible button must recheck conditions changed before the next render.
+        assertTrue(catalog.setConfirmed(first, false, preferences));
+        assertTrue(catalog.setConfirmed(last, false, preferences));
+        shortcut.performClick();
+        assertEquals("UNREAD", field("savedFilter").toString());
+        controller.recreate(); activity = controller.get();
+        assertEquals("ALL", field("savedFilter").toString());
+        assertEquals(View.GONE, ((Button) field("savedCapacityConfirmed")).getVisibility());
+    }
+
     @Test public void capacityDisplayUsesTotalAcrossFiltersAndDeleteUndoRecreation() throws Exception {
         setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
         assertTrue(((Button) field("savedAll")).isSelected());
