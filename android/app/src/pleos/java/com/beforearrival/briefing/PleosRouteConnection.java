@@ -81,6 +81,7 @@ final class PleosRouteConnection implements RouteConnection {
         if (!hasPermission()) { invalidate("내비 경로 조회 권한 없음"); return; }
         try {
             pending = true;
+            PleosVerificationTrace.record(context, "requestDestination token=" + token);
             helper.getDestinationInfo();
             main.removeCallbacks(timeout);
             main.postDelayed(timeout, 10_000);
@@ -93,7 +94,10 @@ final class PleosRouteConnection implements RouteConnection {
         pending = false;
         main.removeCallbacks(timeout);
         try {
-            route.destination(token, NaviTimeContract.decode(info == null ? null : info.getRemainTime()), receivedAt);
+            Integer raw = info == null ? null : info.getRemainTime();
+            PleosVerificationTrace.record(context,
+                    "destination token=" + token + " receivedAt=" + receivedAt + " rawRemainTime=" + raw);
+            route.destination(token, NaviTimeContract.decode(raw), receivedAt);
             if (current()) main.postDelayed(poll, 5_000);
         } catch (RuntimeException error) {
             invalidate("도착 시간 단위·유효 범위 확인 필요");
@@ -103,6 +107,7 @@ final class PleosRouteConnection implements RouteConnection {
     private void postInvalidate(String reason) { main.post(() -> { if (current()) invalidate(reason); }); }
 
     private void invalidate(String reason) {
+        PleosVerificationTrace.record(context, "routeInvalidated token=" + token + " reason=" + reason);
         route.invalidate(token, Instant.now(), reason);
         dispose();
     }

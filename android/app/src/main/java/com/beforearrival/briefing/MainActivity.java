@@ -1028,6 +1028,8 @@ public final class MainActivity extends Activity {
 
     private void renderSpeechStatus(String message) {
         boolean playing = speech.isPlaying();
+        PleosVerificationTrace.record(this, "access=" + restrictionState + " resumed=" + resumed
+                + " interactive=" + canInteract() + " playing=" + playing);
         listen.setText(playing ? "듣기 중지" : "브리핑 듣기");
         enableButton(listen, canInteract() && !plan.selected.isEmpty());
         speechStatus.setText(message);
