@@ -2583,6 +2583,132 @@ public class MainActivityTest {
         assertNull(field("savedSourceId"));
     }
 
+    // Three explicit identities exercise ordering; this fixture size is not a product limit.
+    private List<ContentCatalog.Item> confirmNextFinishFixture(int count) throws Exception {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ContentCatalog catalog = field("catalog");
+        catalog.savedItems.clear();
+        List<ContentCatalog.Item> items = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            ContentCatalog.Item item = new ContentCatalog.Item(new org.json.JSONObject()
+                    .put("id", "finish-" + i).put("sourceId", "finish-source-" + i)
+                    .put("title", "같은 제목").put("summary", "finish summary " + i)
+                    .put("provenance", "demo_sample"));
+            items.add(item);
+            catalog.toggleSaved(item);
+        }
+        catalog.persist(field("preferences"));
+        ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
+        return items;
+    }
+
+    private void assertConfirmNextFinish(String label, ContentCatalog.Item candidate) {
+        Button button = detailAction("confirm-next");
+        assertEquals(label, button.getText().toString());
+        assertNull(button.getContentDescription()); // Accessible name follows current text, including retry.
+        assertEquals(candidate != null, detailAction("next-unread").isEnabled());
+        assertPreview(candidate);
+        AlertDialog dialog = field("activeDialog");
+        assertEquals(candidate == null, descendants(dialog.getWindow().getDecorView(), TextView.class)
+                .stream().anyMatch(v -> v.getVisibility() == View.VISIBLE
+                        && v.getText().toString().equals("다른 미확인 소식이 없어요.")));
+    }
+
+    @Test public void confirmNextFinishSingleFailureRetryAndUndo() throws Exception {
+        ContentCatalog.Item item = confirmNextFinishFixture(1).get(0);
+        ContentCatalog catalog = field("catalog");
+        android.content.SharedPreferences preferences = field("preferences");
+        for (boolean throwsAfterWrite : new boolean[]{false, true}) {
+            showDetail(item);
+            assertConfirmNextFinish("확인하고 마치기", null);
+            Button action = detailAction("confirm-next");
+            AlertDialog dialog = field("activeDialog");
+            java.util.Map<String, ?> stored = preferences.getAll();
+            List<ContentCatalog.Item> order = new ArrayList<>(catalog.savedItems);
+            Button undo = undoConfirmation();
+            ReflectionHelpers.setField(activity, "preferences",
+                    CatalogTest.failingCommits(preferences, throwsAfterWrite));
+            action.performClick();
+            assertEquals("저장 실패 · 다시 시도", action.getText().toString());
+            assertNull(action.getContentDescription());
+            assertSame(dialog, field("activeDialog"));
+            assertFalse(catalog.isConfirmed(item));
+            assertEquals(order, catalog.savedItems);
+            assertEquals(stored, preferences.getAll());
+            assertSame(undo, undoConfirmation());
+            ReflectionHelpers.setField(activity, "preferences", preferences);
+            action.performClick();
+            assertTrue(catalog.isConfirmed(item));
+            assertNull(field("activeDialog"));
+            undoConfirmation().performClick();
+            assertFalse(catalog.isConfirmed(item));
+            assertNull(field("activeDialog"));
+            showDetail(item);
+            assertConfirmNextFinish("확인하고 마치기", null);
+        }
+    }
+
+    @Test public void confirmNextFinishUsesGlobalOrderAndRefreshesOnReopenAndClick() throws Exception {
+        List<ContentCatalog.Item> items = confirmNextFinishFixture(3);
+        ContentCatalog.Item first = items.get(0), middle = items.get(1), last = items.get(2);
+        ContentCatalog catalog = field("catalog");
+        android.content.SharedPreferences preferences = field("preferences");
+        assertTrue(catalog.setConfirmed(middle, true, preferences));
+        for (String filter : new String[]{"savedAll", "savedUnread", "savedConfirmed"}) {
+            ((Button) field(filter)).performClick();
+            ReflectionHelpers.setField(activity, "savedQuery", "no matching title");
+            ReflectionHelpers.setField(activity, "savedSourceId", middle.sourceId);
+            ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
+            showDetail(last);
+            assertConfirmNextFinish("확인하고 다음", first); // Wrap to distinct key with identical title.
+        }
+        detailAction("confirm-next").performClick();
+        assertDetail(first);
+        assertConfirmNextFinish("확인하고 마치기", null); // All other entries confirmed.
+        assertTrue(catalog.setConfirmed(last, false, preferences));
+        showDetail(first);
+        assertConfirmNextFinish("확인하고 다음", last);
+        assertTrue(catalog.setConfirmed(last, true, preferences));
+        showDetail(first);
+        assertConfirmNextFinish("확인하고 마치기", null);
+        Button finish = detailAction("confirm-next");
+        assertTrue(catalog.setConfirmed(middle, false, preferences));
+        finish.performClick(); // Opening label is a snapshot; click rechecks candidates.
+        assertDetail(middle);
+        assertConfirmNextFinish("확인하고 마치기", null);
+        showDetail(first);
+        assertNull(detailAction("confirm-next"));
+    }
+
+    @Test public void confirmNextFinishRejectsUnsafeAndStaleReferences() throws Exception {
+        ContentCatalog.Item item = confirmNextFinishFixture(1).get(0);
+        ContentCatalog catalog = field("catalog");
+        android.content.SharedPreferences preferences = field("preferences");
+        for (String transition : new String[]{"restricted", "unknown", "pause", "recreate"}) {
+            showDetail(item);
+            assertConfirmNextFinish("확인하고 마치기", null);
+            Button stale = detailAction("confirm-next");
+            java.util.Map<String, ?> stored = preferences.getAll();
+            if (transition.equals("restricted")) setAccess(AccessPolicy.State.RESTRICTED);
+            else if (transition.equals("unknown")) setAccess(AccessPolicy.State.UNKNOWN);
+            else if (transition.equals("pause")) controller.pause();
+            else { controller.recreate(); activity = controller.get(); }
+            stale.performClick();
+            assertFalse(catalog.isConfirmed(item));
+            assertEquals(stored, preferences.getAll());
+            assertNull(field("activeDialog"));
+            if (transition.equals("pause")) controller.resume();
+            setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+            stale.performClick();
+            catalog = field("catalog");
+            assertFalse(catalog.isConfirmed(item));
+            assertEquals(stored, preferences.getAll());
+            assertNull(field("activeDialog"));
+            assertNull(Shadows.shadowOf(activity).getNextStartedActivity());
+            assertFalse(((SpeechPlayback) field("speech")).isPlaying());
+        }
+    }
+
     private List<ContentCatalog.Item> saveNavigationItems() {
         setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
         ContentCatalog catalog = field("catalog");

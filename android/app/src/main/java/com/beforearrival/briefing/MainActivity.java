@@ -941,13 +941,14 @@ public final class MainActivity extends Activity {
         Button confirm = button(target ? "확인 완료" : "미확인으로 되돌리기", false, () -> {});
         confirm.setTag("confirm-saved");
         add(actions, confirm, 8);
-        Button confirmNext = button("확인하고 다음", false, () -> {});
+        Item previewTarget = nextUnread(item);
+        Button confirmNext = button(getString(previewTarget == null
+                ? R.string.saved_confirm_finish : R.string.saved_confirm_next), false, () -> {});
         confirmNext.setTag("confirm-next");
         if (target) add(actions, confirmNext, 8);
         Button next = button("다음 미확인", false, () -> {});
         next.setTag("next-unread");
         add(actions, next, 8);
-        Item previewTarget = nextUnread(item);
         TextView preview = label(previewTarget == null ? "" : "다음 미확인 · " + previewTarget.title, 14, MUTED, false);
         preview.setTag("next-unread-preview");
         preview.setSingleLine(false);

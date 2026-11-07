@@ -42,4 +42,6 @@
     <string name="saved_source_status">출처 · %1$s · 표시 %2$d건</string>
     <string name="saved_source_empty">선택한 출처의 결과가 없어요</string>
     <string name="saved_show_all">전체 보기</string>
+    <string name="saved_confirm_next">확인하고 다음</string>
+    <string name="saved_confirm_finish">확인하고 마치기</string>
 </resources>
