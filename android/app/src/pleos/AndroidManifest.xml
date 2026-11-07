@@ -1,4 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="pleos.car.permission.NAVI_ROUTE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <application android:appCategory="audio">
+        <meta-data android:name="com.android.automotive" android:resource="@xml/automotive_app_desc" />
+        <service
+            android:name=".BriefingMediaService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
+        </service>
+        <receiver
+            android:name=".GleoBriefingReceiver"
+            android:exported="true"
+            android:permission="ai.umos.gleo.permission.APP_ACTION">
+            <intent-filter>
+                <action android:name="NEXT_BRIEFING_TOPIC" />
+                <action android:name="PAUSE_COMMUTE_BRIEFING" />
+                <action android:name="RESUME_COMMUTE_BRIEFING" />
+            </intent-filter>
+        </receiver>
+    </application>
 </manifest>

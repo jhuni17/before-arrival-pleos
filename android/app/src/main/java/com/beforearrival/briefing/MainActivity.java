@@ -68,6 +68,7 @@ public final class MainActivity extends Activity {
     private CarRestrictions restrictions;
     private State restrictionState = State.UNKNOWN;
     private boolean automotive;
+    private boolean vehicleMedia;
     private boolean resumed;
     private boolean transcriptVisible;
     private enum SavedFilter { ALL, UNREAD, CONFIRMED }
@@ -116,6 +117,7 @@ public final class MainActivity extends Activity {
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         automotive = getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+        vehicleMedia = automotive && LiveConnectionFactory.isSdkIncluded();
         configurePalette();
         liveMode = state == null ? LiveConnectionFactory.isSdkIncluded()
                 : state.getBoolean("live_mode", LiveConnectionFactory.isSdkIncluded());
@@ -131,7 +133,7 @@ public final class MainActivity extends Activity {
             throw new IllegalStateException("공유 소식 목록을 읽지 못했어요", error);
         }
         buildScreen();
-        speech = new SpeechPlayback(this, this::canInteract, this::renderSpeechStatus);
+        if (!vehicleMedia) speech = new SpeechPlayback(this, this::canInteract, this::renderSpeechStatus);
         render();
         renderAccess();
     }
@@ -139,6 +141,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onStart() {
         super.onStart();
+        if (vehicleMedia) BriefingMediaService.observe(this::renderSpeechStatus);
         if (liveMode) connectLive();
         if (!automotive) return;
         try {
@@ -167,13 +170,14 @@ public final class MainActivity extends Activity {
         clearConfirmationUndo();
         lifecycleGeneration++;
         dismissDialog();
-        speech.stop();
+        if (speech != null) speech.stop();
         renderSpeechStatus("");
         super.onPause();
     }
 
     @Override
     protected void onStop() {
+        if (vehicleMedia) BriefingMediaService.observe(null);
         if (liveConnection != null) {
             liveConnection.close();
             liveConnection = null;
@@ -196,7 +200,7 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        speech.close();
+        if (speech != null) speech.close();
         super.onDestroy();
     }
 
@@ -229,7 +233,8 @@ public final class MainActivity extends Activity {
         restrictionNotice.setPadding(dp(24), dp(24), dp(24), dp(24));
         frame.addView(restrictionNotice, new FrameLayout.LayoutParams(-1, -1));
 
-        add(content, label("정차용 브리핑 · 출처를 확인하는 소식", 18, MUTED, true), 0);
+        add(content, label(vehicleMedia ? "출근 브리핑 · 도착까지 듣는 내 소식"
+                : "정차용 브리핑 · 출처를 확인하는 소식", 18, MUTED, true), 0);
         add(content, heading("도착 전에", 34), 4);
         accessLabel = label("", 18, MUTED, false);
         add(content, accessLabel, 4);
@@ -350,7 +355,7 @@ public final class MainActivity extends Activity {
     }
 
     private void onNavigationChanged(RouteInput.Snapshot snapshot) {
-        if (!liveMode || speech == null) return;
+        if (!liveMode || plan == null) return;
         ContentCatalog.Plan updated = catalog.plan(snapshot);
         if (plan == null || updated.budgetSeconds != plan.budgetSeconds || !updated.selected.equals(plan.selected)) {
             refreshPlan();
@@ -485,12 +490,17 @@ public final class MainActivity extends Activity {
 
     private void togglePlayback() {
         if (!canInteract() || plan.selected.isEmpty()) return;
-        if (speech.isPlaying()) speech.stop();
+        if (vehicleMedia) {
+            if (BriefingMediaService.isActive()) BriefingMediaService.stop();
+            else BriefingMediaService.play(this, plan);
+        } else if (speech.isPlaying()) speech.stop();
         else speech.play(plan.narration(), plan.budgetSeconds);
     }
 
     private void refreshPlan() {
-        speech.stop();
+        if (vehicleMedia) {
+            if (canInteract()) BriefingMediaService.stop();
+        } else speech.stop();
         transcriptVisible = false;
         render();
     }
@@ -536,9 +546,11 @@ public final class MainActivity extends Activity {
             dismissDialog();
             transcriptVisible = false;
             renderTranscript();
-            speech.stop();
+            if (speech != null) speech.stop();
             restrictionNotice.setText(restrictionState == State.RESTRICTED
-                    ? "주행 제한 · 화면과 음성을 중지했어요.\n정차 후 브리핑을 열어 주세요."
+                    ? vehicleMedia
+                        ? "주행 중에는 차량 미디어에서 브리핑을 제어해 주세요."
+                        : "주행 제한 · 화면과 음성을 중지했어요.\n정차 후 브리핑을 열어 주세요."
                     : "차량 상태 미확인 · 화면과 음성을 중지했어요.\n차량의 사용 가능 상태를 확인하면 브리핑을 열 수 있어요.");
         }
         renderSpeechStatus("");
@@ -554,6 +566,9 @@ public final class MainActivity extends Activity {
 
     private void renderRows(RouteInput.Snapshot route) {
         briefingRows.removeAllViews();
+        if (vehicleMedia && !plan.selected.isEmpty()) {
+            add(briefingRows, heading("재생 순서 · " + plan.selected.size() + "개 주제", 16), 8);
+        }
         for (Item item : plan.selected) {
             String detail = item.summary;
             if (item.urgent(route.observedAt)) detail += " · 마감 임박으로 먼저 듣기";
@@ -1027,10 +1042,11 @@ public final class MainActivity extends Activity {
     }
 
     private void renderSpeechStatus(String message) {
-        boolean playing = speech.isPlaying();
+        boolean playing = vehicleMedia ? BriefingMediaService.isPlaying() : speech.isPlaying();
+        boolean active = vehicleMedia ? BriefingMediaService.isActive() : playing;
         PleosVerificationTrace.record(this, "access=" + restrictionState + " resumed=" + resumed
                 + " interactive=" + canInteract() + " playing=" + playing);
-        listen.setText(playing ? "듣기 중지" : "브리핑 듣기");
+        listen.setText(active ? "듣기 중지" : "브리핑 듣기");
         enableButton(listen, canInteract() && !plan.selected.isEmpty());
         speechStatus.setText(message);
         speechStatus.setVisibility(message.isEmpty() ? View.GONE : View.VISIBLE);
