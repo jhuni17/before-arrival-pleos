@@ -43,6 +43,7 @@ public class CatalogTest {
         assertEquals("sample-community", catalog.sources.get(0).id);
         assertFalse(catalog.source("sample-game").enabled);
         assertEquals(3, catalog.savedItems.size());
+        assertEquals(3, catalog.unreadCount());
         catalog.move("sample-game", -1); catalog.source("sample-game").enabled = true;
         catalog.persist(preferences);
         ContentCatalog restored = new ContentCatalog(defaults, preferences);
@@ -177,6 +178,60 @@ public class CatalogTest {
             assertEquals(5, source.items.size());
             assertEquals(NOW, source.lastSuccessAt);
         }
+    }
+
+    static SharedPreferences failingCommits(SharedPreferences real) {
+        return (SharedPreferences) java.lang.reflect.Proxy.newProxyInstance(
+                SharedPreferences.class.getClassLoader(), new Class<?>[]{SharedPreferences.class}, (proxy, method, args) -> {
+                    if (!method.getName().equals("edit")) return method.invoke(real, args);
+                    SharedPreferences.Editor editor = real.edit();
+                    return java.lang.reflect.Proxy.newProxyInstance(SharedPreferences.Editor.class.getClassLoader(),
+                            new Class<?>[]{SharedPreferences.Editor.class}, (ep, em, ea) -> {
+                                if (em.getName().equals("commit")) { editor.commit(); return false; }
+                                Object result = em.invoke(editor, ea);
+                                return result == editor ? ep : result;
+                            });
+                });
+    }
+
+    @Test public void existingSavedJsonWithoutConfirmationStartsUnread() throws Exception {
+        catalog.toggleSaved(catalog.sources.get(0).items.get(0));
+        catalog.persist(preferences);
+        JSONObject stored = new JSONObject(preferences.getString(ContentCatalog.STORAGE_KEY, ""));
+        stored.getJSONArray("savedItems").getJSONObject(0).remove("confirmed");
+        preferences.edit().putString(ContentCatalog.STORAGE_KEY, stored.toString()).commit();
+        catalog = new ContentCatalog(defaults, preferences);
+        assertEquals(1, catalog.unreadCount());
+        assertFalse(catalog.isConfirmed(catalog.savedItems.get(0)));
+    }
+
+    @Test public void confirmationIsSavedOnlyDurableReversibleAndAtomic() throws Exception {
+        ContentCatalog.Item item = catalog.sources.get(0).items.get(0);
+        ContentCatalog.Item second = catalog.sources.get(1).items.get(0);
+        catalog.toggleSaved(item); catalog.toggleSaved(second); catalog.persist(preferences);
+        String source = catalog.sources.get(0).json().toString();
+        String payload = item.json().toString();
+        String narration = catalog.plan(new SampleRouteInput().snapshot()).narration();
+        assertEquals(2, catalog.unreadCount());
+        assertFalse(catalog.setConfirmed(item, true, failingCommits(preferences)));
+        assertFalse(catalog.isConfirmed(item)); assertEquals(2, catalog.unreadCount());
+        assertTrue(catalog.setConfirmed(item, true, preferences));
+        assertEquals(1, catalog.unreadCount());
+        assertEquals(source, catalog.sources.get(0).json().toString());
+        assertEquals(payload, catalog.savedItems.get(0).json().toString());
+        assertEquals(second.key(), catalog.savedItems.get(1).key());
+        assertEquals(narration, catalog.plan(new SampleRouteInput().snapshot()).narration());
+        catalog = new ContentCatalog(defaults, preferences);
+        assertTrue(catalog.isConfirmed(item)); assertEquals(1, catalog.unreadCount());
+        assertTrue(catalog.setConfirmed(item, false, preferences));
+        catalog = new ContentCatalog(defaults, preferences);
+        assertFalse(catalog.isConfirmed(item)); assertEquals(2, catalog.unreadCount());
+        catalog.setConfirmed(item, true, preferences);
+        catalog.toggleSaved(item);
+        assertFalse(catalog.setConfirmed(item, true, preferences));
+        assertEquals(1, catalog.savedItems.size());
+        catalog.toggleSaved(item);
+        assertFalse(catalog.isConfirmed(item)); assertEquals(2, catalog.unreadCount());
     }
 
     private static String steamResponse(int appId, String feed, boolean duplicate) throws Exception {

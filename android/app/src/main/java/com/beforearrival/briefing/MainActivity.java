@@ -539,20 +539,38 @@ public final class MainActivity extends Activity {
     }
 
     private void renderSaved() {
-        savedHeading.setText(getString(R.string.saved_heading, catalog.savedItems.size()));
+        savedHeading.setText(getString(R.string.saved_heading, catalog.savedItems.size()) + " · 미확인 " + catalog.unreadCount());
         savedRows.removeAllViews();
         if (catalog.savedItems.isEmpty()) {
             add(savedRows, label("저장한 소식이 없어요.", 14, MUTED, false), 4);
         }
         for (Item item : catalog.savedItems) {
-            Button entry = button(item.title, false, () -> {
+            Button entry = button(item.title + (catalog.isConfirmed(item) ? " · 확인 완료" : " · 미확인"), false, () -> {
+                int generation = lifecycleGeneration;
+                boolean target = !catalog.isConfirmed(item);
+                LinearLayout actions = column();
+                Button confirm = button(target ? "확인 완료" : "미확인으로 되돌리기", false, () -> {});
+                confirm.setTag("confirm-saved");
+                add(actions, confirm, 8);
                 AlertDialog.Builder detail = new AlertDialog.Builder(this)
                     .setTitle(item.title)
+                    .setView(actions)
                     .setMessage(item.summary + "\n\n" + (item.originalUrl == null ? "예시 콘텐츠" : item.originalUrl) + "\n\n" + ContentCatalog.LOCAL_NOTICE)
                     .setNegativeButton("닫기", null)
                     .setNeutralButton("저장 취소", (dialog, which) -> toggleSaved(item));
                 if (catalog.canOpen(item)) detail.setPositiveButton("공식 원문 열기", (dialog, which) -> openOriginal(item));
                 showDialog(detail);
+                AlertDialog shown = activeDialog;
+                confirm.setOnClickListener(view -> {
+                    if (!canInteract() || generation != lifecycleGeneration || activeDialog != shown
+                            || shown == null || !shown.isShowing() || !catalog.isSaved(item)) return;
+                    if (!catalog.setConfirmed(item, target, preferences)) {
+                        confirm.setText("저장 실패 · 다시 시도");
+                        return;
+                    }
+                    renderSaved();
+                    dismissDialog();
+                });
             });
             add(savedRows, entry, 6);
         }

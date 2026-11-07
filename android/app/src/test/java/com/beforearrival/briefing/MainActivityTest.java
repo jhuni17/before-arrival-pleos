@@ -107,7 +107,7 @@ public class MainActivityTest {
         activity = controller.get();
         setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
         TextView heading = field("savedHeading");
-        assertEquals("도착해서 보기 · 1", heading.getText().toString());
+        assertEquals("도착해서 보기 · 1 · 미확인 1", heading.getText().toString());
         LinearLayout savedRows = field("savedRows");
         ((Button) savedRows.getChildAt(0)).performClick();
         AlertDialog dialog = field("activeDialog");
@@ -236,6 +236,52 @@ public class MainActivityTest {
         open.performClick(); // Stale button after dismissal must also remain blocked.
         Shadows.shadowOf(Looper.getMainLooper()).idle();
         assertNull(Shadows.shadowOf(activity).getNextStartedActivity());
+    }
+
+    @Test public void confirmationFailureRetryRecreationAndStaleHandlers() {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ContentCatalog catalog = field("catalog");
+        ContentCatalog.Item item = catalog.sources.get(0).items.get(0);
+        catalog.toggleSaved(item);
+        ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
+        android.content.SharedPreferences preferences = field("preferences");
+        ReflectionHelpers.setField(activity, "preferences", CatalogTest.failingCommits(preferences));
+        Button confirm = openConfirmation();
+        assertFalse(catalog.isConfirmed(item)); // Opening details does not confirm.
+        confirm.performClick();
+        assertEquals("저장 실패 · 다시 시도", confirm.getText().toString());
+        assertEquals(1, catalog.unreadCount());
+        ReflectionHelpers.setField(activity, "preferences", preferences);
+        confirm.performClick();
+        assertTrue(catalog.isConfirmed(item)); assertEquals(0, catalog.unreadCount());
+        controller.recreate(); activity = controller.get();
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        catalog = field("catalog");
+        assertTrue(catalog.isConfirmed(item)); assertEquals(0, catalog.unreadCount());
+        openConfirmation().performClick();
+        assertFalse(catalog.isConfirmed(item)); assertEquals(1, catalog.unreadCount());
+        for (AccessPolicy.State state : new AccessPolicy.State[]{AccessPolicy.State.RESTRICTED, AccessPolicy.State.UNKNOWN}) {
+            Button stale = openConfirmation();
+            AlertDialog dialog = field("activeDialog");
+            setAccess(state); assertFalse(dialog.isShowing());
+            setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+            stale.performClick();
+            assertFalse(catalog.isConfirmed(item)); assertNull(field("activeDialog"));
+            assertNull(Shadows.shadowOf(activity).getNextStartedActivity());
+        }
+        Button stale = openConfirmation();
+        controller.pause(); controller.resume();
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        stale.performClick(); assertFalse(catalog.isConfirmed(item));
+        openConfirmation().performClick();
+        assertTrue(catalog.isConfirmed(item));
+    }
+
+    private Button openConfirmation() {
+        LinearLayout rows = field("savedRows");
+        ((Button) rows.getChildAt(0)).performClick();
+        AlertDialog dialog = field("activeDialog");
+        return dialog.findViewById(android.R.id.custom).findViewWithTag("confirm-saved");
     }
 
     private static <T> List<T> descendants(View view, Class<T> type) {

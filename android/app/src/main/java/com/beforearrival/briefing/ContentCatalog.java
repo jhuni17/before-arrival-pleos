@@ -19,6 +19,7 @@ final class ContentCatalog {
     static final String STORAGE_KEY = "catalog_v2";
     static final String LOCAL_NOTICE = "이 Android 앱에만 저장 · 브라우저/다른 기기와 동기화 안 됨";
     private JSONArray snapshots;
+    private final Set<String> confirmedKeys = new HashSet<>();
     final List<Provider> providers = new ArrayList<>();
     final List<Source> sources = new ArrayList<>();
     final List<Item> savedItems = new ArrayList<>();
@@ -159,7 +160,10 @@ final class ContentCatalog {
             if (itemJson == null) continue;
             Item item = new Item(itemJson);
             if (source(item.sourceId) != null && validItem(item, item.sourceId) && !isSaved(item)
-                    && ("demo_sample".equals(item.provenance) ? "sample".equals(source(item.sourceId).provider) : canOpen(item))) savedItems.add(item);
+                    && ("demo_sample".equals(item.provenance) ? "sample".equals(source(item.sourceId).provider) : canOpen(item))) {
+                savedItems.add(item);
+                if (itemJson.optBoolean("confirmed", false)) confirmedKeys.add(item.key());
+            }
         }
         if (migrated) migrate(preferences);
         persist(preferences);
@@ -219,8 +223,30 @@ final class ContentCatalog {
     }
     boolean isSaved(Item item) { for (Item saved : savedItems) if (saved.key().equals(item.key())) return true; return false; }
     void toggleSaved(Item item) {
-        for (int i = 0; i < savedItems.size(); i++) if (savedItems.get(i).key().equals(item.key())) { savedItems.remove(i); return; }
+        for (int i = 0; i < savedItems.size(); i++) if (savedItems.get(i).key().equals(item.key())) { savedItems.remove(i); confirmedKeys.remove(item.key()); return; }
         savedItems.add(item);
+    }
+    boolean isConfirmed(Item item) { return isSaved(item) && confirmedKeys.contains(item.key()); }
+    int unreadCount() {
+        int count = 0;
+        for (Item item : savedItems) if (!confirmedKeys.contains(item.key())) count++;
+        return count;
+    }
+    boolean setConfirmed(Item item, boolean confirmed, SharedPreferences preferences) {
+        if (!isSaved(item)) return false;
+        boolean previous = isConfirmed(item);
+        String oldStorage = preferences.getString(STORAGE_KEY, null);
+        if (confirmed) confirmedKeys.add(item.key()); else confirmedKeys.remove(item.key());
+        try {
+            if (preferences.edit().putString(STORAGE_KEY, storageJson()).commit()) return true;
+        } catch (JSONException | RuntimeException failure) { /* Keep the prior visible state and allow retry. */ }
+        if (previous) confirmedKeys.add(item.key()); else confirmedKeys.remove(item.key());
+        // A failed SharedPreferences commit can still update its in-memory map.
+        try {
+            if (oldStorage == null) preferences.edit().remove(STORAGE_KEY).commit();
+            else preferences.edit().putString(STORAGE_KEY, oldStorage).commit();
+        } catch (RuntimeException failure) { /* The operation remains unsuccessful. */ }
+        return false;
     }
     Plan plan(RouteInput.Snapshot route) {
         long seconds = route.remainingSeconds.orElse(0);
@@ -265,14 +291,15 @@ final class ContentCatalog {
         Source source = source(sourceId); if (source == null) return;
         source.fetchState = "stale"; source.lastAttemptAt = observedAt; source.failureMessage = "소식을 가져오지 못했어요.";
     }
+    private String storageJson() throws JSONException {
+        JSONArray list = new JSONArray(), saved = new JSONArray();
+        for (Source source : sources) list.put(source.json());
+        for (Item item : savedItems) saved.put(item.json().put("confirmed", isConfirmed(item)));
+        return new JSONObject().put("schemaVersion", 2).put("sources", list).put("savedItems", saved).toString();
+    }
     void persist(SharedPreferences preferences) {
-        try {
-            JSONArray list = new JSONArray(), saved = new JSONArray();
-            for (Source source : sources) list.put(source.json());
-            for (Item item : savedItems) saved.put(item.json());
-            preferences.edit().putString(STORAGE_KEY, new JSONObject().put("schemaVersion", 2)
-                    .put("sources", list).put("savedItems", saved).toString()).apply();
-        } catch (JSONException impossible) { throw new IllegalStateException(impossible); }
+        try { preferences.edit().putString(STORAGE_KEY, storageJson()).apply(); }
+        catch (JSONException impossible) { throw new IllegalStateException(impossible); }
     }
     static String canonicalUrl(String url) {
         if (url == null) return null;
