@@ -39,6 +39,7 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Consumer;
 
 import com.beforearrival.briefing.ContentCatalog.Item;
 import com.beforearrival.briefing.ContentCatalog.Source;
@@ -52,9 +53,9 @@ public final class MainActivity extends Activity {
 
     private final SampleRouteInput sampleRoute = new SampleRouteInput();
     private boolean liveMode;
-    private final NavigationRouteInput navigationRoute = new NavigationRouteInput(this::onNavigationChanged);
+    private final LiveRouteSession navigationRoute = LiveRouteSession.shared;
+    private final Consumer<RouteInput.Snapshot> routeObserver = this::onNavigationChanged;
     private RouteInput routeInput = sampleRoute;
-    private RouteConnection liveConnection;
     private ContentCatalog catalog;
     private LinearLayout sourceRows;
     private final Map<String, Integer> refreshGenerations = new HashMap<>();
@@ -142,7 +143,7 @@ public final class MainActivity extends Activity {
     protected void onStart() {
         super.onStart();
         if (vehicleMedia) BriefingMediaService.observe(this::renderSpeechStatus);
-        if (liveMode) connectLive();
+        if (liveMode) navigationRoute.attach(this, routeObserver);
         if (!automotive) return;
         try {
             restrictions = new CarRestrictions(state -> {
@@ -178,10 +179,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onStop() {
         if (vehicleMedia) BriefingMediaService.observe(null);
-        if (liveConnection != null) {
-            liveConnection.close();
-            liveConnection = null;
-        }
+        navigationRoute.detach(routeObserver);
         if (restrictions != null) {
             restrictions.close();
             restrictions = null;
@@ -252,8 +250,8 @@ public final class MainActivity extends Activity {
             if (!canInteract()) return;
             liveMode = !liveMode;
             routeInput = liveMode ? navigationRoute : sampleRoute;
-            if (liveConnection != null) { liveConnection.close(); liveConnection = null; }
-            if (liveMode) connectLive();
+            if (liveMode) navigationRoute.attach(this, routeObserver);
+            else navigationRoute.detach(routeObserver);
             refreshPlan();
         });
 
@@ -356,18 +354,11 @@ public final class MainActivity extends Activity {
 
     private void onNavigationChanged(RouteInput.Snapshot snapshot) {
         if (!liveMode || plan == null) return;
-        ContentCatalog.Plan updated = catalog.plan(snapshot);
-        if (plan == null || updated.budgetSeconds != plan.budgetSeconds || !updated.selected.equals(plan.selected)) {
-            refreshPlan();
-        } else {
-            render();
-        }
+        render();
     }
 
     private void connectLive() {
-        if (liveConnection != null) liveConnection.close();
-        liveConnection = LiveConnectionFactory.create(this, navigationRoute);
-        liveConnection.start();
+        navigationRoute.reconnect(this);
     }
 
     private void showAddSource() {
@@ -492,7 +483,7 @@ public final class MainActivity extends Activity {
         if (!canInteract() || plan.selected.isEmpty()) return;
         if (vehicleMedia) {
             if (BriefingMediaService.isActive()) BriefingMediaService.stop();
-            else BriefingMediaService.play(this, plan);
+            else BriefingMediaService.play(this, plan, routeInput.snapshot());
         } else if (speech.isPlaying()) speech.stop();
         else speech.play(plan.narration(), plan.budgetSeconds);
     }

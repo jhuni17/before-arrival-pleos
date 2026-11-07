@@ -2,6 +2,8 @@ package com.beforearrival.briefing;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.pm.ApplicationInfo;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -10,6 +12,7 @@ import java.time.Instant;
 
 import ai.pleos.playground.navi.constants.NaviErrorCode;
 import ai.pleos.playground.navi.data.DestinationInfo;
+import ai.pleos.playground.navi.data.DestinationArrivedInfo;
 import ai.pleos.playground.navi.helper.NaviHelper;
 import ai.pleos.playground.navi.helper.listener.NaviHelperEventListener;
 import kotlin.Unit;
@@ -47,6 +50,9 @@ final class PleosRouteConnection implements RouteConnection {
                     main.post(() -> receive(info, receivedAt));
                 }
                 @Override public void onRouteCancelled() { postInvalidate("경로 취소 · 다시 연결해 주세요"); }
+                @Override public void onDestinationArrived(DestinationArrivedInfo info) {
+                    postInvalidate("목적지 도착 · 브리핑 종료");
+                }
                 @Override public void onDestinationChanged() { postInvalidate("목적지 변경 · 다시 연결해 주세요"); }
                 @Override public void onError(NaviErrorCode code) { postInvalidate("내비 오류 · 다시 연결해 주세요"); }
             };
@@ -97,10 +103,11 @@ final class PleosRouteConnection implements RouteConnection {
             Integer raw = info == null ? null : info.getRemainTime();
             PleosVerificationTrace.record(context,
                     "destination token=" + token + " receivedAt=" + receivedAt + " rawRemainTime=" + raw);
-            route.destination(token, NaviTimeContract.decode(raw), receivedAt);
+            boolean debug = (context.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+            route.destination(token, NaviTimeContract.decode(raw, Build.FINGERPRINT, debug), receivedAt);
             if (current()) main.postDelayed(poll, 5_000);
         } catch (RuntimeException error) {
-            invalidate("도착 시간 단위·유효 범위 확인 필요");
+            invalidate("유효한 도착 시간 없음");
         }
     }
 

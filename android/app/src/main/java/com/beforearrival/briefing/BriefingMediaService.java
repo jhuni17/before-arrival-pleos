@@ -21,6 +21,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Process;
+import android.os.SystemClock;
 import android.service.media.MediaBrowserService;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
@@ -32,6 +33,8 @@ import com.beforearrival.briefing.ContentCatalog.Plan;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -43,7 +46,16 @@ public final class BriefingMediaService extends MediaBrowserService {
     private static final String CHANNEL = "briefing_playback";
     private static final int NOTIFICATION = 41;
     // Activity and service run in the same process, on the main thread.
-    private static Plan pending;
+    private static final class Request {
+        final Plan plan;
+        final RouteInput.Snapshot route;
+        Request(Plan plan, RouteInput.Snapshot route) {
+            this.plan = plan;
+            this.route = route;
+        }
+    }
+
+    private static Request pending;
     private static BriefingMediaService current;
     private static Consumer<String> observer;
 
@@ -54,6 +66,7 @@ public final class BriefingMediaService extends MediaBrowserService {
             .build();
     private final Runnable expire = () -> finish("듣기 예산에 맞춰 브리핑을 멈췄어요.");
     private final Runnable unavailable = () -> finish("차량 상태를 확인할 수 없어 브리핑을 멈췄어요.");
+    private final Consumer<RouteInput.Snapshot> liveRouteObserver = this::onLiveRoute;
     private MediaSession session;
     private AudioManager audio;
     private AudioFocusRequest focus;
@@ -70,12 +83,13 @@ public final class BriefingMediaService extends MediaBrowserService {
     private int index;
     private long generation;
     private long focusVersion;
+    private long playbackDeadline;
     private MediaPlayer player;
     private File speechFile;
 
-    static void play(Context context, Plan plan) {
+    static void play(Context context, Plan plan, RouteInput.Snapshot route) {
         if (plan.selected.isEmpty() || plan.budgetSeconds <= 0 || isActive()) return;
-        pending = plan;
+        pending = new Request(plan, route);
         try {
             context.startForegroundService(new Intent(context, BriefingMediaService.class));
             notifyActivity("");
@@ -150,13 +164,13 @@ public final class BriefingMediaService extends MediaBrowserService {
     }
 
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
-        Plan request = pending;
+        Request request = pending;
         pending = null;
         if (request == null) {
             if (items.isEmpty()) stopSelf(startId);
             return START_NOT_STICKY;
         }
-        items = new ArrayList<>(request.selected);
+        items = new ArrayList<>(request.plan.selected);
         queueId = UUID.randomUUID().toString();
         index = 0;
         wantsPlayback = true;
@@ -174,7 +188,15 @@ public final class BriefingMediaService extends MediaBrowserService {
             return START_NOT_STICKY;
         }
         updateState();
-        main.postDelayed(expire, request.budgetSeconds * 1000L);
+        playbackDeadline = SystemClock.elapsedRealtime() + request.plan.budgetSeconds * 1000L;
+        main.postDelayed(expire, request.plan.budgetSeconds * 1000L);
+        PleosVerificationTrace.record(this, "mediaPlan source=" + request.route.source
+                + " etaSeconds=" + request.route.remainingSeconds.orElse(-1)
+                + " budgetSeconds=" + request.plan.budgetSeconds + " tracks=" + items.size());
+        if (request.route.source == RouteInput.Source.NAVI_HELPER) {
+            LiveRouteSession.shared.attach(this, liveRouteObserver);
+            if (items.isEmpty()) return START_NOT_STICKY;
+        }
         main.postDelayed(unavailable, 4000L);
         restrictions = new CarRestrictions(state -> {
             State previous = carState;
@@ -194,6 +216,20 @@ public final class BriefingMediaService extends MediaBrowserService {
             engine = new TextToSpeech(this, status -> main.post(() -> initializeVoice(status)));
         }
         return START_NOT_STICKY;
+    }
+
+    private void onLiveRoute(RouteInput.Snapshot route) {
+        if (items.isEmpty()) return;
+        int budget = ContentCatalog.listeningBudget(route);
+        if (budget == 0 || Duration.between(route.observedAt, Instant.now()).getSeconds() >= 15) {
+            PleosVerificationTrace.record(this, "mediaRouteUnavailable");
+            finish("현재 경로의 듣기 시간이 없어 브리핑을 멈췄어요.");
+            return;
+        }
+        long now = SystemClock.elapsedRealtime();
+        playbackDeadline = Math.min(playbackDeadline, now + budget * 1000L);
+        main.removeCallbacks(expire);
+        main.postDelayed(expire, Math.max(0, playbackDeadline - now));
     }
 
     private void initializeVoice(int status) {
@@ -374,6 +410,7 @@ public final class BriefingMediaService extends MediaBrowserService {
     private void releasePlayback() {
         main.removeCallbacksAndMessages(null);
         items = Collections.emptyList();
+        LiveRouteSession.shared.detach(liveRouteObserver);
         wantsPlayback = false;
         carState = State.UNKNOWN;
         if (restrictions != null) {
