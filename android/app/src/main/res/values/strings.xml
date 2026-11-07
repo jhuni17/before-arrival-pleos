@@ -25,6 +25,7 @@
     <string name="saved_fetched_at">가져온 시각(UTC) · %1$s</string>
     <string name="saved_fetched_unknown">가져온 시각 미제공</string>
     <string name="saved_search">저장한 제목 검색</string>
+    <string name="saved_conditions_clear">조건 모두 지우기</string>
     <string name="saved_search_clear">검색 지우기</string>
     <string name="saved_search_apply">적용</string>
     <string name="saved_search_close">닫기</string>

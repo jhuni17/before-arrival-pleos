@@ -1846,6 +1846,108 @@ public class MainActivityTest {
         assertEquals(savedRowText(items.get(0)), ((Button) rows.getChildAt(0)).getText().toString());
     }
 
+    @Test public void savedConditionsResetClearsEveryCombinationWithoutMutatingSavedState() {
+        assertResetDisplay(new ArrayList<>());
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        ContentCatalog catalog = field("catalog");
+        android.content.SharedPreferences preferences = field("preferences");
+        assertTrue(catalog.setConfirmed(items.get(0), true, preferences));
+        ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
+        assertResetDisplay(items);
+        java.util.Map<String, ?> before = preferences.getAll();
+        Object plan = field("plan");
+        boolean playing = ((SpeechPlayback) field("speech")).isPlaying();
+        for (String query : new String[]{"", items.get(0).title, "no matching saved title"}) {
+            for (String filter : new String[]{"savedAll", "savedUnread", "savedConfirmed"}) {
+                if (!query.isEmpty()) applySearch(query);
+                ((Button) field(filter)).performClick();
+                Button reset = searchButton(activity.getWindow().getDecorView(), "조건 모두 지우기");
+                assertNotNull(reset);
+                assertEquals(query.isEmpty() && filter.equals("savedAll") ? View.GONE : View.VISIBLE,
+                        reset.getVisibility());
+                reset.performClick();
+                assertResetDisplay(items);
+                assertEquals(before, preferences.getAll());
+                assertTrue(catalog.isConfirmed(items.get(0)));
+                assertEquals(items.size() - 1, catalog.unreadCount());
+                assertSavedCapacity(items.size());
+                assertSavedFilterCounts(items.size(), items.size() - 1);
+                assertSame(plan, field("plan"));
+                assertEquals(playing, ((SpeechPlayback) field("speech")).isPlaying());
+                assertNull(field("activeDialog"));
+            }
+        }
+        for (ContentCatalog.Item item : items) deleteSaved(item);
+        applySearch("empty library");
+        ((Button) field("savedConfirmed")).performClick();
+        ((Button) field("savedConditionsClear")).performClick();
+        assertResetDisplay(new ArrayList<>());
+        assertEquals("저장한 소식이 없어요.", ((TextView) ((LinearLayout) field("savedRows"))
+                .getChildAt(0)).getText().toString());
+    }
+
+    private void assertResetDisplay(List<ContentCatalog.Item> items) {
+        assertEquals("", (String) field("savedQuery"));
+        assertTrue(((Button) field("savedAll")).isSelected());
+        assertFalse(((Button) field("savedUnread")).isSelected());
+        assertFalse(((Button) field("savedConfirmed")).isSelected());
+        for (String name : new String[]{"savedSearchStatus", "savedSearchClear", "savedConditionsClear"})
+            assertEquals(View.GONE, ((View) field(name)).getVisibility());
+        LinearLayout rows = field("savedRows");
+        assertEquals(Math.max(1, items.size()), rows.getChildCount());
+        for (int i = 0; i < items.size(); i++)
+            assertEquals(savedRowText(items.get(i)), ((Button) rows.getChildAt(i)).getText().toString());
+    }
+
+    @Test public void savedConditionsResetPreservesBothUndoActions() {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        showDetail(items.get(0));
+        detailAction("confirm-saved").performClick();
+        ReflectionHelpers.callInstanceMethod(activity, "dismissDialog");
+        applySearch("no match");
+        ((Button) field("savedConfirmed")).performClick();
+        Object token = field("undoToken");
+        ((Button) field("savedConditionsClear")).performClick();
+        assertSame(token, field("undoToken"));
+        undoConfirmation().performClick();
+        assertFalse(((ContentCatalog) field("catalog")).isConfirmed(items.get(0)));
+        deleteSaved(items.get(0));
+        Object deleted = field("undoDeleted");
+        applySearch("no match");
+        ((Button) field("savedUnread")).performClick();
+        ((Button) field("savedConditionsClear")).performClick();
+        assertSame(deleted, field("undoDeleted"));
+        undoDeletion().performClick();
+        assertResetDisplay(items);
+    }
+
+    @Test public void savedConditionsResetRejectsUnsafeCallbacksAndRecreationDefaults() {
+        List<ContentCatalog.Item> items = saveNavigationItems();
+        for (int transition = 0; transition < 3; transition++) {
+            applySearch("no match");
+            ((Button) field("savedConfirmed")).performClick();
+            Button retained = field("savedConditionsClear");
+            java.util.Map<String, ?> before = ((android.content.SharedPreferences) field("preferences")).getAll();
+            if (transition == 2) controller.pause();
+            else setAccess(transition == 0 ? AccessPolicy.State.RESTRICTED : AccessPolicy.State.UNKNOWN);
+            retained.performClick();
+            assertEquals("no match", (String) field("savedQuery"));
+            assertTrue(((Button) field("savedConfirmed")).isSelected());
+            assertEquals(before, ((android.content.SharedPreferences) field("preferences")).getAll());
+            assertEquals(items, ((ContentCatalog) field("catalog")).savedItems);
+            assertFalse(((SpeechPlayback) field("speech")).isPlaying());
+            assertNull(field("activeDialog"));
+            if (transition == 2) controller.resume();
+            setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        }
+        controller.recreate(); activity = controller.get();
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        List<ContentCatalog.Item> restored = ((ContentCatalog) field("catalog")).savedItems;
+        assertEquals(items.size(), restored.size());
+        for (int i = 0; i < items.size(); i++) assertEquals(items.get(i).key(), restored.get(i).key());
+        assertResetDisplay(restored);
+    }
+
     private void assertSearchDisplay(String query, String filter) {
         ContentCatalog catalog = field("catalog");
         assertEquals(query, (String) field("savedQuery"));

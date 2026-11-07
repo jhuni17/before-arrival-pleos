@@ -75,6 +75,7 @@ public final class MainActivity extends Activity {
     private String savedQuery = "";
     private TextView savedSearchStatus;
     private Button savedSearchClear;
+    private Button savedConditionsClear;
     private ContentCatalog.DeletedItem undoDeleted;
     private Item undoConfirmed;
     private Object undoToken;
@@ -312,6 +313,8 @@ public final class MainActivity extends Activity {
         add(savedPanel, button(getString(R.string.saved_search), false, this::showSavedSearch), 8);
         savedSearchClear = button(getString(R.string.saved_search_clear), false, this::clearSavedSearch);
         add(savedPanel, savedSearchClear, 4);
+        savedConditionsClear = button(getString(R.string.saved_conditions_clear), false, this::clearSavedConditions);
+        add(savedPanel, savedConditionsClear, 4);
         savedSearchStatus = label("", 14, MUTED, false);
         savedSearchStatus.setTag("saved-search-status");
         add(savedPanel, savedSearchStatus, 4);
@@ -620,6 +623,13 @@ public final class MainActivity extends Activity {
         return value.trim().toLowerCase(Locale.ROOT);
     }
 
+    private void clearSavedConditions() {
+        if (!canInteract()) return;
+        savedQuery = "";
+        savedFilter = SavedFilter.ALL;
+        renderSaved();
+    }
+
     private void clearSavedSearch() {
         if (!canInteract()) return;
         savedQuery = "";
@@ -790,6 +800,8 @@ public final class MainActivity extends Activity {
             add(savedRows, entry, 6);
         }
         boolean searching = !savedQuery.isEmpty();
+        savedConditionsClear.setVisibility(searching || savedFilter != SavedFilter.ALL
+                ? View.VISIBLE : View.GONE);
         savedSearchClear.setVisibility(searching ? View.VISIBLE : View.GONE);
         savedSearchStatus.setVisibility(searching ? View.VISIBLE : View.GONE);
         savedSearchStatus.setText(getString(R.string.saved_search_status, savedQuery, visibleCount)
