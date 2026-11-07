@@ -240,7 +240,7 @@ public class MainActivityTest {
         assertNull(Shadows.shadowOf(activity).getNextStartedActivity());
     }
 
-    @Test public void savedDetailButtonsRejectQueuedAndStaleCallbacksAcrossLifecycle() {
+    @Test public void savedDetailButtonsRejectQueuedAndStaleCallbacksAcrossLifecycle() throws org.json.JSONException {
         setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
         ContentCatalog catalog = field("catalog");
         ContentCatalog.Item item = catalog.add("공식 소식", "lol",
