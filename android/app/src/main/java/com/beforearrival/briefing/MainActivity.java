@@ -719,8 +719,15 @@ public final class MainActivity extends Activity {
         for (Item item : catalog.savedItems) {
             if (savedFilter == SavedFilter.UNREAD && catalog.isConfirmed(item)) continue;
             if (savedFilter == SavedFilter.CONFIRMED && !catalog.isConfirmed(item)) continue;
-            Button entry = button(item.title + (catalog.isConfirmed(item) ? " · 확인 완료" : " · 미확인"),
+            String text = getString(R.string.saved_row, item.title,
+                    getString(catalog.isConfirmed(item) ? R.string.saved_status_confirmed : R.string.saved_status_unread),
+                    getString(R.string.saved_source, savedSourceName(item)));
+            Button entry = button(text,
                     false, () -> showSavedDetail(item));
+            entry.setSingleLine(false);
+            entry.setMaxLines(Integer.MAX_VALUE);
+            entry.setEllipsize(null);
+            entry.setContentDescription(text);
             add(savedRows, entry, 6);
         }
     }
@@ -747,6 +754,12 @@ public final class MainActivity extends Activity {
         return null;
     }
 
+    private String savedSourceName(Item item) {
+        Source source = catalog.source(item.sourceId);
+        return source == null || source.name.trim().isEmpty()
+                ? getString(R.string.saved_source_unknown) : source.name;
+    }
+
     private void showSavedDetail(Item item) {
         if (!canInteract() || !catalog.isSaved(item)) return;
         int generation = lifecycleGeneration;
@@ -756,9 +769,7 @@ public final class MainActivity extends Activity {
             if (catalog.savedItems.get(i).key().equals(item.key())) { savedIndex = i; break; }
         }
         LinearLayout actions = column();
-        Source source = catalog.source(item.sourceId);
-        String sourceName = source == null || source.name.trim().isEmpty()
-                ? getString(R.string.saved_source_unknown) : source.name;
+        String sourceName = savedSourceName(item);
         boolean official = "official_snapshot".equals(item.provenance)
                 || "official_runtime".equals(item.provenance);
         int kind = "demo_sample".equals(item.provenance) ? R.string.saved_kind_sample

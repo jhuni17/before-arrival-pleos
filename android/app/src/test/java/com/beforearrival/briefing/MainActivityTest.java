@@ -385,7 +385,7 @@ public class MainActivityTest {
         assertEquals(items.size() - 1, rows.getChildCount());
         int row = 0;
         for (ContentCatalog.Item item : items) if (!catalog.isConfirmed(item))
-            assertEquals(item.title + " · 미확인", ((Button) rows.getChildAt(row++)).getText().toString());
+            assertEquals(savedRowText(item), ((Button) rows.getChildAt(row++)).getText().toString());
         assertEquals("도착해서 보기 · " + items.size() + " · 미확인 " + (items.size() - 1),
                 ((TextView) field("savedHeading")).getText().toString());
         openConfirmation();
@@ -422,7 +422,7 @@ public class MainActivityTest {
         LinearLayout rows = field("savedRows");
         assertEquals(2, rows.getChildCount());
         for (int i = 0; i < 2; i++)
-            assertEquals(items.get(i + 1).title + " · 확인 완료", ((Button) rows.getChildAt(i)).getText().toString());
+            assertEquals(savedRowText(items.get(i + 1)), ((Button) rows.getChildAt(i)).getText().toString());
         assertEquals("도착해서 보기 · " + items.size() + " · 미확인 " + (items.size() - 2),
                 ((TextView) field("savedHeading")).getText().toString());
         ((Button) rows.getChildAt(0)).performClick();
@@ -532,7 +532,7 @@ public class MainActivityTest {
         openConfirmation().performClick();
         ((Button) field("savedUnread")).performClick();
         assertEquals(1, rows.getChildCount());
-        assertEquals(item.title + " · 미확인", ((Button) rows.getChildAt(0)).getText().toString());
+        assertEquals(savedRowText(item), ((Button) rows.getChildAt(0)).getText().toString());
     }
 
     @Test public void savedFilterActionsStayBlockedAcrossRestrictionsAndPause() {
@@ -1302,8 +1302,8 @@ public class MainActivityTest {
             assertSavedFilterCounts(ContentCatalog.SAVED_ITEM_LIMIT, ContentCatalog.SAVED_ITEM_LIMIT - 2);
             LinearLayout rows = field("savedRows");
             assertEquals(2, rows.getChildCount());
-            assertEquals(first.title + " · 확인 완료", ((Button) rows.getChildAt(0)).getText().toString());
-            assertEquals(last.title + " · 확인 완료", ((Button) rows.getChildAt(1)).getText().toString());
+            assertEquals(savedRowText(first), ((Button) rows.getChildAt(0)).getText().toString());
+            assertEquals(savedRowText(last), ((Button) rows.getChildAt(1)).getText().toString());
             assertEquals(before, catalog.savedItems);
             assertEquals(stored, preferences.getString(ContentCatalog.STORAGE_KEY, null));
             assertEquals(narration, ((ContentCatalog.Plan) field("plan")).narration());
@@ -1667,7 +1667,7 @@ public class MainActivityTest {
         for (int i = 0; i < items.size(); i++) {
             if (i == 0 && (!restored || filter.equals("savedUnread"))) continue;
             if (i != 0 && filter.equals("savedConfirmed")) continue;
-            assertEquals(items.get(i).title + (i == 0 ? " · 확인 완료" : " · 미확인"),
+            assertEquals(savedRowText(items.get(i)),
                     ((Button) rows.getChildAt(row++)).getText().toString());
         }
         assertFalse(descendants(rows, TextView.class).stream().anyMatch(text ->
@@ -1799,13 +1799,100 @@ public class MainActivityTest {
                 }
                 ContentCatalog.Item restored = catalog.savedItems.get(0);
                 assertEquals(expected, restored.json().toString());
-                showDetail(restored);
+                ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
+                LinearLayout rows = field("savedRows");
+                Button first = (Button) rows.getChildAt(0), second = (Button) rows.getChildAt(1);
+                assertEquals(savedRowText(restored), first.getText().toString());
+                assertEquals(savedRowText(catalog.savedItems.get(1)), second.getText().toString());
+                assertNotEquals(first.getText().toString(), second.getText().toString());
+                java.util.Map<String, ?> stored = ((android.content.SharedPreferences) field("preferences")).getAll();
+                first.performClick();
+                assertDetail(restored);
                 assertMetadata(restored, metadata);
-                showDetail(catalog.savedItems.get(1));
+                ((AlertDialog) field("activeDialog")).dismiss();
+                second.performClick();
+                assertDetail(catalog.savedItems.get(1));
+                assertEquals(stored, ((android.content.SharedPreferences) field("preferences")).getAll());
                 assertMetadata(catalog.savedItems.get(1), "출처 · "
                         + catalog.source(sameTitle.sourceId).name + "\n예시 콘텐츠");
             }
         }
+    }
+
+    @Test public void savedRowsDistinguishSourcesAcrossFiltersWithoutMutations() throws Exception {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ContentCatalog catalog = field("catalog");
+        String longText = new String(new char[40]).replace("\0", "긴 제목과 출처 ");
+        String[] names = {"첫 출처", "다른 출처", " ", longText};
+        List<ContentCatalog.Item> items = new ArrayList<>();
+        for (int i = 0; i <= names.length; i++) {
+            String sourceId = "saved-row-fixture-" + i;
+            if (i < names.length) catalog.sources.add(new ContentCatalog.Source(new org.json.JSONObject()
+                    .put("id", sourceId).put("name", names[i])));
+            ContentCatalog.Item item = new ContentCatalog.Item(new org.json.JSONObject()
+                    .put("id", "row-" + i).put("sourceId", sourceId)
+                    .put("title", i == 3 ? longText : "같은 제목")
+                    .put("summary", "항목별 요약 " + i).put("originalUrl", "https://example.org/article/" + i)
+                    .put("provenance", "demo_sample"));
+            items.add(item);
+            catalog.toggleSaved(item);
+        }
+        assertNotEquals(items.get(0).key(), items.get(1).key());
+        android.content.SharedPreferences preferences = field("preferences");
+        for (boolean confirmed : new boolean[]{false, true}) {
+            for (ContentCatalog.Item item : items) catalog.setConfirmed(item, confirmed, preferences);
+            catalog.persist(preferences);
+            {
+                java.util.Map<String, ?> stored = preferences.getAll();
+                List<ContentCatalog.Item> order = new ArrayList<>(catalog.savedItems);
+                ContentCatalog.Plan plan = field("plan");
+                for (String filter : new String[]{"savedAll", confirmed ? "savedConfirmed" : "savedUnread"}) {
+                    ((Button) field(filter)).performClick();
+                    LinearLayout rows = field("savedRows");
+                    assertEquals(items.size(), rows.getChildCount());
+                    assertNotEquals(((Button) rows.getChildAt(0)).getText().toString(),
+                            ((Button) rows.getChildAt(1)).getText().toString());
+                    for (int i = 0; i < order.size(); i++) {
+                        Button row = (Button) rows.getChildAt(i);
+                        assertEquals(savedRowText(order.get(i)), row.getText().toString());
+                        assertEquals(row.getText().toString(), row.getContentDescription().toString());
+                        assertNull(row.getEllipsize());
+                        assertEquals(Integer.MAX_VALUE, row.getMaxLines());
+                        row.performClick();
+                        assertDetail(order.get(i));
+                        ((AlertDialog) field("activeDialog")).dismiss();
+                        for (AccessPolicy.State blocked : new AccessPolicy.State[]{
+                                AccessPolicy.State.RESTRICTED, AccessPolicy.State.UNKNOWN}) {
+                            setAccess(blocked);
+                            row.performClick();
+                            AlertDialog blockedDialog = field("activeDialog");
+                            assertTrue(blockedDialog == null || !blockedDialog.isShowing());
+                        }
+                        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+                        controller.pause();
+                        row.performClick();
+                        AlertDialog active = field("activeDialog");
+                        assertTrue(active == null || !active.isShowing());
+                        controller.resume();
+                        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+                    }
+                    assertEquals(stored, preferences.getAll());
+                    assertEquals(order, catalog.savedItems);
+                    assertEquals(confirmed ? 0 : items.size(), catalog.unreadCount());
+                    assertSame(plan, field("plan"));
+                    assertSavedFilterCounts();
+                    assertNull(Shadows.shadowOf(activity).getNextStartedActivity());
+                    assertFalse(((SpeechPlayback) field("speech")).isPlaying());
+                }
+            }
+        }
+    }
+
+    private String savedRowText(ContentCatalog.Item item) {
+        ContentCatalog catalog = field("catalog");
+        ContentCatalog.Source source = catalog.source(item.sourceId);
+        String name = source == null || source.name.trim().isEmpty() ? "출처 확인 필요" : source.name;
+        return item.title + (catalog.isConfirmed(item) ? " · 확인 완료" : " · 미확인") + "\n출처 · " + name;
     }
 
     private void assertMetadata(ContentCatalog.Item item, String expected) {

@@ -13,6 +13,9 @@
     <string name="saved_filter_unread">미확인만 %1$d건</string>
     <string name="saved_filter_confirmed">확인 완료만 %1$d건</string>
     <string name="saved_filter_selected">%1$s 선택됨</string>
+    <string name="saved_row">%1$s · %2$s\n%3$s</string>
+    <string name="saved_status_confirmed">확인 완료</string>
+    <string name="saved_status_unread">미확인</string>
     <string name="saved_source">출처 · %1$s</string>
     <string name="saved_source_unknown">출처 확인 필요</string>
     <string name="saved_kind_sample">예시 콘텐츠</string>
