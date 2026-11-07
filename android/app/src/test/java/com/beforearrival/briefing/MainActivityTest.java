@@ -997,24 +997,49 @@ public class MainActivityTest {
     @Test public void undoConfirmationDeletionResaveAndExplicitReversalInvalidateCallbacks() {
         List<ContentCatalog.Item> items = saveNavigationItems();
         ContentCatalog catalog = field("catalog");
+        android.content.SharedPreferences preferences = field("preferences");
         for (boolean delete : new boolean[]{true, false}) {
             showDetail(items.get(0));
             detailAction("confirm-saved").performClick();
+            assertTrue(catalog.isConfirmed(items.get(0)));
             Button old = undoConfirmation();
+            assertNotNull(old);
             showDetail(items.get(0));
             if (delete) {
-                ((AlertDialog) field("activeDialog")).getButton(AlertDialog.BUTTON_NEUTRAL).performClick();
+                AlertDialog dialog = field("activeDialog");
+                dialog.getButton(AlertDialog.BUTTON_NEUTRAL).performClick();
+                Shadows.shadowOf(Looper.getMainLooper()).idle();
+                assertFalse(catalog.isSaved(items.get(0)));
+                assertFalse(catalog.isConfirmed(items.get(0)));
+                assertNull(undoConfirmation());
+                assertFalse(dialog.isShowing());
+                assertNull(field("activeDialog"));
                 ReflectionHelpers.callInstanceMethod(activity, "toggleSaved",
                         ReflectionHelpers.ClassParameter.from(ContentCatalog.Item.class, items.get(0)));
             } else detailAction("confirm-saved").performClick();
+            assertTrue(catalog.isSaved(items.get(0)));
+            assertFalse(catalog.isConfirmed(items.get(0)));
             assertNull(undoConfirmation());
             showDetail(items.get(0));
             detailAction("confirm-saved").performClick();
+            assertTrue(catalog.isConfirmed(items.get(0)));
             Button current = undoConfirmation();
+            assertNotNull(current);
+            String storage = preferences.getString(ContentCatalog.STORAGE_KEY, null);
             old.performClick();
             assertTrue(catalog.isConfirmed(items.get(0)));
+            assertTrue(catalog.isSaved(items.get(0)));
+            assertEquals(storage, preferences.getString(ContentCatalog.STORAGE_KEY, null));
             assertSame(current, undoConfirmation());
             current.performClick();
+            assertTrue(catalog.isSaved(items.get(0)));
+            assertFalse(catalog.isConfirmed(items.get(0)));
+            assertNull(undoConfirmation());
+            assertEquals(items.size(), catalog.savedItems.size());
+            for (int i = 1; i < items.size(); i++) {
+                assertTrue(catalog.isSaved(items.get(i)));
+                assertFalse(catalog.isConfirmed(items.get(i)));
+            }
         }
     }
 
