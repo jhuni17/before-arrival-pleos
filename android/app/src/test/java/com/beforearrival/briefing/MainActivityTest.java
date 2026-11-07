@@ -1140,6 +1140,8 @@ public class MainActivityTest {
             assertEquals(stored, preferences.getString(ContentCatalog.STORAGE_KEY, null));
             ContentCatalog.Item removed = catalog.savedItems.get(catalog.savedItems.size() - 1);
             deleteSaved(removed);
+            ContentCatalog.DeletedItem latestDeleted = field("undoDeleted");
+            assertEquals(removed.key(), latestDeleted.item.key());
             Button latest = undoDeletion();
             assertNotSame(undo, latest);
             undo.performClick(); assertFalse(catalog.isSaved(target));
@@ -1147,7 +1149,30 @@ public class MainActivityTest {
             save.performClick();
             assertEquals(ContentCatalog.SAVED_ITEM_LIMIT, catalog.savedItems.size());
             assertSame(target, catalog.savedItems.get(ContentCatalog.SAVED_ITEM_LIMIT - 1));
-            assertSame(latest, undoDeletion());
+            assertSame(latestDeleted, field("undoDeleted"));
+            assertEquals(removed.key(), ((ContentCatalog.DeletedItem) field("undoDeleted")).item.key());
+            Button currentUndo = undoDeletion();
+            assertNotNull(currentUndo);
+            assertFalse(catalog.isSaved(removed));
+            int targetCount = 0;
+            for (ContentCatalog.Item item : catalog.savedItems)
+                if (item.key().equals(target.key())) targetCount++;
+            assertEquals(1, targetCount);
+            List<ContentCatalog.Item> afterRetry = new ArrayList<>(catalog.savedItems);
+            String storedAfterRetry = preferences.getString(ContentCatalog.STORAGE_KEY, null);
+            currentUndo.performClick();
+            assertEquals(ContentCatalog.SAVED_CAPACITY_NOTICE, currentUndo.getText().toString());
+            undo.performClick(); // The previous deletion's callback has expired.
+            assertFalse(catalog.isSaved(removed));
+            assertTrue(catalog.isSaved(target));
+            assertSame(latestDeleted, field("undoDeleted"));
+            assertSame(currentUndo, undoDeletion());
+            assertEquals(afterRetry, catalog.savedItems);
+            assertEquals(storedAfterRetry, preferences.getString(ContentCatalog.STORAGE_KEY, null));
+            assertTrue(catalog.isConfirmed(items.get(1)));
+            assertEquals(ContentCatalog.SAVED_ITEM_LIMIT - 1, catalog.unreadCount());
+            assertTrue(((Button) field(filter)).isSelected());
+            assertSame(items.get(2), ReflectionHelpers.callInstanceMethod(activity, "firstUnread"));
             assertSame(confirmationToken, field("undoToken"));
             assertNull(field("activeDialog"));
             assertFalse(((SpeechPlayback) field("speech")).isPlaying());
