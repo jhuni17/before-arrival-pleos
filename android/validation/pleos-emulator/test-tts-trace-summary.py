@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """Synthetic offline checks; no device or speech evidence."""
 import importlib.util
+import json
 from pathlib import Path
+import subprocess
+import sys
+import tempfile
 import unittest
 
 spec = importlib.util.spec_from_file_location('summary', Path(__file__).with_name('summarize-tts-traces.py'))
@@ -57,6 +61,30 @@ class SummaryTests(unittest.TestCase):
             line = ('TtsComparison: broken' if extra == 'broken' else
                     'TtsComparison: elapsedRealtimeMs=160 engine=candidate ' + extra)
             self.assertEqual(summary.summarize(trace('candidate') + [line])['status'], 'invalid')
+
+    def test_invalid_targets_cli(self):
+        for arm in summary.PROXIES:
+            for value in ['PRIVATE_TEXT', '-1', '3', '01', '']:
+                for target in ['topic', 'next', 'both']:
+                    with self.subTest(arm=arm, value=value, target=target):
+                        lines = trace(arm)
+                        if target in {'next', 'both'}:
+                            lines = [line.replace('next=1', 'next=' + value) for line in lines]
+                        if target in {'topic', 'both'}:
+                            lines = [line.replace('topic=1', 'topic=' + value) for line in lines]
+                        with tempfile.TemporaryDirectory() as directory:
+                            path = Path(directory) / 'synthetic.log'
+                            path.write_text(''.join(lines), encoding='utf-8')
+                            completed = subprocess.run(
+                                [sys.executable, str(Path(summary.__file__)), str(path)],
+                                capture_output=True, text=True, check=False)
+                        self.assertEqual(completed.returncode, 1)
+                        self.assertEqual(completed.stderr, '')
+                        self.assertNotIn('PRIVATE_TEXT', completed.stdout)
+                        report = json.loads(completed.stdout)['reports'][0]
+                        self.assertEqual(report['status'], 'invalid')
+                        self.assertIsNone(report['first_request_to_start_proxy_ms'])
+                        self.assertEqual(report['skip_to_next_start_proxy_ms'], [])
 
 
 if __name__ == '__main__':

@@ -76,9 +76,18 @@ def summarize(lines):
             if re.fullmatch(r'[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+', package) and len(package) <= 200:
                 result['engine'] = package
         topic = values.get('topic')
+        invalid_target = False
         if topic is not None and topic not in {'0', '1', '2'}:
             invalid = True
+            invalid_target = True
             issue('invalid_fixture_topic')
+        if ('next' in values or 'skip_command' in tokens) and values.get('next') not in {'0', '1', '2'}:
+            invalid = True
+            invalid_target = True
+            issue('invalid_skip_target')
+        if invalid_target:
+            # Untrusted targets must never reach pairing or integer conversion.
+            continue
         if 'pause_or_focus_stop_command' in tokens:
             invalid = True
             issue('interrupted_run_not_comparable')
