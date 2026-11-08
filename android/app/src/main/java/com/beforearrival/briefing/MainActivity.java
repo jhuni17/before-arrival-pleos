@@ -1046,7 +1046,7 @@ public final class MainActivity extends Activity {
     private void renderTranscript() {
         enableButton(transcriptButton, !plan.selected.isEmpty());
         transcriptButton.setText(transcriptVisible ? "대본 접기" : "대본 보기");
-        transcript.setText(plan.narration());
+        transcript.setText(ComparisonFixture.enabled(this) ? ComparisonFixture.transcript() : plan.narration());
         transcript.setVisibility(transcriptVisible && !plan.selected.isEmpty() ? View.VISIBLE : View.GONE);
     }
 

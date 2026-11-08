@@ -73,6 +73,60 @@ public final class BriefingMediaService extends MediaBrowserService {
     private CarRestrictions restrictions;
     private State carState = State.UNKNOWN;
     private TextToSpeech engine;
+    private ComparisonSpeech candidate;
+    private boolean candidatePlaying, candidateStopping;
+    private Runnable afterCandidateStop;
+    private boolean comparison() {
+        return ComparisonFixture.enabled(this);
+    }
+    private boolean candidateMode() { return comparison() && "candidate".equals(BuildConfig.TTS_COMPARISON); }
+    private void trial(String event) {
+        if (comparison()) android.util.Log.d("TtsComparison", "elapsedRealtimeMs="
+                + SystemClock.elapsedRealtime() + " engine=" + BuildConfig.TTS_COMPARISON
+                + " topic=" + index + " " + event);
+    }
+    private boolean playing() { return candidateMode() ? candidatePlaying : prepared && player != null && player.isPlaying(); }
+    private void stopCandidate(Runnable next) {
+        candidatePlaying = false;
+        afterCandidateStop = next;
+        if (candidateStopping) return;
+        if (candidate == null) { if (next != null) next.run(); return; }
+        candidateStopping = true;
+        trial("stop_request");
+        try { candidate.stop(() -> {
+            trial("stop_completion_proxy");
+            candidate = null; candidateStopping = false;
+            Runnable continuation = afterCandidateStop; afterCandidateStop = null;
+            if (continuation != null) continuation.run();
+        }); } catch (RuntimeException unavailable) {
+            trial("stop_failed_no_next_topic"); failPlayback();
+        }
+    }
+    private void startCandidate() {
+        if (candidate != null || candidateStopping || !hasFocus || !wantsPlayback || !canControl()) return;
+        long token = generation;
+        trial("start_request voice=SDK_default_identity_unverified mode=ON_DEVICE");
+        try {
+            candidate = ComparisonFactory.create(this,
+                () -> { if (token == generation && canControl() && hasFocus && wantsPlayback) {
+                    candidatePlaying = true; trial("sdk_onStart_proxy"); updateState();
+                } },
+                () -> { if (token == generation && !candidateStopping && !items.isEmpty()) {
+                    candidatePlaying = false;
+                    candidate.release(); candidate = null;
+                    if (!nextTopic()) finish("");
+                } },
+                () -> { trial("candidate_unavailable_or_error_no_fallback"); finish("Pleos 비교 음성을 사용할 수 없어요. 비교 실패이며 Android 음성으로 대체하지 않아요."); });
+            candidate.start(items.get(index).summary);
+            main.postDelayed(() -> {
+                if (token == generation && candidate != null && !candidatePlaying && !candidateStopping) {
+                    trial("initialization_or_start_timeout"); failPlayback();
+                }
+            }, 15000);
+        } catch (RuntimeException error) {
+            trial("candidate_initialization_unsupported_no_fallback"); failPlayback();
+        }
+    }
     private boolean voiceReady;
     private boolean wantsPlayback;
     private boolean hasFocus;
@@ -104,7 +158,7 @@ public final class BriefingMediaService extends MediaBrowserService {
     }
 
     static boolean isPlaying() {
-        return current != null && current.prepared && current.player.isPlaying();
+        return current != null && current.playing();
     }
 
     static void stop() {
@@ -171,6 +225,16 @@ public final class BriefingMediaService extends MediaBrowserService {
             return START_NOT_STICKY;
         }
         items = new ArrayList<>(request.plan.selected);
+        if (comparison()) {
+            items.clear();
+            String[] texts = ComparisonFixture.TEXTS;
+            try {
+                for (int i = 0; i < texts.length; i++) items.add(new Item(new org.json.JSONObject()
+                    .put("id", "tts-fixed-" + i).put("title", "고정 음성 비교 " + (i + 1))
+                    .put("summary", texts[i]).put("sourceId", "debug-fixture").put("estimatedSeconds", 30)));
+            } catch (org.json.JSONException impossible) { throw new IllegalStateException(impossible); }
+            trial("fixture=v1 selected_in_debug_build_not_live_content");
+        }
         queueId = UUID.randomUUID().toString();
         index = 0;
         wantsPlayback = true;
@@ -213,7 +277,8 @@ public final class BriefingMediaService extends MediaBrowserService {
         });
         restrictions.connect(this);
         if (!items.isEmpty()) {
-            engine = new TextToSpeech(this, status -> main.post(() -> initializeVoice(status)));
+            if (candidateMode()) { voiceReady = true; prepareIfReady(); }
+            else engine = new TextToSpeech(this, status -> main.post(() -> initializeVoice(status)));
         }
         return START_NOT_STICKY;
     }
@@ -235,6 +300,7 @@ public final class BriefingMediaService extends MediaBrowserService {
     private void initializeVoice(int status) {
         if (items.isEmpty()) return;
         if (status != TextToSpeech.SUCCESS || !SpeechPlayback.selectOfflineKoreanVoice(engine)) {
+            trial("baseline_initialization_unavailable_no_offline_korean_voice");
             finish("설치된 한국어 음성을 찾지 못했어요. 대본을 읽을 수 있어요.");
             return;
         }
@@ -245,6 +311,7 @@ public final class BriefingMediaService extends MediaBrowserService {
                 main.post(() -> { if (id.equals(utteranceId())) failPlayback(); });
             }
         });
+        if (comparison()) trial("baseline_engine=" + engine.getDefaultEngine() + " voice=" + engine.getVoice().getName() + " offline=true");
         voiceReady = true;
         prepareIfReady();
     }
@@ -254,14 +321,23 @@ public final class BriefingMediaService extends MediaBrowserService {
     }
 
     private void prepareIfReady() {
-        if (voiceReady && canControl() && speechFile == null) prepareTrack();
+        if (voiceReady && canControl() && speechFile == null && !prepared) prepareTrack();
     }
 
     private void prepareTrack() {
         clearTrack();
+        if (candidateMode()) {
+            prepared = true;
+            session.setMetadata(new MediaMetadata.Builder()
+                .putString(MediaMetadata.METADATA_KEY_MEDIA_ID, id(index))
+                .putString(MediaMetadata.METADATA_KEY_TITLE, items.get(index).title).build());
+            stopCandidate(this::startIfReady);
+            return;
+        }
         Item item = items.get(index);
         try {
             speechFile = File.createTempFile("briefing-", ".wav", getCacheDir());
+            trial("start_request timestamp_includes_file_synthesis");
             if (engine.synthesizeToFile(item.summary, new Bundle(), speechFile, utteranceId())
                     != TextToSpeech.SUCCESS) {
                 failPlayback();
@@ -309,7 +385,11 @@ public final class BriefingMediaService extends MediaBrowserService {
                 return;
             }
             try {
-                if (hasFocus && !player.isPlaying()) player.start();
+                if (candidateMode()) {
+                    if (candidateStopping) afterCandidateStop = this::startIfReady;
+                    else startCandidate();
+                }
+                else if (hasFocus && !player.isPlaying()) { player.start(); trial("MediaPlayer_start_return_proxy_not_verified_audible_onset"); }
             } catch (IllegalStateException error) {
                 failPlayback();
                 return;
@@ -349,6 +429,7 @@ public final class BriefingMediaService extends MediaBrowserService {
 
     private boolean skipTo(int next) {
         if (!canControl() || next < 0 || next >= items.size()) return false;
+        trial("skip_command next=" + next);
         index = next;
         if (voiceReady) prepareTrack();
         return !items.isEmpty();
@@ -366,6 +447,7 @@ public final class BriefingMediaService extends MediaBrowserService {
     boolean resumeBriefing() {
         if (!canControl()) return false;
         wantsPlayback = true;
+        if (candidateMode() && candidateStopping) afterCandidateStop = this::startIfReady;
         startIfReady();
         return !items.isEmpty();
     }
@@ -373,7 +455,9 @@ public final class BriefingMediaService extends MediaBrowserService {
     static BriefingMediaService activeSession() { return current; }
 
     private void pauseTrack() {
-        if (prepared && player.isPlaying()) player.pause();
+        trial("pause_or_focus_stop_command");
+        if (candidateMode()) { generation++; stopCandidate(null); }
+        else if (prepared && player.isPlaying()) player.pause();
     }
 
     private void abandonFocus() {
@@ -398,7 +482,10 @@ public final class BriefingMediaService extends MediaBrowserService {
         }
     }
 
-    private void failPlayback() { finish("브리핑을 재생하지 못했어요. 대본을 읽을 수 있어요."); }
+    private void failPlayback() {
+        finish(candidateMode() ? "Pleos 비교 음성을 사용할 수 없어요. 비교 실패이며 Android 음성으로 대체하지 않아요."
+                : "브리핑을 재생하지 못했어요. 대본을 읽을 수 있어요.");
+    }
 
     private void finish(String message) {
         releasePlayback();
@@ -409,6 +496,7 @@ public final class BriefingMediaService extends MediaBrowserService {
 
     private void releasePlayback() {
         main.removeCallbacksAndMessages(null);
+        trial("stop_command");
         items = Collections.emptyList();
         LiveRouteSession.shared.detach(liveRouteObserver);
         wantsPlayback = false;
@@ -418,6 +506,12 @@ public final class BriefingMediaService extends MediaBrowserService {
             restrictions = null;
         }
         clearTrack();
+        afterCandidateStop = null;
+        if (candidate != null) {
+            try { candidate.stop(() -> {}); } catch (RuntimeException ignored) {}
+            candidate.release(); candidate = null;
+        }
+        candidateStopping = false; candidatePlaying = false;
         abandonFocus();
         voiceReady = false;
         if (engine != null) {
@@ -455,7 +549,7 @@ public final class BriefingMediaService extends MediaBrowserService {
 
     private void updateState() {
         boolean hasQueue = !items.isEmpty();
-        boolean playing = prepared && player.isPlaying();
+        boolean playing = playing();
         long actions = hasQueue
                 ? PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE | PlaybackState.ACTION_STOP
                     | PlaybackState.ACTION_PLAY_PAUSE | PlaybackState.ACTION_SKIP_TO_PREVIOUS
@@ -465,7 +559,7 @@ public final class BriefingMediaService extends MediaBrowserService {
         int state = !hasQueue ? PlaybackState.STATE_NONE : playing ? PlaybackState.STATE_PLAYING
                 : wantsPlayback && !prepared ? PlaybackState.STATE_BUFFERING : PlaybackState.STATE_PAUSED;
         session.setPlaybackState(new PlaybackState.Builder().setActions(actions)
-                .setState(state, prepared ? player.getCurrentPosition() : 0, playing ? 1 : 0)
+                .setState(state, prepared && player != null ? player.getCurrentPosition() : 0, playing ? 1 : 0)
                 .setActiveQueueItemId(hasQueue ? index : MediaSession.QueueItem.UNKNOWN_ID)
                 .build());
         if (foreground) getSystemService(NotificationManager.class).notify(NOTIFICATION, playbackNotification());

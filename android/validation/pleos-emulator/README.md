@@ -20,3 +20,5 @@
 테스트 AVD에서 `adb -s <serial> shell setprop log.tag.PleosValidation DEBUG`를 실행한 후 앱을 열고 `adb -s <serial> logcat -v epoch -s PleosValidation:D`로 앱 태그를 수집한다. 로그는 음성 출력 자체의 증거가 아니므로 화면 및 실제 재생 관찰과 대조한다. 완료 후 `adb -s <serial> shell setprop log.tag.PleosValidation INFO`로 진단을 끈다.
 
 공식 참고 자료는 [에뮬레이터 설치](https://document.pleos.ai/en/docs/connect/guide/getting-started/application-development/setup-connect-sdk-emulator), [Virtual Console](https://document.pleos.ai/en/docs/connect/guide/getting-started/application-development/use-vehicle-emulator), [NaviHelper 목적지 콜백](https://document.pleos.ai/en/docs/pleos-only/connect-sdk-pleos/NaviHelper/destinations)이다.
+
+디버그 전용 고정 한국어 TTS A/B 절차와 미측정 항목은 [TTS 비교](tts-comparison.md)를 참고한다. 이 변경의 Windows 실행 증거는 아직 없다.
