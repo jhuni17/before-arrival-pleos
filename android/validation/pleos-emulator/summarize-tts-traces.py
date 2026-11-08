@@ -65,6 +65,11 @@ def summarize(lines):
             if fixtures > 1:
                 invalid = True
                 issue('multiple_fixture_runs')
+        if fixtures == 0 and tokens.intersection({'start_request', 'skip_command', *PROXIES.values()}):
+            invalid = True
+            issue('measurement_before_fixture_boundary')
+            # Never pair events from an unbounded earlier queue with this run.
+            continue
         if 'error' in values or tokens.intersection(FAILURES):
             failed = True
             issue('failure_record')

@@ -62,6 +62,30 @@ class SummaryTests(unittest.TestCase):
                     'TtsComparison: elapsedRealtimeMs=160 engine=candidate ' + extra)
             self.assertEqual(summary.summarize(trace('candidate') + [line])['status'], 'invalid')
 
+    def test_missing_first_fixture_mixed_run_cli(self):
+        for arm in summary.PROXIES:
+            # Same PID and arm, strictly increasing monotonic time; only the
+            # earlier queue's fixture marker is missing.
+            later = [line.replace(f'elapsedRealtimeMs={stamp}',
+                                  f'elapsedRealtimeMs={stamp + 200}')
+                     for line, stamp in zip(trace(arm), [10, 15, 20, 50, 100, 110, 150])]
+            for lines in [trace(arm)[1:], trace(arm)[1:] + later]:
+                with self.subTest(arm=arm, mixed=len(lines) > len(trace(arm))):
+                    with tempfile.TemporaryDirectory() as directory:
+                        path = Path(directory) / 'synthetic.log'
+                        path.write_text(''.join(lines), encoding='utf-8')
+                        completed = subprocess.run(
+                            [sys.executable, str(Path(summary.__file__)), str(path)],
+                            capture_output=True, text=True, check=False)
+                    self.assertEqual(completed.returncode, 1)
+                    self.assertEqual(completed.stderr, '')
+                    self.assertNotIn('PRIVATE_TEXT', completed.stdout)
+                    report = json.loads(completed.stdout)['reports'][0]
+                    self.assertEqual(report['status'], 'invalid')
+                    self.assertIn('measurement_before_fixture_boundary', report['issues'])
+                    self.assertIsNone(report['first_request_to_start_proxy_ms'])
+                    self.assertEqual(report['skip_to_next_start_proxy_ms'], [])
+
     def test_invalid_targets_cli(self):
         for arm in summary.PROXIES:
             for value in ['PRIVATE_TEXT', '-1', '3', '01', '']:
