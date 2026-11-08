@@ -9,15 +9,31 @@ ROOT = Path(__file__).resolve().parents[2]
 FILES = {
     'android/content/Context.java': 'package android.content; public class Context {}',
     'android/os/Looper.java': 'package android.os; public class Looper { public static Looper getMainLooper(){return new Looper();} }',
-    'android/os/SystemClock.java': 'package android.os; public class SystemClock { public static long elapsedRealtime(){return 0;} }',
+    'android/os/SystemClock.java': 'package android.os; public class SystemClock { public static long elapsedRealtime(){return Handler.now;} }',
     'android/util/Log.java': 'package android.util; public class Log { public static int d(String a,String b){return 0;} }',
     'android/os/Handler.java': '''package android.os;
 public class Handler {
- public static final java.util.Queue<Runnable> queue = new java.util.ArrayDeque<>();
- public Handler(Looper l) {} public boolean post(Runnable r){queue.add(r);return true;}
- public boolean postDelayed(Runnable r,long delay){return true;}
- public void removeCallbacksAndMessages(Object token){queue.clear();}
- public static void drain(){while(!queue.isEmpty()) queue.remove().run();}
+ private record Task(Handler owner, Runnable callback, long due, long order) {}
+ private static final java.util.PriorityQueue<Task> queue = new java.util.PriorityQueue<>(
+     java.util.Comparator.comparingLong(Task::due).thenComparingLong(Task::order));
+ public static long now;
+ private static long sequence;
+ public Handler(Looper l) {}
+ public boolean post(Runnable r){return postDelayed(r,0);}
+ public boolean postDelayed(Runnable r,long delay){queue.add(new Task(this,r,now+delay,sequence++));return true;}
+ public void removeCallbacksAndMessages(Object token){
+  if(token!=null)throw new AssertionError("only null token is supported");
+  queue.removeIf(task -> task.owner()==this);
+ }
+ public static void drain(){advanceBy(0);}
+ public static void advanceBy(long milliseconds){
+  if(milliseconds<0)throw new AssertionError("time cannot go backwards");
+  long target=now+milliseconds;
+  while(!queue.isEmpty() && queue.peek().due()<=target){
+   Task task=queue.remove();now=task.due();task.callback().run();
+  }
+  now=target;
+ }
 }''',
     'android/media/AudioAttributes.java': '''package android.media; public class AudioAttributes {
  public static final int USAGE_MEDIA=1, CONTENT_TYPE_SPEECH=1;
@@ -75,6 +91,8 @@ public class LifecycleCheck {
    check(callbacks[0]==0 && callbacks[1]==0 && callbacks[3]==0,"stopping must wait for onStop");
    old.onStop();old.onStop();Handler.drain();
    check(callbacks[3]==1 && sdk.released,"duplicate stop completes once");
+   Handler.advanceBy(5001);
+   check(callbacks[2]==0 && callbacks[3]==1,"successful stop must cancel timeout");
    ComparisonSpeech next=ComparisonFactory.create(new android.content.Context(),()->callbacks[0]++,()->callbacks[1]++,()->callbacks[2]++);
    next.start("next"); if(!sync)TextToSpeech.last.success();Handler.drain();
    old.onStart();old.onDone();old.onError(ErrorType.ERROR);old.onReady();sdk.success();Handler.drain();
@@ -85,7 +103,51 @@ public class LifecycleCheck {
   ComparisonSpeech cancelled=ComparisonFactory.create(new android.content.Context(),()->{throw new AssertionError();},()->{throw new AssertionError();},()->{throw new AssertionError();});
   TextToSpeech sdk=TextToSpeech.last;cancelled.start("cancelled");cancelled.release();sdk.success();sdk.events.onReady();Handler.drain();
   check(sdk.speaks==0,"late initialization after release must not speak");
-  System.out.println("PASS: candidate lifecycle (sync/async initialization, no onReady, duplicate/stale callbacks)");
+  Handler.advanceBy(5001);
+  for(boolean sync:new boolean[]{false,true}){
+   TextToSpeech.synchronous=sync;
+   int[] failures={0}, continuations={0};
+   ComparisonSpeech timed=ComparisonFactory.create(new android.content.Context(),
+       ()->{throw new AssertionError("unexpected start callback");},
+       ()->{throw new AssertionError("unexpected done callback");},()->failures[0]++);
+   TextToSpeech timedSdk=TextToSpeech.last;
+   timed.start("timeout");if(!sync)timedSdk.success();Handler.drain();
+   check(timedSdk.speaks==1,"timeout case must have submitted speech");
+   EventListener timedEvents=timedSdk.events;
+   timed.stop(()->continuations[0]++);
+   Handler.drain();
+   check(failures[0]==0 && continuations[0]==0,"stop must not fail immediately");
+   Handler.advanceBy(4999);
+   check(failures[0]==0 && continuations[0]==0,"must wait the full five seconds");
+   Handler.advanceBy(1);
+   check(failures[0]==1 && continuations[0]==0,"missing onStop must fail without next topic");
+   // Model the service's failure cleanup explicitly; this is not a service test.
+   timed.release();
+   timedEvents.onStop();timedEvents.onError(ErrorType.ERROR);Handler.drain();
+   Handler.advanceBy(5001);
+   check(failures[0]==1 && continuations[0]==0,"released timeout case ignores late callbacks");
+
+   int[] releasedFailures={0}, liveFailures={0};
+   ComparisonSpeech released=ComparisonFactory.create(new android.content.Context(),()->{},()->{},()->releasedFailures[0]++);
+   TextToSpeech releasedSdk=TextToSpeech.last;
+   released.start("release before timeout");if(!sync)releasedSdk.success();Handler.drain();
+   released.stop(()->{throw new AssertionError("released instance continued");});
+   Handler.advanceBy(1000);
+   ComparisonSpeech live=ComparisonFactory.create(new android.content.Context(),()->{},()->{},()->liveFailures[0]++);
+   TextToSpeech liveSdk=TextToSpeech.last;
+   live.start("independent owner");if(!sync)liveSdk.success();Handler.drain();
+   live.stop(()->{throw new AssertionError("missing onStop continued");});
+   released.release();
+   Handler.advanceBy(4000);
+   check(releasedFailures[0]==0 && liveFailures[0]==0,"released timeout is cancelled, live timeout not due");
+   Handler.advanceBy(999);
+   check(liveFailures[0]==0,"live owner's timeout must retain its deadline");
+   Handler.advanceBy(1);
+   check(releasedFailures[0]==0 && liveFailures[0]==1,"release must preserve another owner's timeout");
+   live.release();Handler.advanceBy(5001);
+   check(releasedFailures[0]==0 && liveFailures[0]==1,"cleanup must not produce later failures");
+  }
+  System.out.println("PASS: candidate lifecycle (sync/async initialization, no onReady, duplicate/stale callbacks, five-second stop timeout, success/release cancellation, owner-specific cleanup)");
  }
 }''',
 }

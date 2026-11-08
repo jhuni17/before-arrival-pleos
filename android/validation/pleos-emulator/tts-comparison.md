@@ -1,9 +1,10 @@
 # Debug Korean TTS comparison (fixture v1)
 
 Implementation, not trial evidence. No Windows run, audible onset, voice preference,
-real Gleo recognition, or SDK callback has been observed for this change. Local
-Gradle compilation and core checks were attempted but blocked: no Java/JDK is
-installed. Do not describe this checkout as a successfully built APK until built.
+real Gleo recognition, or SDK callback has been observed for this change. Earlier local
+Gradle compilation and core checks were blocked by a missing JDK. The scoped
+offline lifecycle run recorded below used a supplied JDK 17; it is not an APK
+build. Do not describe this checkout as a successfully built APK until built.
 The supplied official 3.3.1 javap contract is the source for the adapter:
 https://document.pleos.ai/en/docs/pleos-only/connect-sdk-pleos/TextToSpeech/intro
 No credentials, server mode, speaker ID, or assistant voice identity are used.
@@ -128,16 +129,51 @@ covered, including text supplied before and after success. No `onReady` is sent
 before the first request; duplicate success/readiness must not resubmit. Stop waits
 for `onStop`, duplicate stop completes once, and callbacks from a released instance
 cannot affect its successor. Late initialization after release cannot speak.
-Temporary sources/classes are removed on exit; no Gradle, SDK download, AVD or
-microphone is required. The doubles check adapter ordering only, not real SDK
-compatibility, Android scheduling, stop timeout timing or acoustic behavior.
 
-For this scoped change, Python syntax and harness source-path checks passed. The
-lifecycle command was attempted but blocked because this checkout environment has
-no `java` or `javac`; no lifecycle assertions or APK build ran locally. Existing
-hosted CI build/compile evidence is separate and does not establish that this new
-standalone check ran. Run the command in a JDK-equipped checkout before relying on
-its result.
+The Handler double uses a deterministic shared simulated clock, ordered due tasks
+(insertion order for equal deadlines), and owner-specific removal for
+`removeCallbacksAndMessages(null)`. `drain()` runs only currently due work;
+`advanceBy()` runs due work in deadline order without sleeping. SystemClock reads
+that simulated clock. Delayed callbacks are no longer discarded.
+For both initialization modes, the regression checks assert:
+
+- A submitted request stopped without `onStop` has no failure or continuation at
+  4,999 ms, then exactly one failure and no next-topic continuation at 5,000 ms.
+- Successful `onStop` cancels the timeout; advancing beyond five seconds produces
+  no failure and duplicate stop still completes only once.
+- Explicit release before the deadline prevents a later timeout failure, while
+  preserving another candidate's pending timeout and its own deadline.
+- After timeout and explicit release, late stop/error callbacks cannot continue
+  the queue or add failures; subsequent time advances add no failures.
+
+Source inspection (not service execution): `Candidate.stop()` schedules the
+5,000 ms failure callback after `sdk.stop()` for a submitted request. Its `onStop`
+handler releases the instance before calling the stop continuation.
+`BriefingMediaService.startCandidate()` wires failure to `finish()`, which invokes
+`releasePlayback()` and clears `afterCandidateStop`; `stopCandidate()` advances
+only through the stop completion callback. The harness explicitly calls release
+after observing timeout to model that cleanup. It does not compile or run the
+service, so it does not prove service integration or Android scheduling behavior.
+No production defect was observed in these cases; runtime code is unchanged.
+
+Local execution for this scoped regression (2026-11-08), from the checkout root:
+
+```sh
+PATH=/home/ubuntu/.local/share/before-arrival-runner/pleos-validation-stage.FmMxBcJv/jdk17-validation.k3GzMAZw/runtime/usr/lib/jvm/java-17-openjdk-amd64/bin:$PATH python3 android/validation/pleos-emulator/check-tts-lifecycle.py
+```
+
+Exit status 0; the harness invoked `javac --release 17` on the actual adapter and
+interface plus temporary doubles, then ran `LifecycleCheck` with `java`. Output:
+
+```text
+PASS: candidate lifecycle (sync/async initialization, no onReady, duplicate/stale callbacks, five-second stop timeout, success/release cancellation, owner-specific cleanup)
+```
+
+Temporary sources/classes are removed on exit; no Gradle, SDK download, AVD or
+microphone is required. This is adapter-level mock evidence only, not a full
+service test, real SDK compatibility/callback evidence, Pleos emulator execution,
+APK build, audible stop timing or acoustic behavior. The earlier missing-JDK
+attempt did not execute assertions; this supplied-JDK run did.
 
 The visible-vehicle Gleo utterance test, actual route audio and acoustic follow-up
 are deferred at the user's request. Windows Pleos callback/order, audible onset,
