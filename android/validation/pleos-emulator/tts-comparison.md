@@ -143,3 +143,53 @@ The visible-vehicle Gleo utterance test, actual route audio and acoustic follow-
 are deferred at the user's request. Windows Pleos callback/order, audible onset,
 stop/skip overlap, pronunciation and preference evidence remain pending. Injected
 commands are not voice trials. No Windows evidence is added by this check.
+
+## Offline trace summary (no trial evidence)
+
+From the checkout root, using only Python 3's standard library:
+
+```sh
+python3 android/validation/pleos-emulator/summarize-tts-traces.py baseline.log candidate.log
+python3 android/validation/pleos-emulator/test-tts-trace-summary.py
+```
+
+Supply one complete fixture-v1 queue capture per file, starting before the fixture
+marker. Preserve `TtsComparison` lines and their monotonic timestamps; the guide's
+`logcat -v epoch` prefix is supported. Other tags are ignored. Output identifies
+inputs by ordinal, never by filename. No raw lines, briefing text, voice names,
+transcripts, error details or epoch timestamps are emitted. Baseline engine package
+is reported when present and syntactically valid; candidate reports Pleos ON_DEVICE
+with identity unverified. Missing baseline engine metadata remains `unknown`.
+
+The JSON separates the initial topic-0 `start_request` to arm-specific start proxy
+from each `skip_command` to its matching next topic start proxy. Baseline uses
+`MediaPlayer_start_return_proxy_not_verified_audible_onset`; candidate uses
+`sdk_onStart_proxy`. Intervals include synthesis/initialization or stop/next startup
+as applicable. They are **software proxies, not audible timing**, and do not measure
+stop silence, overlap, voice quality or listener preference. `skip_command` also
+occurs on automatic topic advancement: this format cannot identify a user skip.
+
+`complete` means the requested initial and at least one skip interval were paired;
+it does not certify a full three-topic trial or successful playback. `incomplete`
+means a required boundary/measurement or readable input is missing. `failure`
+means an explicit error/failure record was observed; any retained intervals are
+partial observations, not a successful trial. `invalid` means attribution is unsafe
+(mixed arms/processes, repeated fixture markers, backward clock, malformed records,
+unpaired/repeated requests or interrupted playback); its measurements are cleared.
+Exit status is 0 only when every input is complete, otherwise 1. The tool does not
+aggregate arms or rank engines.
+
+There is no queue/run ID in the current trace format. A concatenation with missing
+boundaries, monotonically increasing time and the same arm/PID may be impossible to
+detect. Keep original captures separate and review capture provenance; this tool
+cannot prove matching build, fixture text, route, cache state or device conditions.
+Truncated failures that emit no failure record cannot be reconstructed.
+
+Local utility checks actually run: four standard-library unittest methods covering
+both arms, missing callbacks, errors, mixed runs/processes, malformed and interrupted
+records; CLI subprocess checks for valid arms, empty/mixed/error/unreadable inputs
+and exit codes 0/1; `git diff --check`. All passed on synthetic non-personal inputs.
+These checks add no APK, emulator, real SDK or acoustic evidence. Windows Pleos
+trials and actual Gleo utterance remain deferred; all Windows evidence listed above
+remains pending. Speech runtime, vehicle restrictions and production defaults are
+unchanged.
