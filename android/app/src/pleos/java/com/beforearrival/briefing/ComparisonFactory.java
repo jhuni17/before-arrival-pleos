@@ -19,13 +19,14 @@ final class ComparisonFactory {
         final Handler main = new Handler(Looper.getMainLooper());
         final TextToSpeech sdk;
         final Runnable started, done, failed;
-        boolean initialized, ready, sent, closed, stopping, listenerRegistered;
+        boolean initialized, sent, closed, stopping, listenerRegistered;
         String text;
         Runnable stopped;
         final EventListener events = new EventListener() {
             public void onReady() { main.post(() -> {
                 if (closed || stopping) return;
-                ready = true; submit();
+                if (BuildConfig.DEBUG) android.util.Log.d("TtsComparison", "elapsedRealtimeMs="
+                        + android.os.SystemClock.elapsedRealtime() + " engine=candidate event=onReady");
             }); }
             public void onStart() { main.post(() -> { if (!closed && !stopping) started.run(); }); }
             public void onDone() { main.post(() -> { if (!closed && !stopping) done.run(); }); }
@@ -62,9 +63,11 @@ final class ComparisonFactory {
                     }); }
                 });
                 // initialize creates the SDK's listener storage. Register only after it returns;
-                // onSuccess and onReady are independently queued and both gate submit().
+                // Configuration and listener registration gate the first request. onReady is
+                // diagnostic only: waiting for it here can block the first speak indefinitely.
                 sdk.addEventListener(events);
                 listenerRegistered = true;
+                submit();
             } catch (RuntimeException unavailable) {
                 diagnostic("initialize_or_register", unavailable.getClass().getName());
                 try { release(); } catch (RuntimeException cleanup) {
@@ -80,7 +83,7 @@ final class ComparisonFactory {
         }
         public void start(String value) { text = value; submit(); }
         void submit() {
-            if (!closed && !stopping && initialized && ready && !sent && text != null) {
+            if (!closed && !stopping && initialized && listenerRegistered && !sent && text != null) {
                 sent = true;
                 android.util.Log.d("TtsComparison", "elapsedRealtimeMs=" + android.os.SystemClock.elapsedRealtime()
                         + " engine=candidate sdk_speak_request isFinal=true");
