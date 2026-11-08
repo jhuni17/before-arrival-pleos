@@ -18,6 +18,9 @@
             android:exported="true"
             android:permission="ai.umos.gleo.permission.APP_ACTION">
             <intent-filter>
+                <action android:name="${applicationId}.NEXT_BRIEFING_TOPIC" />
+                <action android:name="${applicationId}.PAUSE_COMMUTE_BRIEFING" />
+                <action android:name="${applicationId}.RESUME_COMMUTE_BRIEFING" />
                 <action android:name="NEXT_BRIEFING_TOPIC" />
                 <action android:name="PAUSE_COMMUTE_BRIEFING" />
                 <action android:name="RESUME_COMMUTE_BRIEFING" />
