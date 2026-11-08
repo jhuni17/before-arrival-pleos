@@ -2,6 +2,8 @@
 
 기준은 PR #3을 병합한 main `9b293c420a786f9ca3a96c8233c2b88d6beb9488`이다. 차량 동작 검증은 별도 PR에서 진행한다.
 
+제출 후보의 서명·해시·새 AVD 첫 실행 확인은 [제출용 APK 사전 점검](submission-apk-preflight.md)을 따른다.
+
 ## 현재 근거
 
 - 공식 Windows/Linux 이미지 목록 요청은 HTTP 200이었다. API 34 x86_64 패키지는 `system-images;android-34;pleos_car_emulator;x86_64`이고, 목록은 약 4.09 GB 아카이브와 별도 `pleos-connect-sdk-license`를 지정한다.
