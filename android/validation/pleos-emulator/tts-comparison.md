@@ -53,7 +53,10 @@ fixture; selected items and route budget are still prerequisites. Route/focus an
 unknown-vehicle-state guards remain active. Android media actions and Gleo schema
 and protected receiver are unchanged.
 
-Pleos directly speaks after initialization AND onReady and granted audio focus.
+Pleos directly speaks after successful initialization, listener registration and
+granted audio focus. `initialize()` must return before `addEventListener()`;
+`onReady` is diagnostic only and is not a prerequisite for the first ON_DEVICE
+request.
 Each topic has its own SDK instance. Skip waits for onStop, releases that instance,
 then starts the next instance. A missing stop callback fails the queue after five
 seconds; initialization/start without onStart fails after fifteen seconds. Old
@@ -72,7 +75,7 @@ topic, so warm does not mean a reused SDK instance. Make no unsupported cold-cac
 
 `TtsComparison` logs use monotonic `SystemClock.elapsedRealtime()` milliseconds,
 including sleep. Logcat epoch is a different clock. Candidate start_request precedes
-initialization/readiness; SDK onStart is a callback proxy. Baseline start_request
+initialization/listener registration; SDK onStart is a callback proxy. Baseline start_request
 precedes file synthesis; MediaPlayer_start_return is a software proxy, NOT verified
 playback. Compare request-to-proxy only under these definitions. Stop/skip commands,
 stop completion and next topic start are logged; baseline file release has no
@@ -107,3 +110,36 @@ or tested logic only, never Windows playback.
 Before acceptance also rerun normal (`off`) selection, time-based plan, persistence,
 P-to-D setup/script locking and unknown-state transitions for both flavors; verify
 release is `off`, baseline pause/resume and existing live ETA/cancel behavior.
+
+## Deterministic candidate lifecycle regression check
+
+From the checkout root, with Python 3 and JDK 17+ on PATH:
+
+```sh
+python3 android/validation/pleos-emulator/check-tts-lifecycle.py
+```
+
+This compiles the actual Pleos `ComparisonFactory.java` and `ComparisonSpeech.java`
+against temporary, dependency-free Android/SDK doubles. It does not copy the
+candidate lifecycle implementation. The double rejects listener registration before
+initialization and speech before successful initialization, listener registration
+and configuration. Both synchronous and asynchronous initialization callbacks are
+covered, including text supplied before and after success. No `onReady` is sent
+before the first request; duplicate success/readiness must not resubmit. Stop waits
+for `onStop`, duplicate stop completes once, and callbacks from a released instance
+cannot affect its successor. Late initialization after release cannot speak.
+Temporary sources/classes are removed on exit; no Gradle, SDK download, AVD or
+microphone is required. The doubles check adapter ordering only, not real SDK
+compatibility, Android scheduling, stop timeout timing or acoustic behavior.
+
+For this scoped change, Python syntax and harness source-path checks passed. The
+lifecycle command was attempted but blocked because this checkout environment has
+no `java` or `javac`; no lifecycle assertions or APK build ran locally. Existing
+hosted CI build/compile evidence is separate and does not establish that this new
+standalone check ran. Run the command in a JDK-equipped checkout before relying on
+its result.
+
+The visible-vehicle Gleo utterance test, actual route audio and acoustic follow-up
+are deferred at the user's request. Windows Pleos callback/order, audible onset,
+stop/skip overlap, pronunciation and preference evidence remain pending. Injected
+commands are not voice trials. No Windows evidence is added by this check.
