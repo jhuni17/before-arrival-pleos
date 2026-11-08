@@ -148,8 +148,38 @@ def summarize(lines):
     return result
 
 
+def compare(reports):
+    """Compare only complete, separate arms with the same ordered skip targets."""
+    if len(reports) != 2:
+        return {'status': 'refused', 'issues': ['requires_exactly_two_inputs']}
+    if any(report['status'] != 'complete' for report in reports):
+        return {'status': 'refused', 'issues': ['requires_complete_inputs']}
+    if {report.get('arm') for report in reports} != {'baseline', 'candidate'}:
+        return {'status': 'refused', 'issues': ['requires_one_input_per_arm']}
+    baseline = next(report for report in reports if report['arm'] == 'baseline')
+    candidate = next(report for report in reports if report['arm'] == 'candidate')
+    skips = 'skip_to_next_start_proxy_ms'
+    if ([item['topic'] for item in baseline[skips]] !=
+            [item['topic'] for item in candidate[skips]]):
+        return {'status': 'refused', 'issues': ['skip_topic_sequence_mismatch']}
+
+    def interval(base, cand):
+        return {'baseline_ms': base, 'candidate_ms': cand,
+                'candidate_minus_baseline_ms': cand - base}
+
+    first = 'first_request_to_start_proxy_ms'
+    return {'status': 'complete',
+            'delta_direction': 'candidate_minus_baseline; negative means shorter candidate software proxy interval',
+            first: interval(baseline[first], candidate[first]),
+            skips: [{'topic': base['topic'],
+                     **interval(base['interval_ms'], cand['interval_ms'])}
+                    for base, cand in zip(baseline[skips], candidate[skips])]}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--compare', action='store_true',
+                        help='compare one complete baseline and one complete candidate trace')
     parser.add_argument('traces', nargs='+', type=Path)
     args = parser.parse_args()
     reports = []
@@ -161,9 +191,13 @@ def main():
             report = {'status': 'incomplete', 'issues': ['unreadable_input']}
         # Ordinals avoid leaking personal input paths.
         reports.append({'input': number, **report})
-    print(json.dumps({'measurement': 'monotonic software proxy intervals; not audible timing',
-                      'reports': reports}, indent=2))
-    return 0 if all(r['status'] == 'complete' for r in reports) else 1
+    output = {'measurement': 'monotonic software proxy intervals; not audible timing',
+              'reports': reports}
+    if args.compare:
+        output['comparison'] = compare(reports)
+    print(json.dumps(output, indent=2))
+    return 0 if (all(r['status'] == 'complete' for r in reports) and
+                 (not args.compare or output['comparison']['status'] == 'complete')) else 1
 
 
 if __name__ == '__main__':

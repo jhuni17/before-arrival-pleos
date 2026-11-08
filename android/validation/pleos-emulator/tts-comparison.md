@@ -176,8 +176,47 @@ means an explicit error/failure record was observed; any retained intervals are
 partial observations, not a successful trial. `invalid` means attribution is unsafe
 (mixed arms/processes, repeated fixture markers, backward clock, malformed records,
 unpaired/repeated requests or interrupted playback); its measurements are cleared.
-Exit status is 0 only when every input is complete, otherwise 1. The tool does not
-aggregate arms or rank engines.
+Exit status is 0 only when every input is complete, otherwise 1. Without opt-in, the tool does not
+compare arms or rank engines.
+
+
+### Optional paired software-proxy comparison
+
+```sh
+python3 android/validation/pleos-emulator/summarize-tts-traces.py --compare baseline.log candidate.log
+```
+
+Use exactly two separate captures: one complete baseline and one complete Pleos
+candidate fixture-v1 queue. Input order does not matter. The existing positional
+CLI, reports and JSON shape remain unchanged when `--compare` is omitted. Opt-in
+adds a `comparison` object while retaining the individual reports.
+
+The comparison keeps `first_request_to_start_proxy_ms` separate from the ordered
+`skip_to_next_start_proxy_ms` entries. Each contains `baseline_ms`, `candidate_ms`
+and `candidate_minus_baseline_ms`: negative means the candidate software-proxy
+interval is shorter, positive means longer, and zero means equal. For example,
+30 ms baseline and 20 ms candidate yield -10 ms. These are different arm-specific
+software boundaries, never audible latency or an engine quality ranking. Skips
+are matched by ordered topic sequence, including repeated occurrences; they are
+not averaged or combined with the first request.
+
+Comparison status is `refused` with a fixed issue code and no comparison values
+unless there are exactly two complete inputs, one per arm, with identical ordered
+skip-topic sequences. Incomplete, unreadable, failed, invalid and same-arm pairs
+exit 1, as do mismatched skip sequences. Successful comparison exits 0. Individual
+reports retain their existing semantics, including partial values on incomplete
+or failed inputs; those values are never used in a refused comparison. Input
+paths and free-form source text are not included in comparison output. Completeness
+still has the limited definition above; matching traces cannot establish matching
+trial conditions or real playback.
+
+Paired-comparison local regression evidence: all nine unittest methods passed on
+synthetic fixtures, including both input orders, signed/zero deltas, multiple skips,
+same-arm and wrong-count refusal, incomplete/failed/invalid inputs, mismatched skip
+topics, text/path redaction and unchanged non-opt-in JSON. The existing lifecycle
+check was also attempted but blocked by missing `java`/`javac`; no lifecycle
+assertions executed. This is offline utility evidence only. No APK build, Windows
+AVD run, actual SDK callback, audible timing or Gleo voice evidence was added.
 
 There is no queue/run ID in the current trace format. A concatenation with missing
 boundaries, monotonically increasing time and the same arm/PID may be impossible to

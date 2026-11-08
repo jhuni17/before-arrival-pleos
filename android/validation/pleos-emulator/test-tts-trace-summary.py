@@ -111,5 +111,78 @@ class SummaryTests(unittest.TestCase):
                         self.assertEqual(report['skip_to_next_start_proxy_ms'], [])
 
 
+class ComparisonTests(unittest.TestCase):
+    def run_cli(self, captures, compare=True):
+        with tempfile.TemporaryDirectory() as directory:
+            paths = []
+            for number, lines in enumerate(captures):
+                path = Path(directory) / f'PRIVATE_TEXT-{number}.log'
+                path.write_text(''.join(lines), encoding='utf-8')
+                paths.append(str(path))
+            result = subprocess.run(
+                [sys.executable, summary.__file__] + (['--compare'] if compare else []) + paths,
+                capture_output=True, text=True, check=False)
+        self.assertEqual(result.stderr, '')
+        self.assertNotIn('PRIVATE_TEXT', result.stdout)
+        return result.returncode, json.loads(result.stdout)
+
+    def test_opt_in_and_direction(self):
+        baseline = trace('baseline')
+        # First callback is 10 ms earlier, next callback is 20 ms later.
+        candidate = [line.replace('elapsedRealtimeMs=50 ', 'elapsedRealtimeMs=40 ')
+                     .replace('elapsedRealtimeMs=150 ', 'elapsedRealtimeMs=170 ')
+                     for line in trace('candidate')]
+        for captures in ([baseline, candidate], [candidate, baseline]):
+            code, output = self.run_cli(captures)
+            self.assertEqual(code, 0)
+            comparison = output['comparison']
+            self.assertEqual(comparison['status'], 'complete')
+            self.assertEqual(comparison['first_request_to_start_proxy_ms'],
+                             {'baseline_ms': 30, 'candidate_ms': 20,
+                              'candidate_minus_baseline_ms': -10})
+            self.assertEqual(comparison['skip_to_next_start_proxy_ms'],
+                             [{'topic': 1, 'baseline_ms': 50, 'candidate_ms': 70,
+                               'candidate_minus_baseline_ms': 20}])
+        code, output = self.run_cli([baseline, candidate], compare=False)
+        self.assertEqual(code, 0)
+        self.assertEqual(output, {
+            'measurement': 'monotonic software proxy intervals; not audible timing',
+            'reports': [{'input': i, **summary.summarize(lines)}
+                        for i, lines in enumerate([baseline, candidate], 1)]})
+
+    def test_refused_pairs(self):
+        baseline, candidate = trace('baseline'), trace('candidate')
+        failure = candidate + ['TtsComparison: elapsedRealtimeMs=180 engine=candidate error=PRIVATE_TEXT']
+        mismatch = [line.replace('next=1', 'next=2').replace('topic=1', 'topic=2')
+                    for line in candidate]
+        for captures, issue in [
+                ([baseline], 'requires_exactly_two_inputs'),
+                ([baseline, candidate, candidate], 'requires_exactly_two_inputs'),
+                ([baseline, baseline], 'requires_one_input_per_arm'),
+                ([candidate, candidate], 'requires_one_input_per_arm'),
+                ([baseline, candidate[:-1]], 'requires_complete_inputs'),
+                ([baseline, []], 'requires_complete_inputs'),
+                ([baseline, failure], 'requires_complete_inputs'),
+                ([baseline, candidate + candidate], 'requires_complete_inputs'),
+                ([baseline, mismatch], 'skip_topic_sequence_mismatch')]:
+            with self.subTest(issue=issue, count=len(captures)):
+                code, output = self.run_cli(captures)
+                self.assertEqual(code, 1)
+                self.assertEqual(output['comparison'], {'status': 'refused', 'issues': [issue]})
+
+    def test_multiple_skips_and_zero_delta(self):
+        reports = []
+        for arm in summary.PROXIES:
+            lines = trace(arm) + [
+                f'TtsComparison: elapsedRealtimeMs=200 engine={arm} topic=1 skip_command next=2',
+                f'TtsComparison: elapsedRealtimeMs=210 engine={arm} topic=2 start_request',
+                f'TtsComparison: elapsedRealtimeMs=260 engine={arm} topic=2 {summary.PROXIES[arm]}']
+            reports.append(summary.summarize(lines))
+        result = summary.compare(reports)
+        self.assertEqual([item['topic'] for item in result['skip_to_next_start_proxy_ms']], [1, 2])
+        self.assertTrue(all(item['candidate_minus_baseline_ms'] == 0
+                            for item in result['skip_to_next_start_proxy_ms']))
+
+
 if __name__ == '__main__':
     unittest.main()
