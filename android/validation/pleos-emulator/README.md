@@ -50,3 +50,32 @@ android/validation/pleos-emulator/check-route-lifecycle.py
 ```
 
 이 결과는 오프라인 합성 어댑터 검사다. UI·편성·미디어 서비스 실행, 실제 SDK 콜백·음성·APK 빌드의 증거가 아니다. 이번 변경의 Windows 실행 증거는 없다. 현재 후보에서 실제 ETA 표시→편성→재생·취소를 같은 Windows/Pleos 세션으로 확인하는 시험과 signed release 검증은 여전히 필요하다. 기존 Windows 원시 값 관찰을 이 미검증 범위의 통과로 사용하지 않는다.
+
+## 오프라인 화면·미디어 경로 인계 검사 (2026-11-08)
+
+저장소 루트에서 제공된 JDK 17 bin을 PATH 앞에 두고 실행했다. 두 명령 모두 종료 코드 **0**이다.
+
+```sh
+PATH=/home/ubuntu/.local/share/before-arrival-runner/pleos-validation-stage.FmMxBcJv/jdk17-validation.k3GzMAZw/runtime/usr/lib/jvm/java-17-openjdk-amd64/bin:$PATH python3 android/validation/pleos-emulator/check-route-handoff.py
+PATH=/home/ubuntu/.local/share/before-arrival-runner/pleos-validation-stage.FmMxBcJv/jdk17-validation.k3GzMAZw/runtime/usr/lib/jvm/java-17-openjdk-amd64/bin:$PATH python3 android/validation/pleos-emulator/check-route-lifecycle.py
+```
+
+새 검사는 기존 `check-route-lifecycle.py`의 `SOURCES` 여섯 개와 `DOUBLES`를 가져온다. 실제 `LiveRouteSession.java`와 Pleos flavor `LiveConnectionFactory.java`를 추가하여 총 여덟 생산 소스를 그대로 복사·컴파일한다. 출력의 `Compile input: 원본 -> 복사본; bytes identical=True`로 각 컴파일 입력과 바이트 일치를 확인했다. 대역의 추가 API는 factory에 필요한 `Context.getApplicationContext()`뿐이며, 세션·factory·어댑터의 연결·구독 판단은 생산 소스에서 실행한다. 임시 컴파일 파일은 실행 후 제거된다.
+
+화면과 미디어 역할을 **합성 관찰자** 두 개로 모사하고 실제 `LiveRouteSession.shared`에 연결했다. 기존 Windows 기록의 fingerprint를 debug 조건에 설정하지만 아래 응답과 사건 순서는 새로 만든 합성 입력이다. 실제 Windows 실행 기록으로 취급하지 않는다.
+
+- 첫 화면 관찰자가 ETA 1920을 받은 뒤 미디어 관찰자를 붙이면 1920을 즉시 한 번 받는다. 화면에 재발행하지 않으며 같은 helper, 조회 1회를 유지한다.
+- 화면만 해제하고 가상 Handler 시계를 4,999ms/5,000ms로 진행하면 조회가 1회/2회다. 응답 1860은 미디어만 받는다. 화면 수신 목록은 그대로이며 helper release는 0회다. 화면 재구독은 새 helper 없이 1860을 즉시 한 번 받는다.
+- 미디어를 해제하고 다음 5,000ms 조회에 1680을 전달하면 화면만 갱신된다. 마지막 화면 해제 후 리스너 제거·helper release는 각각 1회, 예약 작업은 0개다. 추가 60초에도 조회는 총 3회 그대로다.
+- 별도 시나리오는 같은 shared 세션에 새 연결을 시작한다. 화면을 먼저 해제하고 남은 미디어가 취소에 따른 ETA 없음 통지 안에서 자신을 해제한다. 실제 세션의 발행 순회가 예외 없이 돌아오며 ETA 없음은 한 번, 리스너 제거·helper release는 각각 1회, 예약 작업은 0개다. 추가 60초에도 재조회하지 않는다.
+
+각 항목은 Java assertion 함수로 수신 목록·횟수·helper 동일성과 정리를 확인했다. JDK를 PATH에서 제거한 실행은 종료 코드 **1**이고 PASS가 없었다. 소스 변경 없이 메모리의 harness 첫 부분에 강제 assertion을 삽입한 실행에서 Java 종료 코드 **1**이 Python `CalledProcessError`로 전파됐으며 전체 성공을 출력하지 않았다. 정상 검사에서 생산 결함은 재현되지 않았다.
+
+`git diff --check` 종료 코드 **0**. 추적 파일 변경과 untracked 파일 목록을 함께 비교한 변경 파일 집합은 아래 지정 경로 두 개뿐이다.
+
+```text
+android/validation/pleos-emulator/README.md
+android/validation/pleos-emulator/check-route-handoff.py
+```
+
+이 검사는 합성 구독자의 경로 인계만 검증한다. 실제 Activity·미디어 서비스 재생, 편성·저장·사용자 선택, 주행 제한 전환, SDK 런타임 콜백, 음성 실행, APK 빌드·설치를 검증하지 않았다. 차량 제한 로직과 생산 코드는 변경하지 않았다. 이번 변경의 Windows 증거는 없으며, 동일 후보의 실제 ETA→편성→재생·취소 및 화면 이탈 중 활성 미디어의 지속·중단을 Windows/Pleos에서 확인하는 시험과 signed release 확인은 별도로 남아 있다.
