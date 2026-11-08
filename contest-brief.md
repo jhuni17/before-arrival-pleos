@@ -24,9 +24,15 @@ Gleo와 Gemini는 차량에서 음성 요청과 개인화된 답변을 제공한
 
 **공식 콘텐츠.** LoL·Valorant·메이플 공식 원문3건을 게시일·원문·확인 시각이 있는 가져온 스냅샷으로 제공한다. 별도로 Steam 한 제공자는 허용된 외부 실행 환경에서 실제 HTTPS→앱의 동일 갱신 함수·파서·모델→저장·디스크 재조회까지5개 공지를 처리했다. 전송은 curl 기반 fetcher가 담당했다. 후속 실제 브라우저 UI 조회에서 CORS 차단을 확인해 로컬 앱 서버의 동일 출처 조회로 수정했다. 후속6db 서버에서는 실제 브라우저 UI 조회·5개 항목·저장/재로드를 통과했다. 최신 도착 배치는 화면·독립 검토 근거를 따르며 Android 실기 네트워크는 미검증이다. 나머지 출처는 연결 설정 필요 또는 링크 저장 상태로 관리한다.
 
-**Pleos 검증.** NaviHelper 목적지 조회와 `NAVI_ROUTE` 권한을 사용할 후보 소스를 분리했다. 실제 SDK 의존성 빌드는 아직 막혀 있고 `remainTime` 단위·범위가 확인되지 않아 실제 ETA 변환을 차단한다. Connect Emulator의 실제 콜백·권한·경로 취소·제한 전환·한국어 음성과 오디오 포커스는 검증 대상으로 남았다. 실제 입력 실패를 샘플 ETA로 대체하지 않는다.
+**현재 후보 빌드 근거.** 후보 `21c83fdf61768eba7407922791a82f290ac766ea`는 제공된 승인 보고서에 따라 [CI #42477729327](https://github.com/jhuni17/before-arrival-pleos/actions/runs/42477729327)의 실제 Pleos SDK 컴파일·unsigned debug APK 빌드 성공으로 기록한다. 이는 CI 빌드 환경의 근거이며 설치·signed release·현재 후보 런타임 성공을 뜻하지 않는다. 이번 문서 대조에서는 CI를 재조회하거나 빌드하지 않았다.
 
-**APK와 검증.** 현재 통합 소스는 [PR #3의 커밋별 CI](https://github.com/jhuni17/before-arrival-pleos/pull/3/checks)에서 테스트·lint·브라우저 검사 및 서명 없는 sampleDebug 빌드 결과를 확인한다. `27d297b`의 서명 APK·독립 다운로드·JVM 24건은 [과거 고정 소스의 증거](sources-notes.md)다. 실제 설치·한국어 음성·차량 콜백·release APK·제출 영상·기기 동기화는 남아 있다.
+**과거 실제 실행 관찰.** `7bda357f3f6f2a286fa163aa11bf8eacfdbec3d2`의 Windows x64/WHPX·Pleos Connect 2.1.0/API 34·NaviHelper 3.0.5에서 원시 `remainTime` 콜백 `1920`·`1860`·`1680`을 관찰했다. 취소 후 앱을 다시 열어 새 조회한 값은 `0`이었다. 당시 앱은 보호 로직으로 ETA를 표시하지 않고 ‘도착 시간 미확인’을 표시했다. 같은 세션의 유효 ETA 소거를 입증한 기록이 아니다. [Windows 관찰 기록](android/validation/pleos-emulator/windows-pleos-2.1.0.md)과 [세션 JSON](android/validation/pleos-emulator/runtime-evidence.json)을 따른다.
+
+`dc6cf91d678c3a7cb6ad38cbbeabb3c3c2a88ebc`의 Windows Pleos Connect 2.1.0/API 34에서는 샘플 경로 18분과 eSpeak NG 1.52.0으로 D 상태 재생·다음 주제·일시정지·이어듣기를 관찰했다. Gleo 스키마 읽기와 같은 UID 계측 명령 전달도 확인했으나 실제 한국어 Gleo 발화 성공은 아니다. [샘플 오디오 큐 시험](android/validation/pleos-emulator/commute-audio.md)은 현재 후보의 실측과 구분한다.
+
+**차량 신호에서 사용자 결과까지 · 현재 소스 구현.** [NaviTimeContract.decode](android/app/src/main/java/com/beforearrival/briefing/NaviTimeContract.java)는 위 세션 JSON의 확인된 fingerprint와 정확히 일치하는 debug 앱에서만 원시 ETA를 초로 해석한다. release·다른 이미지는 거부하며 null·0 이하·2시간 초과도 거부한다. 이는 SDK 전체 범위 보증이 아닌 debug 시험 계약이다. [ContentCatalog.listeningBudget와 plan](android/app/src/main/java/com/beforearrival/briefing/ContentCatalog.java)은 남은 초에서 도착 준비 180초를 빼고 5로 나눈 값에 0~45초 한도를 적용해, 켠 출처와 일정 마감·추정 길이로 편성한다. 18분→45초, 4분→12초 예산은 구현·샘플 시나리오이며 실제 Pleos에서 18분→4분 변화를 관찰했다는 뜻이 아니다. [BriefingMediaService.onLiveRoute](android/app/src/main/java/com/beforearrival/briefing/BriefingMediaService.java)는 예산 0 또는 15초 이상 오래된 경로에서 활성 브리핑을 종료하고, 유효 갱신 시 재생 마감을 단축한다. ‘남은 시간에 맞춰 듣고 경로가 무효해지면 멈춤’은 현재 소스 설명이며 현재 후보의 런타임 입증은 남았다. 실제 입력 실패를 샘플 ETA로 대체하지 않는다.
+
+**남은 검증과 안전 범위.** 편성과 재생 시작은 차량 화면 사용 가능 상태에서 한다. 주행 제한 중 설정·대본 화면은 잠그고 Pleos의 활성 오디오 큐만 차량 미디어로 제어한다. 차량 상태 미확인 시 화면 상호작용과 음성을 중지한다. 현재 후보의 실제 ETA 표시→예산·편성→재생·경로 취소, 재생 중 UNKNOWN 전환은 Windows 실측이 남았다. 실제 Gleo 발화, 음향 시험·오디오 포커스, signed release 빌드·설치와 최종 영상도 미완료다. 합성 로그·mock 검사는 소스 검사용이며 실제 SDK 실행 근거와 구분한다. `27d297b`의 서명 sampleDebug APK·독립 다운로드·JVM 24건은 [과거 고정 소스 기록](sources-notes.md)으로 유지한다.
 
 ## 6. 기대효과 및 발전 가능성
 
@@ -34,7 +40,11 @@ Gleo와 Gemini는 차량에서 음성 요청과 개인화된 답변을 제공한
 
 ## 7. 참고자료
 
-시연 영상과 소스 저장소의 링크는 완성된 결과물의 접근 권한을 확인한 후 기재한다. 현재 제공물은 18초 HTML 자동 시연이며 녹화 영상은 없다. 아래 40초 구성은 향후 영상 편집안이다. HTML 저장은 같은 브라우저에서만, Android 저장은 해당 앱에서만 유지되며 두 기기 사이 동기화는 연출이다. 전달한 sampleDebug APK 검증과 공식 콘텐츠 연동 근거는 [최신 기록](sources-notes.md)을 따른다. 실제 Pleos SDK·콜백·에뮬레이터 실행과 최종 제출 영상은 미검증이다.
+사용자 제공 접수 조건에 따르면 **1차는 기획서와 서명 동의서가 필수**다. 프로토타입 및 자격을 충족하는 GitHub/APK 제출은 선택이며, **최종 PT에는 동작 앱 시연이 필요**하다. 선택 APK의 빌드 성공이 최종 시연이나 제출 자격 확인을 대신하지 않는다.
+
+현재 제공물은 18초 HTML 자동 시연이며 녹화 영상은 없다. 아래 40초 구성은 향후 영상 편집안이다. 브라우저 재생은 음성 없는 상태 연출이고 저장은 같은 주소의 브라우저에 한정된다. Android 저장은 해당 앱에만 남고 기기 간 동기화는 연출이다. 브라우저 제한 장면은 재생 상태를 초기화하지만 현재 Pleos 소스는 주행 제한 중 활성 큐의 차량 미디어 제어를 허용한다. 상태 미확인 시 중단은 공통이다. [시연 안내](showcase/REHEARSAL.md)를 따른다.
+
+현재 후보 `21c83fdf61768eba7407922791a82f290ac766ea`의 제공된 승인 보고서상 CI #42477729327 SDK 컴파일·unsigned debug APK 성공, 과거 Windows 원시 콜백과 샘플 오디오 시험, 현재 구현 및 미검증 범위는 5절처럼 구분한다. 공식 콘텐츠 연동 이력은 [기존 기록](sources-notes.md)을 유지한다. 실제 실행 근거를 합성 로그나 mock 결과로 대체하지 않는다.
 
 ### 40초 영상 편집안 · 미제작
 

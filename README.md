@@ -2,7 +2,13 @@
 
 현재 검토본은 공통 출처 모델로 Android 앱과 브라우저에서 출처 추가·사용 여부·순서·저장을 실제 편성에 반영한다. 공식 원문 스냅샷3개와 별도로 Steam 한 제공자는6db 로컬 앱 서버에서 실제 브라우저 갱신→공식 HTTPS→5개 항목·저장·재로드를 검증했다. Android 실기 네트워크는 미검증이며, 최신 도착 배치는 별도의 화면·독립 검토 근거를 따른다.
 
-현재 통합 소스의 Android 테스트, lint, 브라우저 검사와 서명 없는 sampleDebug APK는 [PR #3의 커밋별 CI](https://github.com/jhuni17/before-arrival-pleos/pull/3/checks)에서 해당 SHA의 결과와 입력 해시로 확인한다. `27d297b`에서 전달한 서명 sampleDebug APK와 JVM 24건 결과는 [당시 소스의 기록](sources-notes.md)이다. 실제 Pleos 콜백·에뮬레이터·실기 음성·기기 간 동기화와 release 제출물은 미완료다.
+현재 후보 `21c83fdf61768eba7407922791a82f290ac766ea`는 제공된 승인 보고서에 따라 [CI #42477729327](https://github.com/jhuni17/before-arrival-pleos/actions/runs/42477729327)의 실제 Pleos SDK 컴파일·unsigned debug APK 빌드 성공으로 기록한다. CI 빌드 환경의 근거이며 설치·signed release·현재 후보 런타임 성공을 뜻하지 않는다. 이번 문서 검사는 CI 재조회나 재빌드 없이 수행했다.
+
+과거 `7bda357f3f6f2a286fa163aa11bf8eacfdbec3d2`의 Windows x64/WHPX·Pleos Connect 2.1.0/API 34·NaviHelper 3.0.5에서는 원시 콜백 1920·1860·1680과 취소 후 새 조회의 0을 관찰했지만 당시 앱은 ETA를 표시하지 않았다. [Windows 기록](android/validation/pleos-emulator/windows-pleos-2.1.0.md)과 [세션 JSON](android/validation/pleos-emulator/runtime-evidence.json)을 따른다. `dc6cf91d678c3a7cb6ad38cbbeabb3c3c2a88ebc`의 같은 Windows Pleos 2.1.0/API 34 환경에서 D 상태 재생·미디어 명령은 [샘플 경로/eSpeak NG 시험](android/validation/pleos-emulator/commute-audio.md)이며 실제 Gleo 발화 성공이 아니다.
+
+확인된 fingerprint의 debug 앱만 ETA를 해석하고 release·다른 이미지는 거부하는 현재 구현, ETA→예산·편성 및 경로 무효화→종료는 [기획서 5절](contest-brief.md#5-현재-구현과-남은-검증)에 구분했다. 18분→4분은 샘플 예시다. 현재 후보 런타임, 실제 Gleo 발화, 음향 시험·오디오 포커스, signed release·설치는 미완료다. 합성 로그·mock 검사는 실제 실행 근거가 아니다. `27d297b`의 서명 sampleDebug APK와 JVM 24건은 [과거 기록](sources-notes.md)이다.
+
+브라우저 재생은 무음 연출, 저장은 같은 주소의 브라우저에 한정되며 기기 간 동기화는 연출이다. 브라우저 제한 장면의 재생 초기화와 현재 Pleos 활성 큐의 차량 미디어 제어는 다르다. 편성·재생 시작은 차량 화면 사용 가능 시에만 하며 제한 중 설정·대본은 잠근다. 차량 상태 미확인 시 화면 상호작용과 음성을 중지한다. [시연 안내](showcase/REHEARSAL.md)의 상단 범위를 따른다.
 
 ## 실행
 
