@@ -12,6 +12,7 @@ import ai.pleos.playground.tts.listener.EventListener;
 import ai.pleos.playground.tts.listener.OnInitializeListener;
 
 final class ComparisonFactory {
+    static boolean productionBackend() { return true; }
     static ComparisonSpeech create(Context context, Runnable started, Runnable done, Runnable failed) {
         return new Candidate(context, started, done, failed);
     }
@@ -25,14 +26,14 @@ final class ComparisonFactory {
         final EventListener events = new EventListener() {
             public void onReady() { main.post(() -> {
                 if (closed || stopping) return;
-                if (BuildConfig.DEBUG) android.util.Log.d("TtsComparison", "elapsedRealtimeMs="
+                if (BuildConfig.DEBUG && !"off".equals(BuildConfig.TTS_COMPARISON)) android.util.Log.d("TtsComparison", "elapsedRealtimeMs="
                         + android.os.SystemClock.elapsedRealtime() + " engine=candidate event=onReady");
             }); }
             public void onStart() { main.post(() -> { if (!closed && !stopping) started.run(); }); }
-            public void onDone() { main.post(() -> { if (!closed && !stopping) done.run(); }); }
+            public void onDone() { main.post(() -> { if (!closed && !stopping && sent) { sent = false; done.run(); } }); }
             public void onStop() { main.post(() -> { if (!closed && stopping && stopped != null) {
                 Runnable next = stopped; stopped = null; release(); next.run();
-            } }); }
+            } else if (!closed && !stopping) failed.run(); }); }
             public void onError(ErrorType error) { main.post(() -> {
                 if (!closed) { diagnostic("onError", error); failed.run(); }
             }); }
@@ -47,11 +48,12 @@ final class ComparisonFactory {
                     public void onSuccess() { main.post(() -> {
                         if (closed || stopping) return;
                         try {
-                            android.util.Log.d("TtsComparison", "elapsedRealtimeMs=" + android.os.SystemClock.elapsedRealtime()
-                                + " engine=candidate initialized=ON_DEVICE voice=SDK_default_identity_unverified");
                             sdk.setLocale(Locale.KOREA);
+                            sdk.setSpeakerType("seoyoon");
                             sdk.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)
                                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build());
+                            if (BuildConfig.DEBUG && !"off".equals(BuildConfig.TTS_COMPARISON)) android.util.Log.d("TtsComparison", "elapsedRealtimeMs=" + android.os.SystemClock.elapsedRealtime()
+                                + " engine=candidate initialized=ON_DEVICE voice=seoyoon");
                             initialized = true;
                             submit();
                         } catch (RuntimeException unavailable) {
@@ -77,7 +79,7 @@ final class ComparisonFactory {
             }
         }
         static void diagnostic(String stage, Object detail) {
-            if (BuildConfig.DEBUG) android.util.Log.d("TtsComparison", "elapsedRealtimeMs="
+            if (BuildConfig.DEBUG && !"off".equals(BuildConfig.TTS_COMPARISON)) android.util.Log.d("TtsComparison", "elapsedRealtimeMs="
                     + android.os.SystemClock.elapsedRealtime() + " engine=candidate stage=" + stage
                     + " error=" + detail);
         }
@@ -85,7 +87,7 @@ final class ComparisonFactory {
         void submit() {
             if (!closed && !stopping && initialized && listenerRegistered && !sent && text != null) {
                 sent = true;
-                android.util.Log.d("TtsComparison", "elapsedRealtimeMs=" + android.os.SystemClock.elapsedRealtime()
+                if (BuildConfig.DEBUG && !"off".equals(BuildConfig.TTS_COMPARISON)) android.util.Log.d("TtsComparison", "elapsedRealtimeMs=" + android.os.SystemClock.elapsedRealtime()
                         + " engine=candidate sdk_speak_request isFinal=true");
                 try { sdk.speak(text, true); } catch (RuntimeException unavailable) {
                     diagnostic("speak", unavailable.getClass().getName()); failed.run();
@@ -112,10 +114,10 @@ final class ComparisonFactory {
                     sdk.removeEventListener(events);
                 }
             } catch (RuntimeException unavailable) {
-                diagnostic("remove_listener", unavailable.getClass().getName()); throw unavailable;
+                diagnostic("remove_listener", unavailable.getClass().getName());
             } finally {
                 try { sdk.release(); } catch (RuntimeException unavailable) {
-                    diagnostic("release", unavailable.getClass().getName()); throw unavailable;
+                    diagnostic("release", unavailable.getClass().getName());
                 }
             }
         }

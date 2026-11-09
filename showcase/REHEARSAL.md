@@ -1,3 +1,11 @@
+> Seoyoon 변경의 현재 소스/검증 구분과 Windows 혼합 소식 시연 순서는
+> [seoyoon-live-playback.md](../android/validation/pleos-emulator/seoyoon-live-playback.md)를 따른다.
+> 기본 선택은 게임·일정·커뮤니티 예시이며 기존 사용자 설정을 초기화하지 않는다.
+> 휴대폰은 **휴대폰 연동 시연**으로 표시한다. 같은 관심사와 저장 항목을 유지하되
+> 출시 휴대폰 앱이나 실제 기기 간 동기화로 소개하지 않는다.
+> 지원 시스템 배치는 좌우 분할 후 정차 중 브리핑 확장(지도 없음)이다.
+> 새 SHA의 CI/Astra 승인과 Windows 실음성 증거는 아직 없다. 아래 기록은 과거 이력이다.
+
 # 도착 전에 · 브라우저 시연 검증 기록
 
 현재 안내: 브라우저의 ‘듣기 시연’은 **무음 재생 상태 연출**이다. 직접 저장은 **같은 주소의 브라우저에만** 유지되고 Android 앱·다른 기기와 동기화하지 않는다. 자동 저장 완료 장면과 기기 간 동기화는 연출이다. 현재 [index.tsx](examples/before-arrival/index.tsx)와 [내장 HTML](before-arrival-showcase.html)의 제한·재생·저장 문구를 기준으로 읽는다.

@@ -126,7 +126,7 @@ public final class MainActivity extends Activity {
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         automotive = getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
-        vehicleMedia = automotive && LiveConnectionFactory.isSdkIncluded();
+        vehicleMedia = ComparisonFactory.productionBackend();
         configurePalette();
         liveMode = state == null ? LiveConnectionFactory.isSdkIncluded()
                 : state.getBoolean("live_mode", LiveConnectionFactory.isSdkIncluded());
@@ -261,12 +261,13 @@ public final class MainActivity extends Activity {
 
         LinearLayout briefing = newsPanel;
         firstContext = label("", 18, MUTED, false);
-        add(briefing, firstContext, 0);
+        add(briefing, heading("소식", 18), 0);
         nextItem = heading("", 28);
         nextItem.setSingleLine(false);
         nextItem.setMaxLines(Integer.MAX_VALUE);
         nextItem.setEllipsize(null);
-        add(briefing, nextItem, 8);
+        add(briefing, nextItem, 4);
+        add(briefing, firstContext, 4);
         summary = label("", 14, MUTED, false);
         summary.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
 
@@ -593,18 +594,13 @@ public final class MainActivity extends Activity {
         String provenance = "demo_sample".equals(item.provenance) ? "예시"
                 : "official_snapshot".equals(item.provenance) ? "공식 스냅샷"
                 : "official_runtime".equals(item.provenance) ? "공식 갱신 자료" : "자료 구분 미확인";
-        String publisher = "";
-        if (catalog.canOpen(item)) {
-            String host = Uri.parse(item.originalUrl).getHost();
-            if (host != null) publisher = " / " + host;
-        }
         Provider provider = source == null ? null : catalog.provider(source.provider);
         String identity = savedSourceName(item);
         if (provider != null && !"sample".equals(provider.id)) {
             if (provider.label.contains(identity)) identity = provider.label;
             else if (!identity.contains(provider.label)) identity = provider.label + " / " + identity;
         }
-        return kind + " / " + identity + " / " + provenance + publisher;
+        return kind + " / " + identity + " / " + provenance;
     }
 
     private void renderPlan(RouteInput.Snapshot route) {
@@ -711,10 +707,10 @@ public final class MainActivity extends Activity {
         LinearLayout text = column();
         row.addView(text, new LinearLayout.LayoutParams(-1, -2));
         Source source = catalog.source(item.sourceId);
-        add(text, label(itemContext(item) + "\n약 " + item.estimatedSeconds + "초", 13, ACCENT, true), 0);
         int selectedIndex = plan.selected.indexOf(item);
         int position = selectedIndex >= 0 ? selectedIndex + 1 : plan.deferred.indexOf(item) + 1;
-        add(text, label(position + ". " + item.title, 16, TEXT, true), 2);
+        add(text, label(position + ". " + item.title, 18, TEXT, true), 0);
+        add(text, label(itemContext(item) + "\n약 " + item.estimatedSeconds + "초", 13, ACCENT, false), 2);
         add(text, label(source != null && "steam".equals(source.provider) ? "원문 발췌\n" + detail : detail, 13, MUTED, false), 2);
         add(text, label("게시 " + (item.publishedAt == null ? "시각 미제공" : item.publishedAt.toString()), 13, MUTED, false), 2);
         add(text, label(source == null ? "출처 확인 필요" : uiNotice(source.statusLabel()), 13, MUTED, false), 2);

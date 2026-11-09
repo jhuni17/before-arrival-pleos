@@ -36,6 +36,22 @@ public class CatalogTest {
         catalog = new ContentCatalog(defaults, preferences);
     }
 
+    @Test public void freshDemoIsMixedAndReloadDoesNotOverwriteChoices() throws Exception {
+        ContentCatalog.Plan plan = catalog.plan(new SampleRouteInput().snapshot());
+        assertEquals(3, plan.selected.size());
+        assertEquals("sample-game", plan.selected.get(0).sourceId);
+        assertEquals("sample-schedule", plan.selected.get(1).sourceId);
+        assertEquals("sample-community", plan.selected.get(2).sourceId);
+        for (ContentCatalog.Item item : plan.selected) assertEquals("demo_sample", item.provenance);
+        catalog.source("sample-game").enabled = false;
+        catalog.toggleSaved(plan.selected.get(1));
+        catalog.persist(preferences);
+        ContentCatalog restored = new ContentCatalog(defaults, preferences);
+        assertFalse(restored.source("sample-game").enabled);
+        assertEquals(plan.selected.get(1).key(), restored.savedItems.get(0).key());
+        assertEquals(2, restored.plan(new SampleRouteInput().snapshot()).selected.size());
+    }
+
     @Test public void migrationRunsOnceAndRetainsEnabledPriorityAndEverySavedEnum() throws Exception {
         preferences.edit().clear().putBoolean("enabled_GAME", false).putString("priority", "COMMUNITY")
                 .putStringSet("saved", Set.of("GAME", "SCHEDULE", "COMMUNITY")).commit();

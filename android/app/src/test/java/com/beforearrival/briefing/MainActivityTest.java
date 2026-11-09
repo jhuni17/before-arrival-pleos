@@ -41,6 +41,44 @@ public class MainActivityTest {
     }
     @After public void tearDown() { controller.pause().stop().destroy(); }
 
+    @Test public void newsTitlePrecedesCompactMetadataAtNarrowAndExpandedWidths() {
+        setAccessOnly(AccessPolicy.State.PARKED_USE_ALLOWED);
+        LinearLayout panel = field("newsPanel");
+        TextView title = field("nextItem"), metadata = field("firstContext");
+        assertEquals("소식", ((TextView) panel.getChildAt(0)).getText().toString());
+        assertTrue(panel.indexOfChild(title) < panel.indexOfChild(metadata));
+        for (int width : new int[] {320, 390, 960}) {
+            View content = field("content");
+            content.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+            content.layout(0, 0, width, content.getMeasuredHeight());
+            assertTrue(title.getMeasuredWidth() > 0);
+            assertNull(title.getEllipsize());
+            assertFalse(metadata.getText().toString().contains("https://"));
+            ((Button) field("detailsToggle")).performClick();
+            assertEquals(View.VISIBLE, ((View) field("expandedDetails")).getVisibility());
+            ((Button) field("detailsToggle")).performClick();
+        }
+    }
+
+    @Test public void ordinaryButtonSubmitsSelectedPlanToMediaWithoutFixture() {
+        org.junit.Assume.assumeTrue(ComparisonFactory.productionBackend());
+        org.junit.Assume.assumeTrue("off".equals(BuildConfig.TTS_COMPARISON));
+        setAccessOnly(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ReflectionHelpers.setField(activity, "liveMode", false);
+        ReflectionHelpers.setField(activity, "routeInput", new SampleRouteInput());
+        ReflectionHelpers.callInstanceMethod(activity, "render");
+        assertTrue((Boolean) field("vehicleMedia"));
+        assertNull(field("speech"));
+        ContentCatalog.Plan plan = field("plan");
+        ((Button) field("listen")).performClick();
+        Object pending = ReflectionHelpers.getStaticField(BriefingMediaService.class, "pending");
+        assertNotNull(pending);
+        assertSame(plan, ReflectionHelpers.getField(pending, "plan"));
+        assertFalse(ComparisonFixture.enabled(activity));
+        BriefingMediaService.stop();
+    }
+
     @Test public void unknownAndRestrictedHideControlsAndCloseDialog() {
         LinearLayout content = field("content");
         assertEquals(View.GONE, content.getVisibility());
@@ -135,7 +173,7 @@ public class MainActivityTest {
         TextView title = field("nextItem");
         assertEquals("첫 소식\n" + title.getText(), title.getContentDescription().toString());
         assertEquals(3, ((ViewGroup) field("routePanel")).getChildCount());
-        assertEquals(4, ((ViewGroup) field("newsPanel")).getChildCount());
+        assertEquals(5, ((ViewGroup) field("newsPanel")).getChildCount());
         assertFalse(descendants(overview, TextView.class).stream().anyMatch(view ->
                 view.getText().toString().equals("첫 소식")));
         Button listen = field("listen");
@@ -155,7 +193,7 @@ public class MainActivityTest {
         ContentCatalog.Source official = catalog.add("리그 오브 레전드", "lol",
                 "https://www.leagueoflegends.com/ko-kr/news/game-updates/");
         ReflectionHelpers.callInstanceMethod(activity, "render");
-        assertEquals("게임 / 리그 오브 레전드 패치 / 공식 스냅샷 / www.leagueoflegends.com", context.getText().toString());
+        assertEquals("게임 / 리그 오브 레전드 패치 / 공식 스냅샷", context.getText().toString());
         ContentCatalog.Plan plan = field("plan");
         assertEquals(official.items.get(0).title, ((TextView) field("nextItem")).getText().toString());
         assertFalse(context.getText().toString().contains("최신"));

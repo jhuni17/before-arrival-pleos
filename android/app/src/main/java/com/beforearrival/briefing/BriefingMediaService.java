@@ -73,13 +73,24 @@ public final class BriefingMediaService extends MediaBrowserService {
     private CarRestrictions restrictions;
     private State carState = State.UNKNOWN;
     private TextToSpeech engine;
+    interface SpeechFactory {
+        ComparisonSpeech create(Context context, Runnable started, Runnable done, Runnable failed);
+    }
+    SpeechFactory speechFactory = ComparisonFactory::create;
     private ComparisonSpeech candidate;
     private boolean candidatePlaying, candidateStopping;
     private Runnable afterCandidateStop;
     private boolean comparison() {
         return ComparisonFixture.enabled(this);
     }
-    private boolean candidateMode() { return comparison() && "candidate".equals(BuildConfig.TTS_COMPARISON); }
+    private boolean candidateMode() {
+        return ComparisonFactory.productionBackend()
+                && !(comparison() && "baseline".equals(BuildConfig.TTS_COMPARISON));
+    }
+    private void voiceTrace(String event) {
+        if (BuildConfig.DEBUG && candidateMode()) android.util.Log.d("PleosSpeech",
+                "engine=pleos mode=ON_DEVICE voice=seoyoon event=" + event);
+    }
     private void trial(String event) {
         if (comparison()) android.util.Log.d("TtsComparison", "elapsedRealtimeMs="
                 + SystemClock.elapsedRealtime() + " engine=" + BuildConfig.TTS_COMPARISON
@@ -93,7 +104,9 @@ public final class BriefingMediaService extends MediaBrowserService {
         if (candidate == null) { if (next != null) next.run(); return; }
         candidateStopping = true;
         trial("stop_request");
-        try { candidate.stop(() -> {
+        ComparisonSpeech stopping = candidate;
+        try { stopping.stop(() -> {
+            if (candidate != stopping) return;
             trial("stop_completion_proxy");
             candidate = null; candidateStopping = false;
             Runnable continuation = afterCandidateStop; afterCandidateStop = null;
@@ -104,19 +117,23 @@ public final class BriefingMediaService extends MediaBrowserService {
     }
     private void startCandidate() {
         if (candidate != null || candidateStopping || !hasFocus || !wantsPlayback || !canControl()) return;
-        long token = generation;
-        trial("start_request voice=SDK_default_identity_unverified mode=ON_DEVICE");
+        long token = ++generation;
+        candidateGeneration = token;
+        voiceTrace("engine");
+        trial("start_request voice=seoyoon mode=ON_DEVICE");
         try {
-            candidate = ComparisonFactory.create(this,
+            candidate = speechFactory.create(this,
                 () -> { if (token == generation && canControl() && hasFocus && wantsPlayback) {
-                    candidatePlaying = true; trial("sdk_onStart_proxy"); updateState();
+                    candidatePlaying = true; voiceTrace("start"); trial("sdk_onStart_proxy"); updateState();
                 } },
                 () -> { if (token == generation && !candidateStopping && !items.isEmpty()) {
-                    candidatePlaying = false;
+                    candidatePlaying = false; voiceTrace("done");
                     candidate.release(); candidate = null;
                     if (!nextTopic()) finish("");
                 } },
-                () -> { trial("candidate_unavailable_or_error_no_fallback"); finish("Pleos 비교 음성을 사용할 수 없어요. 비교 실패이며 Android 음성으로 대체하지 않아요."); });
+                () -> { if (token == candidateGeneration && candidate != null) {
+                    trial("candidate_unavailable_or_error_no_fallback"); failPlayback();
+                } });
             candidate.start(items.get(index).summary);
             main.postDelayed(() -> {
                 if (token == generation && candidate != null && !candidatePlaying && !candidateStopping) {
@@ -136,6 +153,7 @@ public final class BriefingMediaService extends MediaBrowserService {
     private String queueId;
     private int index;
     private long generation;
+    private long candidateGeneration = -1;
     private long focusVersion;
     private long playbackDeadline;
     private MediaPlayer player;
@@ -483,7 +501,8 @@ public final class BriefingMediaService extends MediaBrowserService {
     }
 
     private void failPlayback() {
-        finish(candidateMode() ? "Pleos 비교 음성을 사용할 수 없어요. 비교 실패이며 Android 음성으로 대체하지 않아요."
+        voiceTrace("error");
+        finish(candidateMode() ? "Pleos 음성을 사용할 수 없어요. 주차 중 대본을 확인해 주세요."
                 : "브리핑을 재생하지 못했어요. 대본을 읽을 수 있어요.");
     }
 
@@ -507,9 +526,12 @@ public final class BriefingMediaService extends MediaBrowserService {
         }
         clearTrack();
         afterCandidateStop = null;
+        candidateGeneration = -1;
         if (candidate != null) {
-            try { candidate.stop(() -> {}); } catch (RuntimeException ignored) {}
-            candidate.release(); candidate = null;
+            ComparisonSpeech previous = candidate;
+            candidate = null;
+            try { previous.stop(() -> {}); } catch (RuntimeException ignored) { voiceTrace("error"); }
+            try { previous.release(); } catch (RuntimeException ignored) { voiceTrace("error"); }
         }
         candidateStopping = false; candidatePlaying = false;
         abandonFocus();
