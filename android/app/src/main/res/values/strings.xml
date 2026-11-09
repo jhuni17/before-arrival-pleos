@@ -48,4 +48,9 @@
     <string name="route_reconnect_hint">실제 도착 시간을 받지 못했어요. 내비 경로와 연결 상태를 확인한 뒤 다시 연결해 주세요.</string>
     <string name="details_open">상세 보기</string>
     <string name="details_close">상세 닫기</string>
+    <string name="app_role">맞춤 출근 브리핑</string>
+    <string name="first_empty">선택된 첫 소식 없음</string>
+    <string name="plan_unknown">ETA 미확인으로 편성 대기. 나중에는 현재 재생에 포함되지 않은 소식이에요.</string>
+    <string name="plan_no_news">편성할 소식이 없어요. 상세에서 출처 선택과 연결 상태를 확인해 주세요.</string>
+    <string name="plan_result">듣기 %1$d개, 나중에 %2$d개. ETA에 맞춘 듣기 예산 %4$d초 중 약 %3$d초 편성.</string>
 </resources>

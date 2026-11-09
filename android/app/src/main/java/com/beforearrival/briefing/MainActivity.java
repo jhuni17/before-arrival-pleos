@@ -103,6 +103,9 @@ public final class MainActivity extends Activity {
     private TextView eta;
     private TextView accessLabel;
     private TextView nextItem;
+    private TextView firstContext;
+    private LinearLayout planBlocks;
+    private TextView planExplanation;
     private Button routeMode;
     private TextView routeLabel;
     private TextView summary;
@@ -229,6 +232,8 @@ public final class MainActivity extends Activity {
         restrictionNotice.setPadding(dp(24), dp(24), dp(24), dp(24));
         frame.addView(restrictionNotice, new FrameLayout.LayoutParams(-1, -1));
 
+        add(content, heading(getString(R.string.app_name), 24), 0);
+        add(content, label(getString(R.string.app_role), 18, MUTED, false), 2);
         overview = column();
         add(content, overview, 8);
         routePanel = panel();
@@ -255,6 +260,8 @@ public final class MainActivity extends Activity {
         });
 
         LinearLayout briefing = newsPanel;
+        firstContext = label("", 18, MUTED, false);
+        add(briefing, firstContext, 0);
         nextItem = heading("", 28);
         nextItem.setSingleLine(false);
         nextItem.setMaxLines(Integer.MAX_VALUE);
@@ -283,6 +290,11 @@ public final class MainActivity extends Activity {
             detailsVisible = !detailsVisible;
             renderDetails();
         });
+        planBlocks = column();
+        add(content, planBlocks, 8);
+        planExplanation = label("", 18, MUTED, false);
+        planExplanation.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        add(content, planExplanation, 4);
         add(content, detailsToggle, 8);
         expandedDetails = column();
         add(content, expandedDetails, 0);
@@ -536,14 +548,17 @@ public final class MainActivity extends Activity {
         routeMode.setText(liveMode ? "샘플 경로로 전환" : "실제 경로로 전환");
         etaLong.setVisibility(liveMode ? View.GONE : View.VISIBLE);
         etaShort.setVisibility(liveMode ? View.GONE : View.VISIBLE);
-        routeLabel.setText(!liveMode ? "샘플 ETA" : seconds < 0 ? "실제 경로"
-                : "실제 ETA");
+        routeLabel.setText(!liveMode ? "샘플 ETA" : seconds < 0 ? "기본 내비 연결 확인 필요"
+                : "기본 내비에서 받은 실제 ETA");
         setRouteButton(etaLong, minutes == 18);
         setRouteButton(etaShort, minutes == 4);
         plan = catalog.plan(route);
         renderSources();
         nextItem.setText(plan.selected.isEmpty() ? "브리핑을 기다리고 있어요" : plan.selected.get(0).title);
         nextItem.setContentDescription("첫 소식\n" + nextItem.getText());
+        firstContext.setText(plan.selected.isEmpty() ? getString(R.string.first_empty)
+                : itemContext(plan.selected.get(0)));
+        renderPlan(route);
         if (catalog.sources.stream().noneMatch(source -> source.enabled)) {
             summary.setText("브리핑에 넣을 소식 출처를 선택해 주세요.");
         } else if (minutes < 0) {
@@ -568,6 +583,62 @@ public final class MainActivity extends Activity {
         renderSaved();
         renderSpeechStatus("");
         renderTranscript();
+    }
+
+    // Identity and provenance come from the registered catalog, never inferred from a title.
+    private String itemContext(Item item) {
+        Source source = catalog.source(item.sourceId);
+        String kind = source == null ? "소식" : "game".equals(source.kind) ? "게임"
+                : "schedule".equals(source.kind) ? "일정" : "channel".equals(source.kind) ? "채널" : "커뮤니티";
+        String provenance = "demo_sample".equals(item.provenance) ? "예시"
+                : "official_snapshot".equals(item.provenance) ? "공식 스냅샷"
+                : "official_runtime".equals(item.provenance) ? "공식 갱신 자료" : "자료 구분 미확인";
+        String publisher = "";
+        if (catalog.canOpen(item)) {
+            String host = Uri.parse(item.originalUrl).getHost();
+            if (host != null) publisher = " / " + host;
+        }
+        Provider provider = source == null ? null : catalog.provider(source.provider);
+        String identity = savedSourceName(item);
+        if (provider != null && !"sample".equals(provider.id)) {
+            if (provider.label.contains(identity)) identity = provider.label;
+            else if (!identity.contains(provider.label)) identity = provider.label + " / " + identity;
+        }
+        return kind + " / " + identity + " / " + provenance + publisher;
+    }
+
+    private void renderPlan(RouteInput.Snapshot route) {
+        planBlocks.removeAllViews();
+        addPlanBlocks(plan.selected, true);
+        addPlanBlocks(plan.deferred, false);
+        String explanation;
+        if (route.remainingSeconds.isEmpty()) {
+            explanation = getString(R.string.plan_unknown);
+        } else if (plan.selected.isEmpty() && plan.deferred.isEmpty()) {
+            explanation = getString(R.string.plan_no_news);
+        } else {
+            explanation = getString(R.string.plan_result, plan.selected.size(), plan.deferred.size(),
+                    plan.selectedSeconds, plan.budgetSeconds);
+        }
+        planExplanation.setText(explanation);
+        planExplanation.setContentDescription(explanation);
+    }
+
+    private void addPlanBlocks(List<Item> items, boolean selected) {
+        if (items.isEmpty()) return;
+        StringBuilder text = new StringBuilder(selected ? "듣기  " : "나중에  ");
+        StringBuilder description = new StringBuilder(selected ? "듣기 순서" : "나중에 듣기 목록");
+        for (int i = 0; i < items.size(); i++) {
+            if (i > 0) text.append(" → ");
+            text.append(i + 1);
+            description.append("\n").append(i + 1).append(". ").append(itemContext(items.get(i)))
+                    .append(" / ").append(items.get(i).title);
+        }
+        TextView block = label(text.toString(), 18, selected ? ON_ACCENT : TEXT, false);
+        block.setPadding(dp(10), dp(6), dp(10), dp(6));
+        block.setBackground(shape(selected ? ACCENT : SURFACE, BORDER, 6));
+        block.setContentDescription(description.toString());
+        add(planBlocks, block, 4);
     }
 
     private void renderDetails() {
@@ -617,7 +688,7 @@ public final class MainActivity extends Activity {
 
     private void renderRows(RouteInput.Snapshot route) {
         briefingRows.removeAllViews();
-        if (vehicleMedia && !plan.selected.isEmpty()) {
+        if (!plan.selected.isEmpty()) {
             add(briefingRows, heading("재생 순서\n" + plan.selected.size() + "개 주제", 16), 8);
         }
         for (Item item : plan.selected) {
@@ -634,13 +705,16 @@ public final class MainActivity extends Activity {
 
     private View itemRow(Item item, String detail) {
         LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.VERTICAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(0, dp(6), 0, dp(6));
         LinearLayout text = column();
-        row.addView(text, new LinearLayout.LayoutParams(0, -2, 1));
+        row.addView(text, new LinearLayout.LayoutParams(-1, -2));
         Source source = catalog.source(item.sourceId);
-        add(text, label((source == null ? item.sourceId : source.name) + "\n약 " + item.estimatedSeconds + "초", 13, ACCENT, true), 0);
-        add(text, label(item.title, 16, TEXT, true), 2);
+        add(text, label(itemContext(item) + "\n약 " + item.estimatedSeconds + "초", 13, ACCENT, true), 0);
+        int selectedIndex = plan.selected.indexOf(item);
+        int position = selectedIndex >= 0 ? selectedIndex + 1 : plan.deferred.indexOf(item) + 1;
+        add(text, label(position + ". " + item.title, 16, TEXT, true), 2);
         add(text, label(source != null && "steam".equals(source.provider) ? "원문 발췌\n" + detail : detail, 13, MUTED, false), 2);
         add(text, label("게시 " + (item.publishedAt == null ? "시각 미제공" : item.publishedAt.toString()), 13, MUTED, false), 2);
         add(text, label(source == null ? "출처 확인 필요" : uiNotice(source.statusLabel()), 13, MUTED, false), 2);

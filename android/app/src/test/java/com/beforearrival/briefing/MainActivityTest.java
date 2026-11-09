@@ -135,13 +135,85 @@ public class MainActivityTest {
         TextView title = field("nextItem");
         assertEquals("첫 소식\n" + title.getText(), title.getContentDescription().toString());
         assertEquals(3, ((ViewGroup) field("routePanel")).getChildCount());
-        assertEquals(3, ((ViewGroup) field("newsPanel")).getChildCount());
+        assertEquals(4, ((ViewGroup) field("newsPanel")).getChildCount());
         assertFalse(descendants(overview, TextView.class).stream().anyMatch(view ->
-                view.getText().toString().equals("첫 소식") || view.getText().toString().equals("도착 전에")));
+                view.getText().toString().equals("첫 소식")));
         Button listen = field("listen");
         assertEquals("브리핑 듣기", listen.getText().toString());
         assertTrue(listen.isImportantForAccessibility());
         assertTrue(listen.isEnabled());
+    }
+
+    @Test public void overviewShowsPurposeAndCatalogIdentityWithoutInventingGame() throws Exception {
+        setAccessOnly(AccessPolicy.State.PARKED_USE_ALLOWED);
+        assertTrue(descendants((View) field("content"), TextView.class).stream()
+                .anyMatch(view -> view.getText().toString().equals("맞춤 출근 브리핑")));
+        TextView context = field("firstContext");
+        assertEquals("게임 / 게임 패치 예시 / 예시", context.getText().toString());
+        ContentCatalog catalog = field("catalog");
+        for (ContentCatalog.Source source : catalog.sources) source.enabled = false;
+        ContentCatalog.Source official = catalog.add("리그 오브 레전드", "lol",
+                "https://www.leagueoflegends.com/ko-kr/news/game-updates/");
+        ReflectionHelpers.callInstanceMethod(activity, "render");
+        assertEquals("게임 / 리그 오브 레전드 패치 / 공식 스냅샷 / www.leagueoflegends.com", context.getText().toString());
+        ContentCatalog.Plan plan = field("plan");
+        assertEquals(official.items.get(0).title, ((TextView) field("nextItem")).getText().toString());
+        assertFalse(context.getText().toString().contains("최신"));
+        assertEquals(official.items.get(0).originalUrl, plan.selected.get(0).originalUrl);
+    }
+
+    @Test public void officialSnapshotsShrinkFromThreeToTwoWithoutChangingSources() throws Exception {
+        setAccessOnly(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ContentCatalog catalog = field("catalog");
+        for (ContentCatalog.Source source : catalog.sources) source.enabled = false;
+        catalog.add("리그 오브 레전드 패치", "lol", "https://www.leagueoflegends.com/ko-kr/news/game-updates/");
+        catalog.add("발로란트 패치", "valorant", "https://playvalorant.com/ko-kr/news/game-updates/");
+        catalog.add("메이플스토리 업데이트", "maple", "https://maplestory.nexon.com/news/update");
+        for (int minutes : new int[] {32, 5}) {
+            RouteInput.Snapshot route = new RouteInput.Snapshot(java.util.OptionalLong.of(minutes * 60),
+                    java.time.Instant.parse("2026-11-05T00:00:00Z"), RouteInput.Source.NAVI_HELPER, "JVM fixture");
+            ReflectionHelpers.setField(activity, "routeInput", (RouteInput) () -> route);
+            ReflectionHelpers.callInstanceMethod(activity, "render");
+            ContentCatalog.Plan plan = field("plan");
+            assertEquals(minutes == 32 ? 3 : 2, plan.selected.size());
+            assertEquals(minutes == 32 ? 0 : 1, plan.deferred.size());
+            assertTrue(((TextView) field("planExplanation")).getText().toString()
+                    .contains("약 " + plan.selectedSeconds + "초"));
+        }
+    }
+
+    @Test public void visualizationTracksActualPlanForEtaUnknownEmptyAndSelection() {
+        setAccessOnly(AccessPolicy.State.PARKED_USE_ALLOWED);
+        for (int seconds : new int[] {1920, 240, 0, -1}) {
+            RouteInput.Snapshot route = new RouteInput.Snapshot(seconds < 0 ? java.util.OptionalLong.empty()
+                    : java.util.OptionalLong.of(seconds), java.time.Instant.parse("2026-11-05T00:00:00Z"),
+                    RouteInput.Source.NAVI_HELPER, "JVM fixture");
+            ReflectionHelpers.setField(activity, "routeInput", (RouteInput) () -> route);
+            ReflectionHelpers.callInstanceMethod(activity, "render");
+            ContentCatalog.Plan plan = field("plan");
+            LinearLayout blocks = field("planBlocks");
+            assertEquals((plan.selected.isEmpty() ? 0 : 1) + (plan.deferred.isEmpty() ? 0 : 1), blocks.getChildCount());
+            int index = 0;
+            for (List<ContentCatalog.Item> items : java.util.Arrays.asList(plan.selected, plan.deferred)) {
+                if (items.isEmpty()) continue;
+                String description = blocks.getChildAt(index++).getContentDescription().toString();
+                int previous = -1;
+                for (ContentCatalog.Item item : items) {
+                    int position = description.indexOf(item.title);
+                    assertTrue(position > previous);
+                    previous = position;
+                }
+            }
+            String explanation = ((TextView) field("planExplanation")).getText().toString();
+            if (seconds < 0) assertTrue(explanation.contains("ETA 미확인"));
+            else assertTrue(explanation.contains("약 " + plan.selectedSeconds + "초"));
+        }
+        ContentCatalog catalog = field("catalog");
+        for (ContentCatalog.Source source : catalog.sources) source.enabled = false;
+        ReflectionHelpers.setField(activity, "routeInput", new SampleRouteInput());
+        ReflectionHelpers.callInstanceMethod(activity, "render");
+        assertEquals(0, ((LinearLayout) field("planBlocks")).getChildCount());
+        assertTrue(((TextView) field("planExplanation")).getText().toString().contains("편성할 소식이 없어요"));
     }
 
     @Test public void parkedDetailsStartClosedAndHideAccessibilityAndFocus() {
