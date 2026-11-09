@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.Shadows;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
@@ -157,80 +158,90 @@ public class MainActivityTest {
 
     /** Synthetic app-window layout only; not a Pleos emulator or SDK callback. */
     @Test public void overviewReflowsWithinInsetSafeWindowWithLargeKoreanText() {
-        String[] primaryNames = {"eta", "nextItem", "listen"};
-        float[] normalSizes = new float[primaryNames.length];
-        float[] sizesSp = {40, 28, 20};
-        for (int i = 0; i < primaryNames.length; i++) {
-            normalSizes[i] = ((TextView) field(primaryNames[i])).getTextSize();
-        }
-        MainActivity original = activity;
-        android.content.res.Configuration config = new android.content.res.Configuration(
-                activity.getResources().getConfiguration());
-        config.fontScale = 1.3f;
-        // Exercise Android's configuration recreation: every view must consume the new scale.
-        controller.configurationChange(config);
-        activity = controller.get();
-        assertNotSame("font scale change recreates the screen", original, activity);
-        assertEquals(1.3f, activity.getResources().getConfiguration().fontScale, 0.001f);
-        for (int i = 0; i < primaryNames.length; i++) {
-            TextView view = field(primaryNames[i]);
-            assertTrue(primaryNames[i] + " is enlarged", view.getTextSize() > normalSizes[i]);
-            assertEquals(primaryNames[i] + " uses configuration font scale",
-                    android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP,
-                            sizesSp[i], activity.getResources().getDisplayMetrics()),
-                    view.getTextSize(), 0.5f);
-        }
-        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
-        View root = ((ViewGroup) activity.findViewById(android.R.id.content)).getChildAt(0);
-        float density = activity.getResources().getDisplayMetrics().density;
-        TextView title = field("nextItem");
-        title.setText("긴 한국어 제목 · 오늘 아침 도착 전에 확인할 지역 소식과 회의 장소 변경 안내");
-        root.dispatchApplyWindowInsets(new android.view.WindowInsets.Builder()
-                .setInsets(android.view.WindowInsets.Type.systemBars(), android.graphics.Insets.of(
-                        (int) (32 * density), (int) (24 * density), (int) (48 * density), (int) (24 * density)))
-                .build());
-        for (int width : new int[]{1400, 420, 1200, 420}) {
-            for (int pass = 0; pass < 4; pass++) {
-                root.measure(View.MeasureSpec.makeMeasureSpec((int) (width * density), View.MeasureSpec.EXACTLY),
-                        View.MeasureSpec.makeMeasureSpec((int) (900 * density), View.MeasureSpec.EXACTLY));
-                root.layout(0, 0, root.getMeasuredWidth(), root.getMeasuredHeight());
+        float originalFontScale = RuntimeEnvironment.getApplication()
+                .getResources().getConfiguration().fontScale;
+        try {
+            String[] primaryNames = {"eta", "nextItem", "listen"};
+            float[] normalSizes = new float[primaryNames.length];
+            float[] sizesSp = {40, 28, 20};
+            for (int i = 0; i < primaryNames.length; i++) {
+                normalSizes[i] = ((TextView) field(primaryNames[i])).getTextSize();
             }
-            LinearLayout overview = field("overview");
-            assertEquals(width >= 1200 ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL, overview.getOrientation());
-            assertEquals(root.getWidth() - root.getPaddingLeft() - root.getPaddingRight(),
-                    ((View) field("content")).getWidth());
-            assertEquals((int) (32 * density), root.getPaddingLeft());
-            assertEquals((int) (48 * density), root.getPaddingRight());
-            assertNull(title.getEllipsize());
-            assertTrue(title.getLayout().getLineCount() > 1);
-            assertEquals(0, title.getLayout().getEllipsisCount(title.getLineCount() - 1));
-            assertTrue(title.getHeight() >= title.getLayout().getHeight());
-            for (String name : primaryNames) {
-                TextView view = field(name);
-                assertTrue(name, view.getWidth() > 0);
-                android.text.Layout text = view.getLayout();
-                assertNotNull(name + " text layout", text);
-                assertEquals(name + " contains all characters", view.getText().length(),
-                        text.getLineEnd(text.getLineCount() - 1));
-                assertTrue(name + " text fits height", text.getHeight() <= view.getHeight()
-                        - view.getCompoundPaddingTop() - view.getCompoundPaddingBottom());
-                for (int line = 0; line < text.getLineCount(); line++) {
-                    assertEquals(name + " has no ellipsis", 0, text.getEllipsisCount(line));
-                    assertTrue(name + " line fits width", text.getLineWidth(line) <= text.getWidth() + 1);
+            MainActivity original = activity;
+            float normalScaledDensity = activity.getResources().getDisplayMetrics().scaledDensity;
+            RuntimeEnvironment.setFontScale(1.3f);
+            android.util.DisplayMetrics metrics = RuntimeEnvironment.getApplication()
+                    .getResources().getDisplayMetrics();
+            assertEquals(1.3f, RuntimeEnvironment.getApplication()
+                    .getResources().getConfiguration().fontScale, 0.001f);
+            assertTrue("effective display metrics enlarge SP", metrics.scaledDensity > normalScaledDensity);
+            // Recreate after updating Robolectric's environment so new views consume scaled metrics.
+            controller.recreate();
+            activity = controller.get();
+            assertNotSame("font scale change recreates the screen", original, activity);
+            assertEquals(1.3f, activity.getResources().getConfiguration().fontScale, 0.001f);
+            for (int i = 0; i < primaryNames.length; i++) {
+                TextView view = field(primaryNames[i]);
+                assertTrue(primaryNames[i] + " is enlarged", view.getTextSize() > normalSizes[i]);
+                assertEquals(primaryNames[i] + " uses configuration font scale",
+                        android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP,
+                                sizesSp[i], activity.getResources().getDisplayMetrics()),
+                        view.getTextSize(), 0.5f);
+            }
+            setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+            View root = ((ViewGroup) activity.findViewById(android.R.id.content)).getChildAt(0);
+            float density = activity.getResources().getDisplayMetrics().density;
+            TextView title = field("nextItem");
+            title.setText("긴 한국어 제목 · 오늘 아침 도착 전에 확인할 지역 소식과 회의 장소 변경 안내");
+            root.dispatchApplyWindowInsets(new android.view.WindowInsets.Builder()
+                    .setInsets(android.view.WindowInsets.Type.systemBars(), android.graphics.Insets.of(
+                            (int) (32 * density), (int) (24 * density), (int) (48 * density), (int) (24 * density)))
+                    .build());
+            for (int width : new int[]{1400, 420, 1200, 420}) {
+                for (int pass = 0; pass < 4; pass++) {
+                    root.measure(View.MeasureSpec.makeMeasureSpec((int) (width * density), View.MeasureSpec.EXACTLY),
+                            View.MeasureSpec.makeMeasureSpec((int) (900 * density), View.MeasureSpec.EXACTLY));
+                    root.layout(0, 0, root.getMeasuredWidth(), root.getMeasuredHeight());
                 }
-                android.graphics.Rect bounds = new android.graphics.Rect();
-                view.getDrawingRect(bounds);
-                ((ViewGroup) root).offsetDescendantRectToMyCoords(view, bounds);
-                assertTrue(name + " clears left inset", bounds.left >= root.getPaddingLeft());
-                assertTrue(name + " clears right inset", bounds.right <= root.getWidth() - root.getPaddingRight());
-                assertTrue(name + " clears top inset", bounds.top >= root.getPaddingTop());
-                assertTrue(name + " fits first viewport", bounds.bottom <= root.getHeight() - root.getPaddingBottom());
+                LinearLayout overview = field("overview");
+                assertEquals(width >= 1200 ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL, overview.getOrientation());
+                assertEquals(root.getWidth() - root.getPaddingLeft() - root.getPaddingRight(),
+                        ((View) field("content")).getWidth());
+                assertEquals((int) (32 * density), root.getPaddingLeft());
+                assertEquals((int) (48 * density), root.getPaddingRight());
+                assertNull(title.getEllipsize());
+                assertTrue(title.getLayout().getLineCount() > 1);
+                assertEquals(0, title.getLayout().getEllipsisCount(title.getLineCount() - 1));
+                assertTrue(title.getHeight() >= title.getLayout().getHeight());
+                for (String name : primaryNames) {
+                    TextView view = field(name);
+                    assertTrue(name, view.getWidth() > 0);
+                    android.text.Layout text = view.getLayout();
+                    assertNotNull(name + " text layout", text);
+                    assertEquals(name + " contains all characters", view.getText().length(),
+                            text.getLineEnd(text.getLineCount() - 1));
+                    assertTrue(name + " text fits height", text.getHeight() <= view.getHeight()
+                            - view.getCompoundPaddingTop() - view.getCompoundPaddingBottom());
+                    for (int line = 0; line < text.getLineCount(); line++) {
+                        assertEquals(name + " has no ellipsis", 0, text.getEllipsisCount(line));
+                        assertTrue(name + " line fits width", text.getLineWidth(line) <= text.getWidth() + 1);
+                    }
+                    android.graphics.Rect bounds = new android.graphics.Rect();
+                    view.getDrawingRect(bounds);
+                    ((ViewGroup) root).offsetDescendantRectToMyCoords(view, bounds);
+                    assertTrue(name + " clears left inset", bounds.left >= root.getPaddingLeft());
+                    assertTrue(name + " clears right inset", bounds.right <= root.getWidth() - root.getPaddingRight());
+                    assertTrue(name + " clears top inset", bounds.top >= root.getPaddingTop());
+                    assertTrue(name + " fits first viewport", bounds.bottom <= root.getHeight() - root.getPaddingBottom());
+                }
+                Button listen = field("listen");
+                assertSame(((View) field("nextItem")).getParent(), listen.getParent());
+                assertNotSame(listen.getParent(), ((View) field("summary")).getParent());
+                assertTrue(title.isAccessibilityHeading());
+                assertEquals(View.GONE, ((View) field("reconnect")).getVisibility());
             }
-            Button listen = field("listen");
-            assertSame(((View) field("nextItem")).getParent(), listen.getParent());
-            assertNotSame(listen.getParent(), ((View) field("summary")).getParent());
-            assertTrue(title.isAccessibilityHeading());
-            assertEquals(View.GONE, ((View) field("reconnect")).getVisibility());
+        } finally {
+            RuntimeEnvironment.setFontScale(originalFontScale);
         }
     }
 
