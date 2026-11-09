@@ -35,7 +35,9 @@ public class BriefingMediaServiceTest {
         Runnable stopped;
         String text;
         boolean released;
+        boolean ready = true;
         FakeSpeech(Runnable s, Runnable d, Runnable f) { started = s; done = d; failed = f; }
+        public boolean isReady() { return ready && !released; }
         public void start(String value) { text = value; }
         public void stop(Runnable completion) { stopped = completion; }
         public void release() { released = true; }
@@ -86,6 +88,27 @@ public class BriefingMediaServiceTest {
         voices.get(0).started.run(); voices.get(0).done.run();
         assertTrue(voices.get(0).released);
         assertEquals(2, voices.size()); // Deliberately fresh engine at uncorrelated callback boundary.
+    }
+    @Test public void initializingPreparationFallsBackAndLateCallbacksCannotAffectService() throws Exception {
+        BriefingMediaService.stop(); voices.clear();
+        PleosSpeechWarmup.factory = (context, start, done, fail) -> {
+            FakeSpeech voice = new FakeSpeech(start, done, fail);
+            voice.ready = false; voices.add(voice); return voice;
+        };
+        PleosSpeechWarmup.eligible(service, warmScreen, true);
+        FakeSpeech abandoned = voices.get(0);
+        startPlan(); // take() discards initialization; service constructs its normal SDK path.
+        assertTrue(abandoned.released); assertNull(abandoned.text);
+        assertEquals(2, voices.size());
+        FakeSpeech cold = voices.get(1);
+        assertEquals("편성 대본 0", cold.text);
+        abandoned.ready = true;
+        abandoned.failed.run(); abandoned.started.run(); abandoned.done.run();
+        assertTrue(BriefingMediaService.isActive());
+        assertFalse(cold.released); assertEquals(2, voices.size());
+        cold.started.run(); cold.done.run();
+        assertEquals(3, voices.size());
+        assertEquals("편성 대본 1", voices.get(2).text);
     }
     @Test public void unavailablePreparationUsesOrdinarySameBackendStartup() throws Exception {
         BriefingMediaService.stop(); voices.clear();

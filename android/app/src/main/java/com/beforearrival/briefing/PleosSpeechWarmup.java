@@ -41,7 +41,10 @@ final class PleosSpeechWarmup {
     static Lease take() {
         Lease lease = idle;
         idle = null;
-        if (lease == null || lease.closed) return null;
+        if (lease == null) return null;
+        // Never transfer an initializing engine: late initialization failure must not
+        // terminate a service request that could use the ordinary same-SDK path.
+        if (!lease.isReady()) { lease.release(); return null; }
         return lease;
     }
 
@@ -56,7 +59,7 @@ final class PleosSpeechWarmup {
         private Runnable onStart, onDone, onFailure;
         private boolean closed, bound;
         void bind(Runnable started, Runnable done, Runnable failed) {
-            if (closed || bound) throw new IllegalStateException("lease unavailable");
+            if (!isReady() || bound) throw new IllegalStateException("lease unavailable");
             bound = true; onStart = started; onDone = done; onFailure = failed;
         }
         private void started() { if (!closed && bound) onStart.run(); }
@@ -66,6 +69,9 @@ final class PleosSpeechWarmup {
             Runnable failure = onFailure;
             release();
             if (failure != null) failure.run();
+        }
+        public boolean isReady() {
+            return !closed && engine != null && engine.isReady();
         }
         public void start(String text) {
             if (closed || !bound) throw new IllegalStateException("lease unavailable");

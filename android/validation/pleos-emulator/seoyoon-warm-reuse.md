@@ -18,10 +18,12 @@ The genuine side-by-side and compact/expanded layout are unchanged.
 
 A main-thread lease is attempted once per eligible screen lifetime. Idle preparation
 expires at 15 seconds, releases on pause or eligibility loss, and releases on
-initialization failure. Normal play transfers the lease into the pending service
-request; screen teardown then cannot release it. An unbound abandoned request
+initialization failure. Normal play transfers only a fully initialized/configured, listener-registered
+lease into the pending service request; screen teardown then cannot release it. An unbound abandoned request
 also expires. The service binds callbacks only when starting the first topic after
-its existing vehicle and focus gates. Expired/failed preparation falls back to
+its existing vehicle and focus gates. Initializing preparation is released immediately on listen; it is never bound
+to service callbacks. Late success/failure cannot resurrect that closed lease.
+Readiness is checked again at bind. Expired/failed/not-ready preparation falls back to
 ordinary construction in the same Pleos factory. A bound engine belongs exclusively
 to the service and follows its cancellation/deadline/shutdown cleanup. No engine
 is retained for a later playback session.
@@ -110,3 +112,42 @@ show improvement and safety holds. Otherwise retain the old video and investigat
 raw PCM discontinuities aligned with SDK/AudioTrack timing. To enable cross-topic
 reuse safely, obtain a documented callback drain barrier or correlated utterance
 identity before replacing the current conservative instance boundary.
+
+
+## Repair validation (2026-11-09, uncommitted working tree)
+
+The review's initialization-in-flight defect is repaired: `take()` checks the
+adapter's main-thread readiness snapshot and closes a not-ready engine before
+returning null. The service then follows its existing ordinary same-factory
+construction path. The production adapter reports ready only after initialization,
+Korean/seoyoon/media configuration and event listener registration, while still
+open and not stopping/terminal. Other implementations default to not ready;
+sample and explicit comparison dispatch are unchanged. No SDK API was added.
+
+Added deterministic tests (written, **not executed**): initializing lease rejection
+and late failure/success isolation in the warmup suite; prepare → listen before
+initialization → cold service request → old failure/start/done in the service
+suite; and real production adapter with SDK doubles for old initialization failure,
+success and event callbacks after replacement in the lifecycle checker. Existing
+ready-lease transfer tests now provide an explicit ready fake. These are source
+checks/test cases, not observed SDK or acoustic behavior.
+
+Executed locally for this repair:
+
+- `git diff --check`: passed.
+- Python AST parse and source-set permission isolation: passed (not merged manifests).
+- Lifecycle checker: exit 1, missing `java`/`javac`; no Java checks ran.
+- Offline Gradle `testPleosDebugUnitTest`, `compilePleosDebugJavaWithJavac`,
+  `compilePleosReleaseJavaWithJavac`: exit 1 before Gradle, missing Java/JAVA_HOME.
+
+Acceptance 1: readiness/fallback repair and deterministic regression cases are in
+source; execution remains blocked. Acceptance 2 remains **unmet**: no public
+callback drain barrier or utterance correlation was established, so natural topic
+transitions still create fresh instances. No single-engine three-topic success is
+claimed. Prior CI #42610988285 debug compilation applies to the reviewed predecessor,
+not this repair, and does not prove unit tests or release compilation. Same-revision
+CI and Astra source acceptance remain required. Acceptance 3: **WAITING_RUNTIME**;
+no Windows verification, artifact installation, A/B metrics, physical-car or human
+listening was performed. Existing video is unchanged; no acoustic improvement is
+claimed. The Windows procedure above remains outstanding, including route/D/UNKNOWN
+and focus transitions. Gleo spoken commands remain deferred.

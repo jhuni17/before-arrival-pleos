@@ -25,7 +25,9 @@ public class PleosSpeechWarmupTest {
     private static final class Fake implements ComparisonSpeech {
         final Runnable failed;
         int speaks, releases;
+        boolean ready = true;
         Fake(Runnable failure) { failed = failure; }
+        public boolean isReady() { return ready; }
         public void start(String text) { speaks++; }
         public void stop(Runnable completion) { completion.run(); }
         public void release() { releases++; }
@@ -75,6 +77,17 @@ public class PleosSpeechWarmupTest {
         prepare(); PleosSpeechWarmup.eligible(context, screen, false);
         assertEquals(1, engine.releases); assertEquals(0, engine.speaks);
         assertNull(PleosSpeechWarmup.take());
+    }
+    @Test public void initializingLeaseIsReleasedAndLateFailureCannotEscape() {
+        prepare(); engine.ready = false;
+        Fake abandoned = engine;
+        assertNull(PleosSpeechWarmup.take());
+        assertEquals(1, abandoned.releases);
+        abandoned.ready = true; // Late initialization success cannot resurrect ownership.
+        abandoned.failed.run();
+        assertNull(PleosSpeechWarmup.take());
+        assertEquals(0, abandoned.speaks);
+        assertEquals(1, abandoned.releases);
     }
     @Test public void asyncWarmFailureLeavesNoLease() {
         prepare(); engine.failed.run();

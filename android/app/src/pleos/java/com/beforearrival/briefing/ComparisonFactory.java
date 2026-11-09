@@ -93,6 +93,9 @@ final class ComparisonFactory {
                     + android.os.SystemClock.elapsedRealtime() + " engine=candidate stage=" + stage
                     + " error=" + detail);
         }
+        public boolean isReady() {
+            return initialized && listenerRegistered && !closed && !stopping && !terminal;
+        }
         public void start(String value) {
             if (text != null || terminal || closed || stopping) throw new IllegalStateException("one topic per engine");
             text = value; submit();

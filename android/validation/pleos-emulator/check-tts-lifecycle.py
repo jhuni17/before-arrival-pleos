@@ -153,6 +153,27 @@ public class LifecycleCheck {
    live.release();Handler.advanceBy(5001);
    check(releasedFailures[0]==0 && liveFailures[0]==1,"cleanup must not produce later failures");
   }
+  // Reproduce listen before warm initialization response, then old failure/success.
+  TextToSpeech.synchronous=false;
+  android.content.Context earlyContext=new android.content.Context();
+  Object earlyScreen=new Object();
+  PleosSpeechWarmup.eligible(earlyContext,earlyScreen,true);
+  TextToSpeech earlySdk=TextToSpeech.last;
+  EventListener earlyEvents=earlySdk.events;
+  check(PleosSpeechWarmup.take()==null && earlySdk.released,"initializing warm engine must be discarded");
+  int[] coldCallbacks={0,0,0};
+  ComparisonSpeech cold=ComparisonFactory.create(earlyContext,()->coldCallbacks[0]++,()->coldCallbacks[1]++,()->coldCallbacks[2]++);
+  TextToSpeech coldSdk=TextToSpeech.last;
+  cold.start("ordinary cold fallback");
+  earlySdk.init.onFailure(ErrorType.ERROR);earlySdk.success();
+  earlyEvents.onStart();earlyEvents.onDone();earlyEvents.onError(ErrorType.ERROR);Handler.drain();
+  check(earlySdk.speaks==0 && coldSdk.speaks==0,"late old initialization must not speak");
+  check(coldCallbacks[0]==0 && coldCallbacks[1]==0 && coldCallbacks[2]==0,"old warm callbacks cannot terminate cold request");
+  coldSdk.success();Handler.drain();
+  check(cold.isReady() && coldSdk.speaks==1,"ordinary same SDK startup must remain available");
+  coldSdk.events.onStart();coldSdk.events.onDone();Handler.drain();
+  check(coldCallbacks[0]==1 && coldCallbacks[1]==1 && coldCallbacks[2]==0,"cold request completes independently");
+  cold.release();PleosSpeechWarmup.eligible(earlyContext,earlyScreen,false);
   TextToSpeech.synchronous=true;
   android.content.Context context=new android.content.Context();
   Object screen=new Object();
