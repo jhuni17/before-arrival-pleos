@@ -87,7 +87,7 @@ public class MainActivityTest {
         Button routeMode = field("routeMode");
         routeMode.performClick();
         TextView eta = field("eta");
-        assertEquals("도착 시간 미확인", eta.getText().toString());
+        assertEquals("ETA 미확인", eta.getText().toString());
         Button listen = field("listen");
         assertFalse(listen.isEnabled());
         RouteInput input = field("routeInput");
@@ -99,8 +99,8 @@ public class MainActivityTest {
         setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
         TextView eta = field("eta"), next = field("nextItem");
         Button listen = field("listen"), reconnect = field("reconnect");
-        assertSame(eta.getParent(), next.getParent());
-        assertSame(eta.getParent(), listen.getParent());
+        assertSame(((View) eta.getParent()).getParent(), ((View) next.getParent()).getParent());
+        assertSame(next.getParent(), listen.getParent());
         assertTrue(((TextView) field("routeLabel")).getText().toString().contains("샘플"));
         assertEquals(View.VISIBLE, listen.getVisibility());
         assertEquals(View.GONE, reconnect.getVisibility());
@@ -114,7 +114,7 @@ public class MainActivityTest {
         assertEquals("18분", eta.getText().toString());
         assertEquals(View.VISIBLE, listen.getVisibility());
         assertTrue(listen.isEnabled());
-        assertTrue(((TextView) field("routeLabel")).getText().toString().contains("실제 경로"));
+        assertTrue(((TextView) field("routeLabel")).getText().toString().contains("실제 ETA"));
         assertNotSame(next.getParent(), ((Button) field("transcriptButton")).getParent());
         next.setText("매우 긴 한국어 소식 제목을 확대된 글자로도 여러 줄에 걸쳐 확인할 수 있어야 해요");
         assertEquals(Integer.MAX_VALUE, next.getMaxLines());
@@ -132,7 +132,7 @@ public class MainActivityTest {
         ((Button) field("routeMode")).performClick();
         assertEquals(View.VISIBLE, reconnect.getVisibility());
         assertTrue(reconnect.isEnabled());
-        assertSame(((TextView) field("eta")).getParent(), reconnect.getParent());
+        assertSame(((TextView) field("nextItem")).getParent(), reconnect.getParent());
         assertEquals(View.GONE, ((Button) field("listen")).getVisibility());
         assertEquals(View.GONE, ((Button) field("transcriptButton")).getVisibility());
         assertEquals(activity.getString(R.string.route_reconnect_hint),
@@ -153,6 +153,55 @@ public class MainActivityTest {
         }
         assertTrue((Boolean) field("liveMode"));
         assertEquals(RouteInput.Source.NAVI_HELPER, session.snapshot().source);
+    }
+
+    /** Synthetic app-window layout only; not a Pleos emulator or SDK callback. */
+    @Test public void overviewReflowsWithinInsetSafeWindowWithLargeKoreanText() {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        View root = ((ViewGroup) activity.findViewById(android.R.id.content)).getChildAt(0);
+        float density = activity.getResources().getDisplayMetrics().density;
+        android.content.res.Configuration config = new android.content.res.Configuration(
+                activity.getResources().getConfiguration());
+        config.fontScale = 1.3f;
+        activity.getResources().updateConfiguration(config, activity.getResources().getDisplayMetrics());
+        TextView title = field("nextItem");
+        title.setText("긴 한국어 제목 · 오늘 아침 도착 전에 확인할 지역 소식과 회의 장소 변경 안내");
+        title.setTextSize(36.4f);
+        root.dispatchApplyWindowInsets(new android.view.WindowInsets.Builder()
+                .setInsets(android.view.WindowInsets.Type.systemBars(), android.graphics.Insets.of(
+                        (int) (32 * density), (int) (24 * density), (int) (48 * density), (int) (24 * density)))
+                .build());
+        for (int width : new int[]{1400, 420, 1200, 420}) {
+            for (int pass = 0; pass < 4; pass++) {
+                root.measure(View.MeasureSpec.makeMeasureSpec((int) (width * density), View.MeasureSpec.EXACTLY),
+                        View.MeasureSpec.makeMeasureSpec((int) (900 * density), View.MeasureSpec.EXACTLY));
+                root.layout(0, 0, root.getMeasuredWidth(), root.getMeasuredHeight());
+            }
+            LinearLayout overview = field("overview");
+            assertEquals(width >= 1200 ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL, overview.getOrientation());
+            assertEquals(root.getWidth() - root.getPaddingLeft() - root.getPaddingRight(),
+                    ((View) field("content")).getWidth());
+            assertEquals((int) (32 * density), root.getPaddingLeft());
+            assertEquals((int) (48 * density), root.getPaddingRight());
+            assertNull(title.getEllipsize());
+            assertTrue(title.getLayout().getLineCount() > 1);
+            assertEquals(0, title.getLayout().getEllipsisCount(title.getLineCount() - 1));
+            assertTrue(title.getHeight() >= title.getLayout().getHeight());
+            for (String name : new String[]{"eta", "nextItem", "listen"}) {
+                View view = field(name);
+                assertTrue(name, view.getWidth() > 0);
+                assertTrue(name, view.getRight() <= ((View) view.getParent()).getWidth());
+            }
+            Button listen = field("listen");
+            android.graphics.Rect bounds = new android.graphics.Rect();
+            listen.getDrawingRect(bounds);
+            ((ViewGroup) root).offsetDescendantRectToMyCoords(listen, bounds);
+            assertTrue("primary fits first viewport", bounds.bottom <= root.getHeight() - root.getPaddingBottom());
+            assertSame(((View) field("nextItem")).getParent(), listen.getParent());
+            assertNotSame(listen.getParent(), ((View) field("summary")).getParent());
+            assertTrue(title.isAccessibilityHeading());
+            assertEquals(View.GONE, ((View) field("reconnect")).getVisibility());
+        }
     }
 
     @Test public void savedItemSurvivesActivityRecreation() {

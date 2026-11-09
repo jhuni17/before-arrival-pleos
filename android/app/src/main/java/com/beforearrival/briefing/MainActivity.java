@@ -93,6 +93,9 @@ public final class MainActivity extends Activity {
     private Button savedConfirmed;
 
     private LinearLayout content;
+    private LinearLayout overview;
+    private LinearLayout routePanel;
+    private LinearLayout newsPanel;
     private LinearLayout briefingRows;
     private LinearLayout savedRows;
     private TextView restrictionNotice;
@@ -220,31 +223,26 @@ public final class MainActivity extends Activity {
         content = column();
         content.setPadding(dp(20), dp(20), dp(20), dp(32));
         frame.addView(content, new FrameLayout.LayoutParams(-1, -2, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
-        frame.addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
-            int width = Math.min(right - left, dp(880));
-            if (width > 0 && content.getLayoutParams().width != width) {
-                content.getLayoutParams().width = width;
-                content.requestLayout();
-            }
-        });
         restrictionNotice = label("", 20, TEXT, true);
         restrictionNotice.setGravity(Gravity.CENTER);
         restrictionNotice.setPadding(dp(24), dp(24), dp(24), dp(24));
         frame.addView(restrictionNotice, new FrameLayout.LayoutParams(-1, -1));
 
-        add(content, label(vehicleMedia ? "출근 브리핑 · 도착까지 듣는 내 소식"
-                : "정차용 브리핑 · 출처를 확인하는 소식", 18, MUTED, true), 0);
-        add(content, heading("도착 전에", 34), 4);
+        add(content, heading("도착 전에", 26), 0);
+        overview = column();
+        add(content, overview, 8);
+        routePanel = panel();
+        newsPanel = panel();
+        add(overview, routePanel, 0);
+        add(overview, newsPanel, 8);
+        overview.addOnLayoutChangeListener((view, left, top, right, bottom,
+                oldLeft, oldTop, oldRight, oldBottom) -> arrangeOverview(right - left));
         accessLabel = label("", 18, MUTED, false);
-        add(content, accessLabel, 4);
-
-        LinearLayout route = panel();
-        add(content, route, 20);
-        add(route, label("도착까지", 20, MUTED, true), 0);
-        eta = label("", 48, TEXT, true);
-        add(route, eta, 2);
+        add(routePanel, accessLabel, 0);
+        eta = label("", 40, TEXT, true);
+        add(routePanel, eta, 2);
         routeLabel = label("", 18, MUTED, false);
-        add(route, routeLabel, 2);
+        add(routePanel, routeLabel, 2);
         etaLong = button("18분", false, () -> selectRoute(18));
         etaShort = button("4분", false, () -> selectRoute(4));
         routeMode = button("", false, () -> {
@@ -256,8 +254,8 @@ public final class MainActivity extends Activity {
             refreshPlan();
         });
 
-        LinearLayout briefing = route;
-        add(briefing, heading("이번에 들을 소식", 20), 16);
+        LinearLayout briefing = newsPanel;
+        add(briefing, heading("첫 소식", 20), 0);
         nextItem = heading("", 28);
         nextItem.setSingleLine(false);
         nextItem.setMaxLines(Integer.MAX_VALUE);
@@ -265,7 +263,7 @@ public final class MainActivity extends Activity {
         add(briefing, nextItem, 8);
         summary = label("", 14, MUTED, false);
         summary.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
-        add(briefing, summary, 4);
+
         listen = button("브리핑 듣기", true, this::togglePlayback);
         listen.setSingleLine(false);
         listen.setEllipsize(null);
@@ -280,11 +278,11 @@ public final class MainActivity extends Activity {
         });
         reconnect.setSingleLine(false);
         reconnect.setEllipsize(null);
-        add(briefing, reconnect, 8);
 
         LinearLayout details = panel();
         add(content, details, 12);
-        add(details, transcriptButton, 0);
+        add(details, summary, 0);
+        add(details, transcriptButton, 8);
         speechStatus = label("", 14, ACCENT, false);
         speechStatus.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         add(briefing, speechStatus, 4);
@@ -298,6 +296,7 @@ public final class MainActivity extends Activity {
         add(settings, heading("내 브리핑 설정", 21), 0);
         add(settings, buttonRow(etaLong, etaShort), 8);
         add(settings, routeMode, 8);
+        add(settings, reconnect, 8);
         add(settings, label(ContentCatalog.LOCAL_NOTICE, 13, MUTED, false), 8);
         sourceRows = column();
         add(settings, sourceRows, 8);
@@ -348,6 +347,21 @@ public final class MainActivity extends Activity {
         add(content, label("샘플과 가져온 공식 소식은 각 출처에서 구분해 표시해요.", 13, MUTED, false), 14);
 
         setContentView(root);
+    }
+
+    // Width is the app's inset-safe viewport, never the physical display width.
+    private void arrangeOverview(int width) {
+        boolean wide = width >= dp((int) Math.ceil(760 * Math.max(1f, getResources().getConfiguration().fontScale)));
+        int orientation = wide ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL;
+        if (overview.getOrientation() == orientation
+                && routePanel.getLayoutParams() instanceof LinearLayout.LayoutParams
+                && ((LinearLayout.LayoutParams) routePanel.getLayoutParams()).weight == (wide ? 2f : 0f)) return;
+        overview.setOrientation(orientation);
+        routePanel.setLayoutParams(new LinearLayout.LayoutParams(wide ? 0 : -1, -2, wide ? 2f : 0f));
+        LinearLayout.LayoutParams news = new LinearLayout.LayoutParams(wide ? 0 : -1, -2, wide ? 3f : 0f);
+        news.leftMargin = wide ? dp(12) : 0;
+        news.topMargin = wide ? 0 : dp(8);
+        newsPanel.setLayoutParams(news);
     }
 
     @SuppressWarnings("deprecation")
@@ -511,12 +525,12 @@ public final class MainActivity extends Activity {
         RouteInput.Snapshot route = routeInput.snapshot();
         long seconds = route.remainingSeconds.orElse(-1);
         long minutes = seconds < 0 ? -1 : seconds / 60;
-        eta.setText(seconds >= 0 ? (seconds == 0 ? "도착" : seconds < 60 ? "1분 미만" : minutes + "분") : "도착 시간 미확인");
+        eta.setText(seconds >= 0 ? (seconds == 0 ? "도착" : seconds < 60 ? "1분 미만" : minutes + "분") : "ETA 미확인");
         routeMode.setText(liveMode ? "샘플 경로로 전환" : "실제 경로로 전환");
         etaLong.setVisibility(liveMode ? View.GONE : View.VISIBLE);
         etaShort.setVisibility(liveMode ? View.GONE : View.VISIBLE);
-        routeLabel.setText(route.observedAt.equals(Instant.EPOCH) ? route.sourceLabel
-                : getString(R.string.route_observation, route.sourceLabel, CLOCK.format(route.observedAt)));
+        routeLabel.setText(!liveMode ? "샘플 ETA" : seconds < 0 ? "실제 경로 · ETA 미확인"
+                : "실제 ETA · " + CLOCK.format(route.observedAt));
         setRouteButton(etaLong, minutes == 18);
         setRouteButton(etaShort, minutes == 4);
         plan = catalog.plan(route);
@@ -534,6 +548,11 @@ public final class MainActivity extends Activity {
         boolean missingLiveEta = liveMode && seconds < 0;
         if (missingLiveEta) summary.setText(R.string.route_reconnect_hint);
         listen.setVisibility(missingLiveEta ? View.GONE : View.VISIBLE);
+        LinearLayout reconnectParent = missingLiveEta ? newsPanel : (LinearLayout) routeMode.getParent();
+        if (reconnect.getParent() != reconnectParent) {
+            ((LinearLayout) reconnect.getParent()).removeView(reconnect);
+            add(reconnectParent, reconnect, 8);
+        }
         reconnect.setVisibility(liveMode ? View.VISIBLE : View.GONE);
         reconnect.setTextColor(missingLiveEta ? ON_ACCENT : TEXT);
         reconnect.setBackground(buttonBackground(missingLiveEta));
@@ -545,7 +564,7 @@ public final class MainActivity extends Activity {
 
     private void renderAccess() {
         boolean allowed = canUse();
-        accessLabel.setText(allowed ? "주차 시 사용 가능 · 차량 UX 제한 해제" : "차량 상태 미확인");
+        accessLabel.setText(allowed ? "정차 · 도착까지" : "차량 상태 미확인");
         content.setVisibility(allowed ? View.VISIBLE : View.GONE);
         restrictionNotice.setVisibility(allowed ? View.GONE : View.VISIBLE);
         if (!canInteract()) { clearConfirmationUndo(); clearDeletionUndo(); }
