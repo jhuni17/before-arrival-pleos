@@ -125,7 +125,7 @@ public class MainActivityTest {
     }
 
     @Test public void overviewKeepsOnlyEssentialCopyAndNames() {
-        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        setAccessOnly(AccessPolicy.State.PARKED_USE_ALLOWED);
         LinearLayout overview = field("overview");
         for (TextView text : descendants((View) field("content"), TextView.class)) {
             assertFalse("app-authored sample UI has no middle-dot separators: " + text.getText(),
@@ -140,8 +140,61 @@ public class MainActivityTest {
                 view.getText().toString().equals("첫 소식") || view.getText().toString().equals("도착 전에")));
         Button listen = field("listen");
         assertEquals("브리핑 듣기", listen.getText().toString());
-        assertEquals(View.IMPORTANT_FOR_ACCESSIBILITY_AUTO, listen.getImportantForAccessibility());
+        assertTrue(listen.isImportantForAccessibility());
         assertTrue(listen.isEnabled());
+    }
+
+    @Test public void parkedDetailsStartClosedAndHideAccessibilityAndFocus() {
+        setAccessOnly(AccessPolicy.State.PARKED_USE_ALLOWED);
+        LinearLayout details = field("expandedDetails");
+        Button toggle = field("detailsToggle");
+        for (int width : new int[] {480, 1280}) {
+            ReflectionHelpers.callInstanceMethod(activity, "arrangeOverview",
+                    ReflectionHelpers.ClassParameter.from(int.class, width));
+            assertEquals(View.GONE, details.getVisibility());
+            assertEquals(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS,
+                    details.getImportantForAccessibility());
+            assertEquals(ViewGroup.FOCUS_BLOCK_DESCENDANTS, details.getDescendantFocusability());
+            List<View> focusable = new ArrayList<>();
+            details.addFocusables(focusable, View.FOCUS_FORWARD);
+            assertTrue(focusable.isEmpty());
+            for (String name : new String[] {"summary", "briefingRows", "sourceRows", "savedRows"}) {
+                View child = field(name);
+                assertFalse(child.isShown());
+                assertTrue(descendants(details, View.class).contains(child));
+            }
+            assertEquals("상세 보기", toggle.getText().toString());
+            assertTrue(((View) field("eta")).isShown());
+            assertTrue(((View) field("nextItem")).isShown());
+            assertTrue(((View) field("listen")).isShown());
+            toggle.performClick();
+            assertEquals(View.VISIBLE, details.getVisibility());
+            assertEquals(View.IMPORTANT_FOR_ACCESSIBILITY_AUTO, details.getImportantForAccessibility());
+            assertEquals(ViewGroup.FOCUS_BEFORE_DESCENDANTS, details.getDescendantFocusability());
+            ((Button) field("etaShort")).performClick();
+            assertEquals("4분", ((TextView) field("eta")).getText().toString());
+            assertTrue(((View) field("sourceRows")).isShown());
+            assertTrue(((View) field("savedRows")).isShown());
+            toggle.performClick();
+            assertEquals(View.GONE, details.getVisibility());
+        }
+    }
+
+    @Test public void restrictionsCloseDetailsAndRejectRetainedToggle() {
+        for (AccessPolicy.State blocked : new AccessPolicy.State[] {
+                AccessPolicy.State.RESTRICTED, AccessPolicy.State.UNKNOWN}) {
+            setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+            assertEquals(View.VISIBLE, ((View) field("expandedDetails")).getVisibility());
+            setAccessOnly(blocked);
+            Button toggle = field("detailsToggle");
+            toggle.performClick();
+            assertFalse(toggle.isEnabled());
+            assertEquals(View.GONE, ((View) field("content")).getVisibility());
+            assertEquals(View.GONE, ((View) field("expandedDetails")).getVisibility());
+            assertFalse(((TextView) field("restrictionNotice")).getText().toString().contains("\u00b7"));
+            setAccessOnly(AccessPolicy.State.PARKED_USE_ALLOWED);
+            assertEquals(View.GONE, ((View) field("expandedDetails")).getVisibility());
+        }
     }
 
     @Test public void externalMiddleDotsSurviveSavedRowsAndDetail() throws Exception {
@@ -202,9 +255,9 @@ public class MainActivityTest {
         float originalFontScale = RuntimeEnvironment.getApplication()
                 .getResources().getConfiguration().fontScale;
         try {
-            String[] primaryNames = {"eta", "nextItem", "listen"};
+            String[] primaryNames = {"eta", "nextItem", "listen", "detailsToggle"};
             float[] normalSizes = new float[primaryNames.length];
-            float[] sizesSp = {40, 28, 20};
+            float[] sizesSp = {40, 28, 20, 20};
             for (int i = 0; i < primaryNames.length; i++) {
                 normalSizes[i] = ((TextView) field(primaryNames[i])).getTextSize();
             }
@@ -230,7 +283,8 @@ public class MainActivityTest {
             }
             // Android 35 scales SP nonlinearly: 40sp ETA may stay unchanged at 1.3x.
             assertTrue("listen is enlarged", ((TextView) field("listen")).getTextSize() > normalSizes[2]);
-            setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+            setAccessOnly(AccessPolicy.State.PARKED_USE_ALLOWED);
+            assertEquals(View.GONE, ((View) field("expandedDetails")).getVisibility());
             View root = ((ViewGroup) activity.findViewById(android.R.id.content)).getChildAt(0);
             float density = activity.getResources().getDisplayMetrics().density;
             TextView title = field("nextItem");
@@ -3162,7 +3216,16 @@ public class MainActivityTest {
         return result;
     }
 
+    // Functional tests enter the existing controls through the parked disclosure button.
     private void setAccess(AccessPolicy.State state) {
+        setAccessOnly(state);
+        if (state == AccessPolicy.State.PARKED_USE_ALLOWED
+                && ((View) field("expandedDetails")).getVisibility() == View.GONE) {
+            ((Button) field("detailsToggle")).performClick();
+        }
+    }
+
+    private void setAccessOnly(AccessPolicy.State state) {
         ReflectionHelpers.setField(activity, "restrictionState", state);
         ReflectionHelpers.callInstanceMethod(activity, "renderAccess");
         Shadows.shadowOf(Looper.getMainLooper()).idle();

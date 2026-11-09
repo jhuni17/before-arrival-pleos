@@ -46,4 +46,6 @@
     <string name="saved_confirm_finish">확인하고 마치기</string>
     <string name="route_reconnect">실제 경로 다시 연결</string>
     <string name="route_reconnect_hint">실제 도착 시간을 받지 못했어요. 내비 경로와 연결 상태를 확인한 뒤 다시 연결해 주세요.</string>
+    <string name="details_open">상세 보기</string>
+    <string name="details_close">상세 닫기</string>
 </resources>

@@ -27,6 +27,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -91,6 +92,9 @@ public final class MainActivity extends Activity {
 
     private LinearLayout content;
     private LinearLayout overview;
+    private LinearLayout expandedDetails;
+    private Button detailsToggle;
+    private boolean detailsVisible;
     private LinearLayout routePanel;
     private LinearLayout newsPanel;
     private LinearLayout briefingRows;
@@ -274,8 +278,16 @@ public final class MainActivity extends Activity {
         reconnect.setSingleLine(false);
         reconnect.setEllipsize(null);
 
+        detailsToggle = button(getString(R.string.details_open), false, () -> {
+            if (!canInteract()) return;
+            detailsVisible = !detailsVisible;
+            renderDetails();
+        });
+        add(content, detailsToggle, 8);
+        expandedDetails = column();
+        add(content, expandedDetails, 0);
         LinearLayout details = panel();
-        add(content, details, 12);
+        add(expandedDetails, details, 12);
         add(details, summary, 0);
         add(details, transcriptButton, 8);
         speechStatus = label("", 14, ACCENT, false);
@@ -287,7 +299,7 @@ public final class MainActivity extends Activity {
         add(details, briefingRows, 4);
 
         LinearLayout settings = panel();
-        add(content, settings, 12);
+        add(expandedDetails, settings, 12);
         add(settings, heading("내 브리핑 설정", 21), 0);
         add(settings, buttonRow(etaLong, etaShort), 8);
         add(settings, routeMode, 8);
@@ -299,7 +311,7 @@ public final class MainActivity extends Activity {
         add(settings, priorityButton, 8);
 
         LinearLayout savedPanel = panel();
-        add(content, savedPanel, 12);
+        add(expandedDetails, savedPanel, 12);
         savedHeading = heading("", 21);
         add(savedPanel, savedHeading, 0);
         savedCapacity = label("", 14, MUTED, false);
@@ -339,7 +351,7 @@ public final class MainActivity extends Activity {
         savedRows = column();
         add(savedPanel, savedRows, 4);
         add(savedPanel, label(uiNotice(ContentCatalog.LOCAL_NOTICE), 13, MUTED, false), 8);
-        add(content, label("샘플과 가져온 공식 소식은 각 출처에서 구분해 표시해요.", 13, MUTED, false), 14);
+        renderDetails();
 
         setContentView(root);
     }
@@ -558,12 +570,28 @@ public final class MainActivity extends Activity {
         renderTranscript();
     }
 
+    private void renderDetails() {
+        expandedDetails.setVisibility(detailsVisible ? View.VISIBLE : View.GONE);
+        expandedDetails.setImportantForAccessibility(detailsVisible
+                ? View.IMPORTANT_FOR_ACCESSIBILITY_AUTO
+                : View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        expandedDetails.setDescendantFocusability(detailsVisible
+                ? ViewGroup.FOCUS_BEFORE_DESCENDANTS : ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+        if (!detailsVisible) expandedDetails.clearFocus();
+        detailsToggle.setText(detailsVisible ? R.string.details_close : R.string.details_open);
+        enableButton(detailsToggle, canInteract());
+    }
+
     private void renderAccess() {
         boolean allowed = canUse();
         accessLabel.setText(allowed ? "도착까지" : "차량 상태 미확인");
         content.setVisibility(allowed ? View.VISIBLE : View.GONE);
         restrictionNotice.setVisibility(allowed ? View.GONE : View.VISIBLE);
-        if (!canInteract()) { clearConfirmationUndo(); clearDeletionUndo(); }
+        if (!canInteract()) {
+            clearConfirmationUndo(); clearDeletionUndo();
+            detailsVisible = false;
+        }
+        renderDetails();
         if (!allowed) {
             lifecycleGeneration++;
             dismissDialog();
