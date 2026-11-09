@@ -29,29 +29,63 @@ executes the checklist below. Do not reuse older CI as evidence for this diff.
   URL and technical timestamps stay in expanded detail. 출처 remains attribution,
   registration and filtering terminology. No window or vehicle policy changed.
 
-Release limitation: current TTS_SERVICE permission is declared only in
-src/pleosDebug/AndroidManifest.xml. This task forbids permission/manifest edits.
-Release selects Pleos in source but service authorization and successful release
-playback are NOT established. Astra must treat this as an unresolved release
-runtime prerequisite, not mark all acceptance items passed.
+## Permission scope and evidence (2026-11-09)
 
-## Local checks (2026-11-09)
+The existing `pleos.car.permission.TTS_SERVICE` declaration now lives in
+`src/pleos/AndroidManifest.xml`; the redundant pleosDebug manifest is removed.
+Gradle flavor inheritance therefore requests it for default Pleos debug and
+release, while sample has no declaration. No microphone, window, navigation,
+signing or vehicle-policy change was made. A declaration does not prove a
+production service grant or successful playback.
 
+Contract reference supplied with the task:
+https://document.pleos.ai/en/docs/pleos-only/connect-sdk-pleos/TextToSpeech/declaring-permissions .
+No network tools were used under this task's restriction; that page was not
+independently retrieved here. The change moves the existing permission verbatim.
+Pinned SDK binary compatibility still requires a real SDK compile.
+
+## Local checks on this working tree (2026-11-09)
+
+- Reused installed OpenJDK 17.0.20.1; no JDK installation/download.
+- `check-tts-lifecycle.py`: passed. Compiles unchanged Pleos factory and shared
+  ComparisonSpeech/ComparisonFixture source against deterministic doubles with
+  setSpeakerType and TTS_COMPARISON. The double requires ON_DEVICE, Korean,
+  seoyoon, MEDIA attributes and listener registration before speak. Five cases:
+  debug/off, release/off, debug/baseline, debug/candidate, release/candidate.
+  Checks fixture/package and diagnostic isolation, sync/async initialization,
+  stop acknowledgement/timeout, duplicate/stale events and cleanup. The release
+  candidate case checks defense in depth; Gradle release still forces off.
+- Source-set XML permission check passed for Pleos/sample debug/release.
+  This is NOT Android manifest merger output or APK inspection.
+- `check-route-lifecycle.py` and `check-route-handoff.py`: passed deterministic
+  adapter/session replay, gating, cancellation, timeout and cleanup checks.
+  These are not fresh SDK callbacks or Windows observations.
+- `test-tts-trace-summary.py`: nine synthetic utility tests passed.
 - `git diff --check`: passed.
-- `python3 android/validation/pleos-emulator/test-tts-trace-summary.py`: nine
-  synthetic trace utility tests passed. These do not test this playback change.
-- `sh android/gradlew --offline -p android :app:testSampleDebugUnitTest
-  :app:testPleosDebugUnitTest :app:assemblePleosDebug :app:assemblePleosRelease`:
-  blocked before Gradle: JAVA_HOME unset, no java command. No tests/build executed.
-- Existing check-tts-lifecycle.py and check-route-lifecycle.py: blocked, no JDK
-  17+ / java / javac. No lifecycle assertions executed. The legacy TTS double
-  also lacks setSpeakerType and TTS_COMPARISON; it must be updated in a separately allowed scope
-  before it can validate the new contract. It is not SDK compilation evidence.
-- Added, not executed: sample UI title/metadata at 320/390/960 widths and expanded
-  details; mixed default/persistence; ordinary button plan submission; real
-  service decisions with fake speech for completion, rapid skip/stop ack, old
-  callbacks, pause/resume, errors, focus denial/loss, UNKNOWN, cancellation and
-  deadline. These are deterministic tests, never real vehicle/SDK observations.
+- Offline Gradle testSampleDebugUnitTest, testPleosDebugUnitTest,
+  assemblePleosDebug and assemblePleosRelease were attempted with JDK 17 and a
+  temporary Gradle home. No cached Gradle 8.11.1 distribution was found. The wrapper
+  attempted distribution bootstrap despite --offline and failed with
+  `SocketException: Operation not permitted`, before Gradle tasks ran. No retry
+  or external tools were used. No APK, SDK compilation, Robolectric execution or
+  merged manifest is established by this attempt. Explicit comparison APK builds
+  are likewise pending.
+- Reviewed ordinary Plan dispatch, SDK lifecycle/failure handling, mixed-source
+  labels, selection/persistence tests and existing motion/audio/ETA gates. Apart
+  from the permission and stale checker defects reported by Astra, no additional
+  actionable defect was established in this focused review. Product code and
+  existing content settings/demo profile were left intact. UI/service unit tests
+  remain unexecuted locally; source review does not pass their acceptance gate.
+
+Evidence stages must remain separate:
+1. New same-SHA CI unsigned default pleosDebug + actual pinned SDK compilation
+   and required tests. Base CI #42603905314 only supports base 7aadeb0, not this diff.
+2. Offline release APK build and Android merged-manifest inspection for both
+   Pleos variants and sample, plus generated BuildConfig off/default/opt-in checks.
+   No release signature or production permission grant follows from this stage.
+3. Exact reviewed APK on Windows Pleos, with hashes/certificate and synchronized
+   screen/device-output loopback, microphone off. Runtime acceptance remains
+   WAITING_RUNTIME after source/CI approval. No Windows evidence exists here.
 
 Required offline-capable CI checks with installed SDK/JDK/dependencies:
 `testSampleDebugUnitTest`; `testPleosDebugUnitTest --tests '*BriefingMediaServiceTest'
@@ -120,5 +154,8 @@ replacement. These are supported sequencing safeguards, not acoustic fixes.
 No audible dummy utterance or invented Pleos PCM/pre-roll API was added. Android
 sample's actual silent utterance is separate; a sleep would not be PCM padding.
 Do not claim SDK pre-roll or an acoustic improvement without official supported
-API guidance and actual loopback evidence. Record hardware/output/sample-rate
+API guidance and actual loopback evidence. Gleo spoken-command/STT testing remains deferred by the user; this app-initiated
+TTS task adds no microphone permission or real-utterance acceptance gate.
+
+Record hardware/output/sample-rate
 and any limitation; passing callbacks alone cannot pass the sound assessment.

@@ -7,10 +7,10 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 FILES = {
-    'android/content/Context.java': 'package android.content; public class Context {}',
+    'android/content/Context.java': 'package android.content; public class Context { public String getPackageName(){return "com.beforearrival.briefing";} }',
     'android/os/Looper.java': 'package android.os; public class Looper { public static Looper getMainLooper(){return new Looper();} }',
     'android/os/SystemClock.java': 'package android.os; public class SystemClock { public static long elapsedRealtime(){return Handler.now;} }',
-    'android/util/Log.java': 'package android.util; public class Log { public static int d(String a,String b){return 0;} }',
+    'android/util/Log.java': 'package android.util; public class Log { public static int count; public static int d(String a,String b){count++;return 0;} }',
     'android/os/Handler.java': '''package android.os;
 public class Handler {
  private record Task(Handler owner, Runnable callback, long due, long order) {}
@@ -55,18 +55,19 @@ public class TextToSpeech {
  public static TextToSpeech last; public static boolean synchronous;
  public OnInitializeListener init; public EventListener events;
  public boolean storage, initialized, registered, locale, attributes, released;
- public int speaks; public String spoken;
+ public int speaks; public String spoken, speaker;
  public TextToSpeech(android.content.Context c, Mode m){if(m!=Mode.ON_DEVICE)throw new AssertionError();last=this;}
  public void initialize(OnInitializeListener l){init=l;storage=true;if(synchronous)success();}
  public void success(){initialized=true;init.onSuccess();}
  public void addEventListener(EventListener e){if(!storage)throw new AssertionError("listener before initialize");events=e;registered=true;}
  public void setLocale(java.util.Locale l){locale=java.util.Locale.KOREA.equals(l);}
+ public void setSpeakerType(String s){speaker=s;}
  public void setAudioAttributes(android.media.AudioAttributes a){attributes=true;}
- public void speak(String s,boolean end){if(!initialized||!registered||!locale||!attributes||!end||released)throw new AssertionError("premature speak");speaks++;spoken=s;}
+ public void speak(String s,boolean end){if(!initialized||!registered||!locale||!attributes||!"seoyoon".equals(speaker)||!end||released)throw new AssertionError("premature speak");speaks++;spoken=s;}
  public void stop(){} public void removeEventListener(EventListener e){registered=false;}
  public void release(){released=true;}
 }''',
-    'com/beforearrival/briefing/BuildConfig.java': 'package com.beforearrival.briefing; final class BuildConfig { static final boolean DEBUG=true; }',
+    'com/beforearrival/briefing/BuildConfig.java': 'package com.beforearrival.briefing; final class BuildConfig { static final boolean DEBUG=Boolean.parseBoolean(System.getProperty("debug", "true")); static final String TTS_COMPARISON=System.getProperty("comparison", "off"); }',
     'com/beforearrival/briefing/LifecycleCheck.java': '''package com.beforearrival.briefing;
 import ai.pleos.playground.tts.TextToSpeech;
 import ai.pleos.playground.tts.listener.EventListener;
@@ -75,6 +76,10 @@ import android.os.Handler;
 public class LifecycleCheck {
  static void check(boolean ok,String message){if(!ok)throw new AssertionError(message);}
  public static void main(String[] args){
+  String mode=BuildConfig.TTS_COMPARISON;
+  check(ComparisonFactory.productionBackend(),"Pleos production backend required");
+  check(ComparisonFixture.enabled(new android.content.Context()) == (BuildConfig.DEBUG && !"off".equals(mode)), "comparison must be explicit and debug only");
+  check(!ComparisonFixture.enabled(new android.content.Context(){public String getPackageName(){return "com.beforearrival.briefing.sample";}}), "sample must never inject comparison fixture");
   for(boolean sync:new boolean[]{false,true}){
    TextToSpeech.synchronous=sync; int[] callbacks={0,0,0,0};
    ComparisonSpeech candidate=ComparisonFactory.create(new android.content.Context(),()->callbacks[0]++,()->callbacks[1]++,()->callbacks[2]++);
@@ -147,15 +152,35 @@ public class LifecycleCheck {
    live.release();Handler.advanceBy(5001);
    check(releasedFailures[0]==0 && liveFailures[0]==1,"cleanup must not produce later failures");
   }
+  check((android.util.Log.count>0)==(BuildConfig.DEBUG && !"off".equals(mode)), "comparison logs must be opt-in debug only");
   System.out.println("PASS: candidate lifecycle (sync/async initialization, no onReady, duplicate/stale callbacks, five-second stop timeout, success/release cancellation, owner-specific cleanup)");
  }
 }''',
 }
 
 
+def check_permission_sources():
+    """Source-set check only; Gradle merged manifests remain a separate gate."""
+    import xml.etree.ElementTree as ET
+    source = ROOT / 'app/src'
+    permission = 'pleos.car.permission.TTS_SERVICE'
+    name = '{http://schemas.android.com/apk/res/android}name'
+    for flavor in ['pleos', 'sample']:
+        for build_type in ['Debug', 'Release']:
+            declarations = []
+            for layer in ['main', flavor, build_type.lower(), flavor + build_type]:
+                manifest = source / layer / 'AndroidManifest.xml'
+                if manifest.exists():
+                    declarations.extend(node.get(name) for node in
+                                        ET.parse(manifest).getroot().findall('uses-permission'))
+            assert declarations.count(permission) == (1 if flavor == 'pleos' else 0), (flavor, build_type)
+    print('PASS: source-set TTS permission isolation (not merged-manifest evidence)', flush=True)
+
+
 def main():
     if not shutil.which('javac') or not shutil.which('java'):
         raise SystemExit('BLOCKED: JDK 17+ (javac and java) is required; no checks executed')
+    check_permission_sources()
     with tempfile.TemporaryDirectory(prefix='tts-lifecycle-') as directory:
         work = Path(directory)
         for name, content in FILES.items():
@@ -164,12 +189,17 @@ def main():
             path.write_text(content, encoding='utf-8')
         source = ROOT / 'app/src'
         for relative in ['pleos/java/com/beforearrival/briefing/ComparisonFactory.java',
-                         'main/java/com/beforearrival/briefing/ComparisonSpeech.java']:
+                         'main/java/com/beforearrival/briefing/ComparisonSpeech.java',
+                         'main/java/com/beforearrival/briefing/ComparisonFixture.java']:
             shutil.copy(source / relative, work / 'com/beforearrival/briefing')
         subprocess.run(['javac', '--release', '17', '-encoding', 'UTF-8', '-d', str(work / 'classes'),
                         *map(str, sorted(work.rglob('*.java')))], check=True)
-        subprocess.run(['java', '-cp', str(work / 'classes'),
-                        'com.beforearrival.briefing.LifecycleCheck'], check=True)
+        for debug, mode in [('true', 'off'), ('false', 'off'), ('true', 'baseline'),
+                            ('true', 'candidate'), ('false', 'candidate')]:
+            print(f'Checking debug={debug} comparison={mode}', flush=True)
+            subprocess.run(['java', f'-Ddebug={debug}', f'-Dcomparison={mode}',
+                            '-cp', str(work / 'classes'),
+                            'com.beforearrival.briefing.LifecycleCheck'], check=True)
 
 
 if __name__ == '__main__':
