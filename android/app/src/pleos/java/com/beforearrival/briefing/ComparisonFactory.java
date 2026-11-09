@@ -29,7 +29,13 @@ final class ComparisonFactory {
                     + android.os.SystemClock.elapsedRealtime() + " instance=" + instance + " event=" + event);
         }
         String text;
-        Runnable stopped;
+        // Published before sdk.stop(); SDK callback threads capture this exact request.
+        // A queued unsolicited onStop must never acknowledge a later stop request.
+        private static final class StopRequest {
+            final Runnable completion;
+            StopRequest(Runnable completion) { this.completion = completion; }
+        }
+        volatile StopRequest stopRequest;
         final EventListener events = new EventListener() {
             public void onReady() { main.post(() -> {
                 if (closed || stopping) return;
@@ -39,9 +45,19 @@ final class ComparisonFactory {
             }); }
             public void onStart() { boolean submitted = sent; main.post(() -> { if (submitted && !closed && !stopping && sent && !active && !terminal) { active = true; timing("start"); started.run(); } }); }
             public void onDone() { boolean submitted = sent; main.post(() -> { if (submitted && !closed && !stopping && sent && active && !terminal) { sent = false; active = false; terminal = true; timing("done"); done.run(); } }); }
-            public void onStop() { main.post(() -> { if (!closed && stopping && stopped != null) {
-                Runnable next = stopped; stopped = null; release(); next.run();
-            } else if (!closed && !stopping) failed.run(); }); }
+            public void onStop() {
+                StopRequest receivedFor = stopRequest;
+                main.post(() -> {
+                    if (closed) return;
+                    if (receivedFor != null && receivedFor == stopRequest && stopping) {
+                        Runnable next = receivedFor.completion;
+                        release(); next.run();
+                    } else {
+                        // Unknown/pre-request stop: discard even a subsequently queued ack.
+                        release(); failed.run();
+                    }
+                });
+            }
             public void onError(ErrorType error) { main.post(() -> {
                 if (!closed) { diagnostic("onError", error); failed.run(); }
             }); }
@@ -113,7 +129,9 @@ final class ComparisonFactory {
         }
         public void stop(Runnable completion) {
             if (closed) { completion.run(); return; }
-            stopping = true; stopped = completion;
+            if (stopping) { release(); failed.run(); return; }
+            stopping = true;
+            stopRequest = new StopRequest(completion);
             if (!sent) { release(); completion.run(); return; }
             try { sdk.stop(); } catch (RuntimeException unavailable) {
                 diagnostic("stop", unavailable.getClass().getName()); throw unavailable;
@@ -124,6 +142,7 @@ final class ComparisonFactory {
         public void release() {
             if (closed) return;
             closed = true;
+            stopRequest = null;
             main.removeCallbacksAndMessages(null);
             try {
                 if (listenerRegistered) {

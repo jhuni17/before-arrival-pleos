@@ -95,15 +95,52 @@ public class LifecycleCheck {
    candidate.stop(()->callbacks[3]++);
    old.onStart();old.onDone();Handler.drain();
    check(callbacks[0]==0 && callbacks[1]==0 && callbacks[3]==0,"stopping must wait for onStop");
-   old.onStop();old.onStop();Handler.drain();
+   Thread acknowledgement=new Thread(old::onStop);
+   acknowledgement.start();
+   try { acknowledgement.join(); } catch(InterruptedException e){throw new AssertionError(e);}
+   old.onStop();Handler.drain();
    check(callbacks[3]==1 && sdk.released,"duplicate stop completes once");
    Handler.advanceBy(5001);
    check(callbacks[2]==0 && callbacks[3]==1,"successful stop must cancel timeout");
    ComparisonSpeech next=ComparisonFactory.create(new android.content.Context(),()->callbacks[0]++,()->callbacks[1]++,()->callbacks[2]++);
    next.start("next"); if(!sync)TextToSpeech.last.success();Handler.drain();
-   old.onStart();old.onDone();old.onError(ErrorType.ERROR);old.onReady();sdk.success();Handler.drain();
+   old.onStart();old.onDone();old.onStop();old.onError(ErrorType.ERROR);old.onReady();sdk.success();Handler.drain();
    check(callbacks[0]==0 && callbacks[1]==0 && callbacks[2]==0,"released callbacks must be ignored");
    check(TextToSpeech.last.speaks==1,"old callbacks must not affect next instance");next.release();
+  }
+  // Callback receipt precedes stop, but delivery to main follows the request.
+  // Run receipt on a separate SDK thread to exercise the published request token.
+  for(boolean sync:new boolean[]{false,true}){
+   for(boolean laterAck:new boolean[]{false,true}){
+    TextToSpeech.synchronous=sync;
+    int[] failures={0}, continuations={0};
+    ComparisonSpeech raced=ComparisonFactory.create(new android.content.Context(),
+        ()->{throw new AssertionError("unexpected start");},
+        ()->{throw new AssertionError("unexpected done");},()->failures[0]++);
+    TextToSpeech racedSdk=TextToSpeech.last;
+    raced.start("queued stop before request");if(!sync)racedSdk.success();Handler.drain();
+    EventListener racedEvents=racedSdk.events;
+    Thread receipt=new Thread(racedEvents::onStop);
+    receipt.start();
+    try { receipt.join(); } catch(InterruptedException e){throw new AssertionError(e);}
+    raced.stop(()->continuations[0]++);
+    if(laterAck)racedEvents.onStop();
+    Handler.drain();Handler.advanceBy(5001);
+    check(racedSdk.released && failures[0]==1 && continuations[0]==0,
+        "pre-request onStop must fail closed, never acknowledge a later request");
+    racedEvents.onStop();Handler.drain();
+    check(failures[0]==1 && continuations[0]==0,"closed race ignores duplicate stop");
+   }
+   int[] failures={0}, continuations={0};
+   ComparisonSpeech repeated=ComparisonFactory.create(new android.content.Context(),()->{},()->{},()->failures[0]++);
+   TextToSpeech repeatedSdk=TextToSpeech.last;
+   repeated.start("rapid stop");if(!sync)repeatedSdk.success();Handler.drain();
+   repeated.stop(()->continuations[0]++);
+   repeatedSdk.events.onStop();
+   repeated.stop(()->continuations[0]++);
+   Handler.drain();Handler.advanceBy(5001);
+   check(repeatedSdk.released && failures[0]==1 && continuations[0]==0,
+       "overlapping stop requests cannot replace the acknowledged continuation");
   }
   TextToSpeech.synchronous=false;
   ComparisonSpeech cancelled=ComparisonFactory.create(new android.content.Context(),()->{throw new AssertionError();},()->{throw new AssertionError();},()->{throw new AssertionError();});
@@ -211,7 +248,7 @@ public class LifecycleCheck {
   PleosSpeechWarmup.eligible(context,screen,false);
   PleosSpeechWarmup.factory=ComparisonFactory::create;
   check((android.util.Log.count>0)==(BuildConfig.DEBUG && !"off".equals(mode)), "comparison logs must be opt-in debug only");
-  System.out.println("PASS: candidate lifecycle (sync/async initialization, no onReady, duplicate/stale callbacks, five-second stop timeout, success/release cancellation, owner-specific cleanup, silent warmup, transfer, expiry, cold fallback)");
+  System.out.println("PASS: candidate lifecycle (sync/async initialization, no onReady, duplicate/stale callbacks, pre-request queued stop isolation, overlapping stop rejection, five-second stop timeout, success/release cancellation, owner-specific cleanup, silent warmup, transfer, expiry, cold fallback)");
  }
 }''',
 }
