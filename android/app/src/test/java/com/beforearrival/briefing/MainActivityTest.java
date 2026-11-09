@@ -157,16 +157,34 @@ public class MainActivityTest {
 
     /** Synthetic app-window layout only; not a Pleos emulator or SDK callback. */
     @Test public void overviewReflowsWithinInsetSafeWindowWithLargeKoreanText() {
-        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
-        View root = ((ViewGroup) activity.findViewById(android.R.id.content)).getChildAt(0);
-        float density = activity.getResources().getDisplayMetrics().density;
+        String[] primaryNames = {"eta", "nextItem", "listen"};
+        float[] normalSizes = new float[primaryNames.length];
+        float[] sizesSp = {40, 28, 20};
+        for (int i = 0; i < primaryNames.length; i++) {
+            normalSizes[i] = ((TextView) field(primaryNames[i])).getTextSize();
+        }
+        MainActivity original = activity;
         android.content.res.Configuration config = new android.content.res.Configuration(
                 activity.getResources().getConfiguration());
         config.fontScale = 1.3f;
-        activity.getResources().updateConfiguration(config, activity.getResources().getDisplayMetrics());
+        // Exercise Android's configuration recreation: every view must consume the new scale.
+        controller.configurationChange(config);
+        activity = controller.get();
+        assertNotSame("font scale change recreates the screen", original, activity);
+        assertEquals(1.3f, activity.getResources().getConfiguration().fontScale, 0.001f);
+        for (int i = 0; i < primaryNames.length; i++) {
+            TextView view = field(primaryNames[i]);
+            assertTrue(primaryNames[i] + " is enlarged", view.getTextSize() > normalSizes[i]);
+            assertEquals(primaryNames[i] + " uses configuration font scale",
+                    android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP,
+                            sizesSp[i], activity.getResources().getDisplayMetrics()),
+                    view.getTextSize(), 0.5f);
+        }
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        View root = ((ViewGroup) activity.findViewById(android.R.id.content)).getChildAt(0);
+        float density = activity.getResources().getDisplayMetrics().density;
         TextView title = field("nextItem");
         title.setText("긴 한국어 제목 · 오늘 아침 도착 전에 확인할 지역 소식과 회의 장소 변경 안내");
-        title.setTextSize(36.4f);
         root.dispatchApplyWindowInsets(new android.view.WindowInsets.Builder()
                 .setInsets(android.view.WindowInsets.Type.systemBars(), android.graphics.Insets.of(
                         (int) (32 * density), (int) (24 * density), (int) (48 * density), (int) (24 * density)))
@@ -187,16 +205,28 @@ public class MainActivityTest {
             assertTrue(title.getLayout().getLineCount() > 1);
             assertEquals(0, title.getLayout().getEllipsisCount(title.getLineCount() - 1));
             assertTrue(title.getHeight() >= title.getLayout().getHeight());
-            for (String name : new String[]{"eta", "nextItem", "listen"}) {
-                View view = field(name);
+            for (String name : primaryNames) {
+                TextView view = field(name);
                 assertTrue(name, view.getWidth() > 0);
-                assertTrue(name, view.getRight() <= ((View) view.getParent()).getWidth());
+                android.text.Layout text = view.getLayout();
+                assertNotNull(name + " text layout", text);
+                assertEquals(name + " contains all characters", view.getText().length(),
+                        text.getLineEnd(text.getLineCount() - 1));
+                assertTrue(name + " text fits height", text.getHeight() <= view.getHeight()
+                        - view.getCompoundPaddingTop() - view.getCompoundPaddingBottom());
+                for (int line = 0; line < text.getLineCount(); line++) {
+                    assertEquals(name + " has no ellipsis", 0, text.getEllipsisCount(line));
+                    assertTrue(name + " line fits width", text.getLineWidth(line) <= text.getWidth() + 1);
+                }
+                android.graphics.Rect bounds = new android.graphics.Rect();
+                view.getDrawingRect(bounds);
+                ((ViewGroup) root).offsetDescendantRectToMyCoords(view, bounds);
+                assertTrue(name + " clears left inset", bounds.left >= root.getPaddingLeft());
+                assertTrue(name + " clears right inset", bounds.right <= root.getWidth() - root.getPaddingRight());
+                assertTrue(name + " clears top inset", bounds.top >= root.getPaddingTop());
+                assertTrue(name + " fits first viewport", bounds.bottom <= root.getHeight() - root.getPaddingBottom());
             }
             Button listen = field("listen");
-            android.graphics.Rect bounds = new android.graphics.Rect();
-            listen.getDrawingRect(bounds);
-            ((ViewGroup) root).offsetDescendantRectToMyCoords(listen, bounds);
-            assertTrue("primary fits first viewport", bounds.bottom <= root.getHeight() - root.getPaddingBottom());
             assertSame(((View) field("nextItem")).getParent(), listen.getParent());
             assertNotSame(listen.getParent(), ((View) field("summary")).getParent());
             assertTrue(title.isAccessibilityHeading());
