@@ -20,17 +20,25 @@ final class ComparisonFactory {
         final Handler main = new Handler(Looper.getMainLooper());
         final TextToSpeech sdk;
         final Runnable started, done, failed;
-        boolean initialized, sent, closed, stopping, listenerRegistered;
+        static long sequence;
+        final long instance = ++sequence;
+        boolean initialized, active, terminal, closed, stopping, listenerRegistered;
+        volatile boolean sent;
+        void timing(String event) {
+            if (BuildConfig.DEBUG) android.util.Log.d("PleosSpeech", "elapsedRealtimeMs="
+                    + android.os.SystemClock.elapsedRealtime() + " instance=" + instance + " event=" + event);
+        }
         String text;
         Runnable stopped;
         final EventListener events = new EventListener() {
             public void onReady() { main.post(() -> {
                 if (closed || stopping) return;
+                timing("ready");
                 if (BuildConfig.DEBUG && !"off".equals(BuildConfig.TTS_COMPARISON)) android.util.Log.d("TtsComparison", "elapsedRealtimeMs="
                         + android.os.SystemClock.elapsedRealtime() + " engine=candidate event=onReady");
             }); }
-            public void onStart() { main.post(() -> { if (!closed && !stopping) started.run(); }); }
-            public void onDone() { main.post(() -> { if (!closed && !stopping && sent) { sent = false; done.run(); } }); }
+            public void onStart() { boolean submitted = sent; main.post(() -> { if (submitted && !closed && !stopping && sent && !active && !terminal) { active = true; timing("start"); started.run(); } }); }
+            public void onDone() { boolean submitted = sent; main.post(() -> { if (submitted && !closed && !stopping && sent && active && !terminal) { sent = false; active = false; terminal = true; timing("done"); done.run(); } }); }
             public void onStop() { main.post(() -> { if (!closed && stopping && stopped != null) {
                 Runnable next = stopped; stopped = null; release(); next.run();
             } else if (!closed && !stopping) failed.run(); }); }
@@ -40,13 +48,14 @@ final class ComparisonFactory {
             public void onUpdatedRms(double rms) {}
         };
         Candidate(Context context, Runnable started, Runnable done, Runnable failed) {
+            timing("init");
             this.started = started; this.done = done; this.failed = failed;
             try { sdk = new TextToSpeech(context, Mode.ON_DEVICE); }
             catch (RuntimeException error) { diagnostic("construct", error.getClass().getName()); throw error; }
             try {
                 sdk.initialize(new OnInitializeListener() {
                     public void onSuccess() { main.post(() -> {
-                        if (closed || stopping) return;
+                        if (closed || stopping || initialized) return;
                         try {
                             sdk.setLocale(Locale.KOREA);
                             sdk.setSpeakerType("seoyoon");
@@ -55,6 +64,7 @@ final class ComparisonFactory {
                             if (BuildConfig.DEBUG && !"off".equals(BuildConfig.TTS_COMPARISON)) android.util.Log.d("TtsComparison", "elapsedRealtimeMs=" + android.os.SystemClock.elapsedRealtime()
                                 + " engine=candidate initialized=ON_DEVICE voice=seoyoon");
                             initialized = true;
+                            timing("initialized");
                             submit();
                         } catch (RuntimeException unavailable) {
                             diagnostic("configure", unavailable.getClass().getName()); failed.run();
@@ -83,10 +93,14 @@ final class ComparisonFactory {
                     + android.os.SystemClock.elapsedRealtime() + " engine=candidate stage=" + stage
                     + " error=" + detail);
         }
-        public void start(String value) { text = value; submit(); }
+        public void start(String value) {
+            if (text != null || terminal || closed || stopping) throw new IllegalStateException("one topic per engine");
+            text = value; submit();
+        }
         void submit() {
             if (!closed && !stopping && initialized && listenerRegistered && !sent && text != null) {
                 sent = true;
+                timing("speak");
                 if (BuildConfig.DEBUG && !"off".equals(BuildConfig.TTS_COMPARISON)) android.util.Log.d("TtsComparison", "elapsedRealtimeMs=" + android.os.SystemClock.elapsedRealtime()
                         + " engine=candidate sdk_speak_request isFinal=true");
                 try { sdk.speak(text, true); } catch (RuntimeException unavailable) {

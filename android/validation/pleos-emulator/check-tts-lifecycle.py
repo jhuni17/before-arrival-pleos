@@ -7,10 +7,10 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 FILES = {
-    'android/content/Context.java': 'package android.content; public class Context { public String getPackageName(){return "com.beforearrival.briefing";} }',
+    'android/content/Context.java': 'package android.content; public class Context { public Context getApplicationContext(){return this;} public String getPackageName(){return "com.beforearrival.briefing";} }',
     'android/os/Looper.java': 'package android.os; public class Looper { public static Looper getMainLooper(){return new Looper();} }',
     'android/os/SystemClock.java': 'package android.os; public class SystemClock { public static long elapsedRealtime(){return Handler.now;} }',
-    'android/util/Log.java': 'package android.util; public class Log { public static int count; public static int d(String a,String b){count++;return 0;} }',
+    'android/util/Log.java': 'package android.util; public class Log { public static int count; public static int d(String a,String b){if("TtsComparison".equals(a))count++;return 0;} }',
     'android/os/Handler.java': '''package android.os;
 public class Handler {
  private record Task(Handler owner, Runnable callback, long due, long order) {}
@@ -67,6 +67,7 @@ public class TextToSpeech {
  public void stop(){} public void removeEventListener(EventListener e){registered=false;}
  public void release(){released=true;}
 }''',
+    'com/beforearrival/briefing/BriefingMediaService.java': 'package com.beforearrival.briefing; final class BriefingMediaService { static boolean isActive(){return false;} }',
     'com/beforearrival/briefing/BuildConfig.java': 'package com.beforearrival.briefing; final class BuildConfig { static final boolean DEBUG=Boolean.parseBoolean(System.getProperty("debug", "true")); static final String TTS_COMPARISON=System.getProperty("comparison", "off"); }',
     'com/beforearrival/briefing/LifecycleCheck.java': '''package com.beforearrival.briefing;
 import ai.pleos.playground.tts.TextToSpeech;
@@ -152,8 +153,44 @@ public class LifecycleCheck {
    live.release();Handler.advanceBy(5001);
    check(releasedFailures[0]==0 && liveFailures[0]==1,"cleanup must not produce later failures");
   }
+  TextToSpeech.synchronous=true;
+  android.content.Context context=new android.content.Context();
+  Object screen=new Object();
+  PleosSpeechWarmup.eligible(context,screen,true); Handler.drain();
+  TextToSpeech warmSdk=TextToSpeech.last;
+  check(warmSdk.speaks==0 && warmSdk.initialized,"warmup initializes silently");
+  PleosSpeechWarmup.eligible(context,screen,true); Handler.drain();
+  check(TextToSpeech.last==warmSdk,"one bounded engine");
+  PleosSpeechWarmup.Lease warm=PleosSpeechWarmup.take();
+  check(warm!=null && PleosSpeechWarmup.take()==null,"exclusive transfer");
+  PleosSpeechWarmup.eligible(context,screen,false);
+  check(!warmSdk.released,"screen loss cannot release service ownership");
+  int[] natural={0,0};
+  warm.bind(()->natural[0]++,()->natural[1]++,()->{throw new AssertionError();});
+  warm.start("ordinary"); Handler.drain();
+  warmSdk.events.onDone(); Handler.drain();
+  check(natural[1]==0,"done before start cannot advance");
+  warmSdk.events.onStart();warmSdk.events.onStart();warmSdk.events.onDone();warmSdk.events.onDone();Handler.drain();
+  check(natural[0]==1 && natural[1]==1,"duplicate start/done suppressed");
+  warm.release();check(warmSdk.released,"service cleanup");
+  PleosSpeechWarmup.eligible(context,screen,true);Handler.drain();
+  TextToSpeech abandoned=TextToSpeech.last;
+  Handler.advanceBy(15000);
+  check(abandoned.released && PleosSpeechWarmup.take()==null,"bounded idle expiration/cold fallback");
+  PleosSpeechWarmup.eligible(context,screen,true);
+  check(TextToSpeech.last==abandoned,"no retry loop in same visible lifetime");
+  PleosSpeechWarmup.eligible(context,screen,false);
+  PleosSpeechWarmup.eligible(context,screen,true);Handler.drain();
+  TextToSpeech lost=TextToSpeech.last;
+  PleosSpeechWarmup.eligible(context,screen,false);
+  check(lost.released,"lifecycle/eligibility loss releases idle engine");
+  PleosSpeechWarmup.factory=(c,a,b,f)->{throw new IllegalStateException();};
+  PleosSpeechWarmup.eligible(context,screen,true);
+  check(PleosSpeechWarmup.take()==null,"unavailable warmup leaves ordinary startup available");
+  PleosSpeechWarmup.eligible(context,screen,false);
+  PleosSpeechWarmup.factory=ComparisonFactory::create;
   check((android.util.Log.count>0)==(BuildConfig.DEBUG && !"off".equals(mode)), "comparison logs must be opt-in debug only");
-  System.out.println("PASS: candidate lifecycle (sync/async initialization, no onReady, duplicate/stale callbacks, five-second stop timeout, success/release cancellation, owner-specific cleanup)");
+  System.out.println("PASS: candidate lifecycle (sync/async initialization, no onReady, duplicate/stale callbacks, five-second stop timeout, success/release cancellation, owner-specific cleanup, silent warmup, transfer, expiry, cold fallback)");
  }
 }''',
 }
@@ -190,7 +227,8 @@ def main():
         source = ROOT / 'app/src'
         for relative in ['pleos/java/com/beforearrival/briefing/ComparisonFactory.java',
                          'main/java/com/beforearrival/briefing/ComparisonSpeech.java',
-                         'main/java/com/beforearrival/briefing/ComparisonFixture.java']:
+                         'main/java/com/beforearrival/briefing/ComparisonFixture.java',
+                         'main/java/com/beforearrival/briefing/PleosSpeechWarmup.java']:
             shutil.copy(source / relative, work / 'com/beforearrival/briefing')
         subprocess.run(['javac', '--release', '17', '-encoding', 'UTF-8', '-d', str(work / 'classes'),
                         *map(str, sorted(work.rglob('*.java')))], check=True)

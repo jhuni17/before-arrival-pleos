@@ -29,6 +29,7 @@ public class BriefingMediaServiceTest {
     private BriefingMediaService service;
     private final List<FakeSpeech> voices = new ArrayList<>();
     private String message;
+    private final Object warmScreen = new Object();
     private static final class FakeSpeech implements ComparisonSpeech {
         final Runnable started, done, failed;
         Runnable stopped;
@@ -50,6 +51,9 @@ public class BriefingMediaServiceTest {
         Shadows.shadowOf(service.getSystemService(AudioManager.class))
                 .setNextFocusRequestResponse(AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
         BriefingMediaService.observe(value -> { if (!value.isEmpty()) message = value; });
+        startPlan();
+    }
+    private void startPlan() throws Exception {
         List<ContentCatalog.Item> items = new ArrayList<>();
         for (int i = 0; i < 3; i++) items.add(new ContentCatalog.Item(new JSONObject()
                 .put("id", "ordinary-" + i).put("sourceId", "sample-schedule")
@@ -62,9 +66,33 @@ public class BriefingMediaServiceTest {
         callback.accept(AccessPolicy.State.PARKED_USE_ALLOWED);
     }
     @After public void cleanup() {
+        PleosSpeechWarmup.eligible(service, warmScreen, false);
+        PleosSpeechWarmup.factory = ComparisonFactory::create;
         BriefingMediaService.observe(null);
         if (service != null) service.onDestroy();
         BriefingMediaService.stop();
+    }
+    @Test public void normalPlayTakesSilentPreparationWithoutSecondConstruction() throws Exception {
+        BriefingMediaService.stop(); voices.clear();
+        PleosSpeechWarmup.factory = (context, start, done, fail) -> {
+            FakeSpeech voice = new FakeSpeech(start, done, fail); voices.add(voice); return voice;
+        };
+        PleosSpeechWarmup.eligible(service, warmScreen, true);
+        assertEquals(1, voices.size()); assertNull(voices.get(0).text);
+        startPlan();
+        assertEquals(1, voices.size()); assertEquals("편성 대본 0", voices.get(0).text);
+        PleosSpeechWarmup.eligible(service, warmScreen, false);
+        assertFalse(voices.get(0).released);
+        voices.get(0).started.run(); voices.get(0).done.run();
+        assertTrue(voices.get(0).released);
+        assertEquals(2, voices.size()); // Deliberately fresh engine at uncorrelated callback boundary.
+    }
+    @Test public void unavailablePreparationUsesOrdinarySameBackendStartup() throws Exception {
+        BriefingMediaService.stop(); voices.clear();
+        PleosSpeechWarmup.factory = (context, start, done, fail) -> { throw new IllegalStateException(); };
+        PleosSpeechWarmup.eligible(service, warmScreen, true);
+        startPlan();
+        assertEquals(1, voices.size()); assertEquals("편성 대본 0", voices.get(0).text);
     }
     @Test public void defaultDispatchUsesOrdinaryPlanAndCompletesWithoutFixture() {
         assertEquals(1, voices.size());

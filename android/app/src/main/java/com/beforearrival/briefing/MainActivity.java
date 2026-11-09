@@ -175,6 +175,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onPause() {
         resumed = false;
+        PleosSpeechWarmup.eligible(this, this, false);
         clearDeletionUndo();
         clearConfirmationUndo();
         lifecycleGeneration++;
@@ -651,6 +652,8 @@ public final class MainActivity extends Activity {
 
     private void renderAccess() {
         boolean allowed = canUse();
+        PleosSpeechWarmup.eligible(this, this, ComparisonFactory.productionBackend()
+                && vehicleMedia && canInteract() && !ComparisonFixture.enabled(this));
         accessLabel.setText(allowed ? "도착까지" : "차량 상태 미확인");
         content.setVisibility(allowed ? View.VISIBLE : View.GONE);
         restrictionNotice.setVisibility(allowed ? View.GONE : View.VISIBLE);

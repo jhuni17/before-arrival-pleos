@@ -1,3 +1,7 @@
+> Follow-up source changes and unexecuted warm-up checks are tracked in
+> [seoyoon-warm-reuse.md](seoyoon-warm-reuse.md). Earlier runtime observations
+> below do not validate this candidate. Cross-topic reuse remains disabled.
+
 # Seoyoon production playback: source change and pending evidence
 
 Status: SOURCE_CI_REVIEW_PENDING. No new APK, CI run, SDK callback, Windows

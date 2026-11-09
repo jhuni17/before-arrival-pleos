@@ -49,9 +49,11 @@ public final class BriefingMediaService extends MediaBrowserService {
     private static final class Request {
         final Plan plan;
         final RouteInput.Snapshot route;
+        final PleosSpeechWarmup.Lease warm;
         Request(Plan plan, RouteInput.Snapshot route) {
             this.plan = plan;
             this.route = route;
+            warm = PleosSpeechWarmup.take();
         }
     }
 
@@ -78,6 +80,7 @@ public final class BriefingMediaService extends MediaBrowserService {
     }
     SpeechFactory speechFactory = ComparisonFactory::create;
     private ComparisonSpeech candidate;
+    private PleosSpeechWarmup.Lease reserved;
     private boolean candidatePlaying, candidateStopping;
     private Runnable afterCandidateStop;
     private boolean comparison() {
@@ -122,18 +125,24 @@ public final class BriefingMediaService extends MediaBrowserService {
         voiceTrace("engine");
         trial("start_request voice=seoyoon mode=ON_DEVICE");
         try {
-            candidate = speechFactory.create(this,
+            Runnable started =
                 () -> { if (token == generation && canControl() && hasFocus && wantsPlayback) {
                     candidatePlaying = true; voiceTrace("start"); trial("sdk_onStart_proxy"); updateState();
-                } },
-                () -> { if (token == generation && !candidateStopping && !items.isEmpty()) {
+                } };
+            Runnable done = () -> { if (token == generation && !candidateStopping && !items.isEmpty()) {
                     candidatePlaying = false; voiceTrace("done");
                     candidate.release(); candidate = null;
                     if (!nextTopic()) finish("");
-                } },
-                () -> { if (token == candidateGeneration && candidate != null) {
+                } };
+            Runnable failed = () -> { if (token == candidateGeneration && candidate != null) {
                     trial("candidate_unavailable_or_error_no_fallback"); failPlayback();
-                } });
+                } };
+            if (reserved != null) {
+                PleosSpeechWarmup.Lease warm = reserved; reserved = null;
+                try { warm.bind(started, done, failed); candidate = warm; }
+                catch (IllegalStateException unavailable) { warm.release(); }
+            }
+            if (candidate == null) candidate = speechFactory.create(this, started, done, failed);
             candidate.start(items.get(index).summary);
             main.postDelayed(() -> {
                 if (token == generation && candidate != null && !candidatePlaying && !candidateStopping) {
@@ -166,6 +175,7 @@ public final class BriefingMediaService extends MediaBrowserService {
             context.startForegroundService(new Intent(context, BriefingMediaService.class));
             notifyActivity("");
         } catch (IllegalStateException | SecurityException denied) {
+            if (pending != null && pending.warm != null) pending.warm.release();
             pending = null;
             notifyActivity("차량 미디어 재생을 시작하지 못했어요.");
         }
@@ -180,6 +190,7 @@ public final class BriefingMediaService extends MediaBrowserService {
     }
 
     static void stop() {
+        if (pending != null && pending.warm != null) pending.warm.release();
         pending = null;
         if (current != null) current.finish("");
     }
@@ -242,6 +253,7 @@ public final class BriefingMediaService extends MediaBrowserService {
             if (items.isEmpty()) stopSelf(startId);
             return START_NOT_STICKY;
         }
+        reserved = request.warm;
         items = new ArrayList<>(request.plan.selected);
         if (comparison()) {
             items.clear();
@@ -515,6 +527,7 @@ public final class BriefingMediaService extends MediaBrowserService {
 
     private void releasePlayback() {
         main.removeCallbacksAndMessages(null);
+        if (reserved != null) { reserved.release(); reserved = null; }
         trial("stop_command");
         items = Collections.emptyList();
         LiveRouteSession.shared.detach(liveRouteObserver);
