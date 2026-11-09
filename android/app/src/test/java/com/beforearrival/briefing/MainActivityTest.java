@@ -182,12 +182,13 @@ public class MainActivityTest {
             assertEquals(1.3f, activity.getResources().getConfiguration().fontScale, 0.001f);
             for (int i = 0; i < primaryNames.length; i++) {
                 TextView view = field(primaryNames[i]);
-                assertTrue(primaryNames[i] + " is enlarged", view.getTextSize() > normalSizes[i]);
                 assertEquals(primaryNames[i] + " uses configuration font scale",
                         android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP,
                                 sizesSp[i], activity.getResources().getDisplayMetrics()),
                         view.getTextSize(), 0.5f);
             }
+            // Android 35 scales SP nonlinearly: 40sp ETA may stay unchanged at 1.3x.
+            assertTrue("listen is enlarged", ((TextView) field("listen")).getTextSize() > normalSizes[2]);
             setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
             View root = ((ViewGroup) activity.findViewById(android.R.id.content)).getChildAt(0);
             float density = activity.getResources().getDisplayMetrics().density;
