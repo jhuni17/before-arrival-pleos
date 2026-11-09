@@ -346,7 +346,7 @@ public final class BriefingMediaService extends MediaBrowserService {
             session.setMetadata(new MediaMetadata.Builder()
                     .putString(MediaMetadata.METADATA_KEY_MEDIA_ID, id(index))
                     .putString(MediaMetadata.METADATA_KEY_TITLE, item.title)
-                    .putString(MediaMetadata.METADATA_KEY_ARTIST, "도착 전에 · 출근 브리핑")
+                    .putString(MediaMetadata.METADATA_KEY_ARTIST, "도착 전에 출근 브리핑")
                     .build());
             updateState();
         } catch (IOException | RuntimeException error) {
@@ -576,7 +576,7 @@ public final class BriefingMediaService extends MediaBrowserService {
         return new Notification.Builder(this, CHANNEL)
                 .setSmallIcon(android.R.drawable.ic_media_play)
                 .setContentTitle(items.get(index).title)
-                .setContentText("도착 전에 · 출근 브리핑")
+                .setContentText("도착 전에 출근 브리핑")
                 .setContentIntent(open)
                 .setOnlyAlertOnce(true)
                 .setVisibility(Notification.VISIBILITY_PRIVATE)
