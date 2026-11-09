@@ -112,6 +112,7 @@ public final class MainActivity extends Activity {
     private Button etaShort;
     private Button priorityButton;
     private Button listen;
+    private Button reconnect;
     private Button transcriptButton;
 
     @Override
@@ -255,38 +256,48 @@ public final class MainActivity extends Activity {
             refreshPlan();
         });
 
-        LinearLayout briefing = panel();
-        add(content, briefing, 12);
-        add(briefing, heading("이번에 들을 소식", 20), 0);
+        LinearLayout briefing = route;
+        add(briefing, heading("이번에 들을 소식", 20), 16);
         nextItem = heading("", 28);
+        nextItem.setSingleLine(false);
+        nextItem.setMaxLines(Integer.MAX_VALUE);
+        nextItem.setEllipsize(null);
         add(briefing, nextItem, 8);
         summary = label("", 14, MUTED, false);
         summary.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         add(briefing, summary, 4);
         listen = button("브리핑 듣기", true, this::togglePlayback);
+        listen.setSingleLine(false);
+        listen.setEllipsize(null);
         transcriptButton = button("대본 보기", false, () -> {
             if (!canInteract()) return;
             transcriptVisible = !transcriptVisible;
             renderTranscript();
         });
         add(briefing, listen, 16);
-        add(briefing, transcriptButton, 8);
+        reconnect = button(getString(R.string.route_reconnect), true, () -> {
+            if (canInteract() && liveMode) connectLive();
+        });
+        reconnect.setSingleLine(false);
+        reconnect.setEllipsize(null);
+        add(briefing, reconnect, 8);
+
+        LinearLayout details = panel();
+        add(content, details, 12);
+        add(details, transcriptButton, 0);
         speechStatus = label("", 14, ACCENT, false);
         speechStatus.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         add(briefing, speechStatus, 4);
         transcript = label("", 16, TEXT, false);
-        add(briefing, transcript, 6);
+        add(details, transcript, 6);
         briefingRows = column();
-        add(briefing, briefingRows, 4);
+        add(details, briefingRows, 4);
 
         LinearLayout settings = panel();
         add(content, settings, 12);
         add(settings, heading("내 브리핑 설정", 21), 0);
         add(settings, buttonRow(etaLong, etaShort), 8);
         add(settings, routeMode, 8);
-        add(settings, button("실제 경로 다시 연결", false, () -> {
-            if (canInteract() && liveMode) connectLive();
-        }), 8);
         add(settings, label(ContentCatalog.LOCAL_NOTICE, 13, MUTED, false), 8);
         sourceRows = column();
         add(settings, sourceRows, 8);
@@ -520,6 +531,12 @@ public final class MainActivity extends Activity {
         } else {
             summary.setText(getString(R.string.budget_selected, plan.budgetSeconds, plan.selected.size(), plan.selectedSeconds));
         }
+        boolean missingLiveEta = liveMode && seconds < 0;
+        if (missingLiveEta) summary.setText(R.string.route_reconnect_hint);
+        listen.setVisibility(missingLiveEta ? View.GONE : View.VISIBLE);
+        reconnect.setVisibility(liveMode ? View.VISIBLE : View.GONE);
+        reconnect.setTextColor(missingLiveEta ? ON_ACCENT : TEXT);
+        reconnect.setBackground(buttonBackground(missingLiveEta));
         renderRows(route);
         renderSaved();
         renderSpeechStatus("");
@@ -1039,11 +1056,13 @@ public final class MainActivity extends Activity {
                 + " interactive=" + canInteract() + " playing=" + playing);
         listen.setText(active ? "듣기 중지" : "브리핑 듣기");
         enableButton(listen, canInteract() && !plan.selected.isEmpty());
+        enableButton(reconnect, canInteract() && liveMode);
         speechStatus.setText(message);
         speechStatus.setVisibility(message.isEmpty() ? View.GONE : View.VISIBLE);
     }
 
     private void renderTranscript() {
+        transcriptButton.setVisibility(plan.selected.isEmpty() ? View.GONE : View.VISIBLE);
         enableButton(transcriptButton, !plan.selected.isEmpty());
         transcriptButton.setText(transcriptVisible ? "대본 접기" : "대본 보기");
         transcript.setText(ComparisonFixture.enabled(this) ? ComparisonFixture.transcript() : plan.narration());

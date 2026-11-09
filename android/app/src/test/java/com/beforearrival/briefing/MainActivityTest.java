@@ -95,6 +95,66 @@ public class MainActivityTest {
         assertTrue(input.snapshot().remainingSeconds.isEmpty());
     }
 
+    @Test public void firstGroupSharesEtaTitleAndPlaybackForSampleAndLiveReady() {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        TextView eta = field("eta"), next = field("nextItem");
+        Button listen = field("listen"), reconnect = field("reconnect");
+        assertSame(eta.getParent(), next.getParent());
+        assertSame(eta.getParent(), listen.getParent());
+        assertTrue(((TextView) field("routeLabel")).getText().toString().contains("샘플"));
+        assertEquals(View.VISIBLE, listen.getVisibility());
+        assertEquals(View.GONE, reconnect.getVisibility());
+        assertTrue(listen.isEnabled());
+        RouteInput.Snapshot ready = new RouteInput.Snapshot(java.util.OptionalLong.of(1080),
+                java.time.Instant.parse("2026-11-05T00:00:00Z"),
+                RouteInput.Source.NAVI_HELPER, "실제 경로 · 테스트 입력");
+        ReflectionHelpers.setField(activity, "liveMode", true);
+        ReflectionHelpers.setField(activity, "routeInput", (RouteInput) () -> ready);
+        ReflectionHelpers.callInstanceMethod(activity, "render");
+        assertEquals("18분", eta.getText().toString());
+        assertEquals(View.VISIBLE, listen.getVisibility());
+        assertTrue(listen.isEnabled());
+        assertTrue(((TextView) field("routeLabel")).getText().toString().contains("실제 경로"));
+        assertNotSame(next.getParent(), ((Button) field("transcriptButton")).getParent());
+        next.setText("매우 긴 한국어 소식 제목을 확대된 글자로도 여러 줄에 걸쳐 확인할 수 있어야 해요");
+        assertEquals(Integer.MAX_VALUE, next.getMaxLines());
+        assertNull(next.getEllipsize());
+        assertEquals(ViewGroup.LayoutParams.WRAP_CONTENT, next.getLayoutParams().height);
+    }
+
+    @Test public void movedReconnectIsUniqueAndRetainsLiveAndInteractionGuards() {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        Button reconnect = field("reconnect");
+        LiveRouteSession session = field("navigationRoute");
+        RouteInput.Snapshot before = session.snapshot();
+        reconnect.performClick(); // Retained hidden control must still reject sample mode.
+        assertSame(before, session.snapshot());
+        ((Button) field("routeMode")).performClick();
+        assertEquals(View.VISIBLE, reconnect.getVisibility());
+        assertTrue(reconnect.isEnabled());
+        assertSame(((TextView) field("eta")).getParent(), reconnect.getParent());
+        assertEquals(View.GONE, ((Button) field("listen")).getVisibility());
+        assertEquals(View.GONE, ((Button) field("transcriptButton")).getVisibility());
+        assertEquals(activity.getString(R.string.route_reconnect_hint),
+                ((TextView) field("summary")).getText().toString());
+        long count = descendants((View) field("content"), Button.class).stream()
+                .filter(button -> button.getText().toString().equals(activity.getString(R.string.route_reconnect))).count();
+        assertEquals(1, count);
+        before = session.snapshot();
+        reconnect.performClick();
+        assertNotSame(before, session.snapshot());
+        for (AccessPolicy.State state : new AccessPolicy.State[] {
+                AccessPolicy.State.RESTRICTED, AccessPolicy.State.UNKNOWN}) {
+            setAccess(state);
+            before = session.snapshot();
+            reconnect.performClick();
+            assertSame(before, session.snapshot());
+            assertEquals(View.GONE, ((View) field("content")).getVisibility());
+        }
+        assertTrue((Boolean) field("liveMode"));
+        assertEquals(RouteInput.Source.NAVI_HELPER, session.snapshot().source);
+    }
+
     @Test public void savedItemSurvivesActivityRecreation() {
         setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
         LinearLayout rows = field("briefingRows");

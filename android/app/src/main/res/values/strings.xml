@@ -44,4 +44,6 @@
     <string name="saved_show_all">전체 보기</string>
     <string name="saved_confirm_next">확인하고 다음</string>
     <string name="saved_confirm_finish">확인하고 마치기</string>
+    <string name="route_reconnect">실제 경로 다시 연결</string>
+    <string name="route_reconnect_hint">실제 도착 시간을 받지 못했어요. 내비 경로와 연결 상태를 확인한 뒤 다시 연결해 주세요.</string>
 </resources>
