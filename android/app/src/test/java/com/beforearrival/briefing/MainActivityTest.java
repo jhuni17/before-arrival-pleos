@@ -155,7 +155,7 @@ public class MainActivityTest {
             assertEquals(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS,
                     details.getImportantForAccessibility());
             assertEquals(ViewGroup.FOCUS_BLOCK_DESCENDANTS, details.getDescendantFocusability());
-            List<View> focusable = new ArrayList<>();
+            ArrayList<View> focusable = new ArrayList<>();
             details.addFocusables(focusable, View.FOCUS_FORWARD);
             assertTrue(focusable.isEmpty());
             for (String name : new String[] {"summary", "briefingRows", "sourceRows", "savedRows"}) {
