@@ -27,6 +27,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -36,9 +37,9 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.time.Instant;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Consumer;
 
 import com.beforearrival.briefing.ContentCatalog.Item;
 import com.beforearrival.briefing.ContentCatalog.Source;
@@ -47,14 +48,12 @@ import com.beforearrival.briefing.AccessPolicy.State;
 
 public final class MainActivity extends Activity {
     private int BACKGROUND, SURFACE, BORDER, TEXT, MUTED, ACCENT, ON_ACCENT;
-    private static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("HH:mm")
-            .withZone(SampleRouteInput.SEOUL);
 
     private final SampleRouteInput sampleRoute = new SampleRouteInput();
     private boolean liveMode;
-    private final NavigationRouteInput navigationRoute = new NavigationRouteInput(this::onNavigationChanged);
+    private final LiveRouteSession navigationRoute = LiveRouteSession.shared;
+    private final Consumer<RouteInput.Snapshot> routeObserver = this::onNavigationChanged;
     private RouteInput routeInput = sampleRoute;
-    private RouteConnection liveConnection;
     private ContentCatalog catalog;
     private LinearLayout sourceRows;
     private final Map<String, Integer> refreshGenerations = new HashMap<>();
@@ -68,6 +67,7 @@ public final class MainActivity extends Activity {
     private CarRestrictions restrictions;
     private State restrictionState = State.UNKNOWN;
     private boolean automotive;
+    private boolean vehicleMedia;
     private boolean resumed;
     private boolean transcriptVisible;
     private enum SavedFilter { ALL, UNREAD, CONFIRMED }
@@ -91,12 +91,21 @@ public final class MainActivity extends Activity {
     private Button savedConfirmed;
 
     private LinearLayout content;
+    private LinearLayout overview;
+    private LinearLayout expandedDetails;
+    private Button detailsToggle;
+    private boolean detailsVisible;
+    private LinearLayout routePanel;
+    private LinearLayout newsPanel;
     private LinearLayout briefingRows;
     private LinearLayout savedRows;
     private TextView restrictionNotice;
     private TextView eta;
     private TextView accessLabel;
     private TextView nextItem;
+    private TextView firstContext;
+    private LinearLayout planBlocks;
+    private TextView planExplanation;
     private Button routeMode;
     private TextView routeLabel;
     private TextView summary;
@@ -110,36 +119,51 @@ public final class MainActivity extends Activity {
     private Button etaShort;
     private Button priorityButton;
     private Button listen;
+    private Button reconnect;
     private Button transcriptButton;
 
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         automotive = getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+        vehicleMedia = ComparisonFactory.productionBackend();
         configurePalette();
         liveMode = state == null ? LiveConnectionFactory.isSdkIncluded()
                 : state.getBoolean("live_mode", LiveConnectionFactory.isSdkIncluded());
         routeInput = liveMode ? navigationRoute : sampleRoute;
         if (state != null) sampleRoute.select(state.getInt("sample_eta", 18));
         preferences = getSharedPreferences("briefing", MODE_PRIVATE);
-        try (InputStream input = getAssets().open("catalog.json")) {
-            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            byte[] chunk = new byte[4096]; int count;
-            while ((count = input.read(chunk)) != -1) bytes.write(chunk, 0, count);
-            catalog = new ContentCatalog(new String(bytes.toByteArray(), StandardCharsets.UTF_8), preferences);
+        try {
+            String defaults = readAsset("catalog.json");
+            if ("pleos".equals(BuildConfig.FLAVOR) && "release".equals(BuildConfig.BUILD_TYPE)) {
+                org.json.JSONObject vehicleCatalog = new org.json.JSONObject(defaults);
+                vehicleCatalog.put("sources", new org.json.JSONArray(readAsset("release-sources.json")));
+                defaults = vehicleCatalog.toString();
+            }
+            catalog = new ContentCatalog(defaults, preferences);
         } catch (Exception error) {
             throw new IllegalStateException("공유 소식 목록을 읽지 못했어요", error);
         }
         buildScreen();
-        speech = new SpeechPlayback(this, this::canInteract, this::renderSpeechStatus);
+        if (!vehicleMedia) speech = new SpeechPlayback(this, this::canInteract, this::renderSpeechStatus);
         render();
         renderAccess();
+    }
+
+    private String readAsset(String name) throws java.io.IOException {
+        try (InputStream input = getAssets().open(name)) {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            byte[] chunk = new byte[4096]; int count;
+            while ((count = input.read(chunk)) != -1) bytes.write(chunk, 0, count);
+            return new String(bytes.toByteArray(), StandardCharsets.UTF_8);
+        }
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        if (liveMode) connectLive();
+        if (vehicleMedia) BriefingMediaService.observe(this::renderSpeechStatus);
+        if (liveMode) navigationRoute.attach(this, routeObserver);
         if (!automotive) return;
         try {
             restrictions = new CarRestrictions(state -> {
@@ -163,21 +187,20 @@ public final class MainActivity extends Activity {
     @Override
     protected void onPause() {
         resumed = false;
+        PleosSpeechWarmup.eligible(this, this, false);
         clearDeletionUndo();
         clearConfirmationUndo();
         lifecycleGeneration++;
         dismissDialog();
-        speech.stop();
+        if (speech != null) speech.stop();
         renderSpeechStatus("");
         super.onPause();
     }
 
     @Override
     protected void onStop() {
-        if (liveConnection != null) {
-            liveConnection.close();
-            liveConnection = null;
-        }
+        if (vehicleMedia) BriefingMediaService.observe(null);
+        navigationRoute.detach(routeObserver);
         if (restrictions != null) {
             restrictions.close();
             restrictions = null;
@@ -196,7 +219,7 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        speech.close();
+        if (speech != null) speech.close();
         super.onDestroy();
     }
 
@@ -217,86 +240,109 @@ public final class MainActivity extends Activity {
         content = column();
         content.setPadding(dp(20), dp(20), dp(20), dp(32));
         frame.addView(content, new FrameLayout.LayoutParams(-1, -2, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
-        frame.addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
-            int width = Math.min(right - left, dp(880));
-            if (width > 0 && content.getLayoutParams().width != width) {
-                content.getLayoutParams().width = width;
-                content.requestLayout();
-            }
-        });
         restrictionNotice = label("", 20, TEXT, true);
         restrictionNotice.setGravity(Gravity.CENTER);
         restrictionNotice.setPadding(dp(24), dp(24), dp(24), dp(24));
         frame.addView(restrictionNotice, new FrameLayout.LayoutParams(-1, -1));
 
-        add(content, label("정차용 브리핑 · 출처를 확인하는 소식", 18, MUTED, true), 0);
-        add(content, heading("도착 전에", 34), 4);
+        add(content, heading(getString(R.string.app_name), 24), 0);
+        add(content, label(getString(R.string.app_role), 18, MUTED, false), 2);
+        overview = column();
+        add(content, overview, 8);
+        routePanel = panel();
+        newsPanel = panel();
+        add(overview, routePanel, 0);
+        add(overview, newsPanel, 8);
+        overview.addOnLayoutChangeListener((view, left, top, right, bottom,
+                oldLeft, oldTop, oldRight, oldBottom) -> arrangeOverview(right - left));
         accessLabel = label("", 18, MUTED, false);
-        add(content, accessLabel, 4);
-
-        LinearLayout route = panel();
-        add(content, route, 20);
-        add(route, label("도착까지", 20, MUTED, true), 0);
-        eta = label("", 48, TEXT, true);
-        add(route, eta, 2);
+        add(routePanel, accessLabel, 0);
+        eta = label("", 40, TEXT, true);
+        add(routePanel, eta, 2);
         routeLabel = label("", 18, MUTED, false);
-        add(route, routeLabel, 2);
+        add(routePanel, routeLabel, 2);
         etaLong = button("18분", false, () -> selectRoute(18));
         etaShort = button("4분", false, () -> selectRoute(4));
         routeMode = button("", false, () -> {
             if (!canInteract()) return;
             liveMode = !liveMode;
             routeInput = liveMode ? navigationRoute : sampleRoute;
-            if (liveConnection != null) { liveConnection.close(); liveConnection = null; }
-            if (liveMode) connectLive();
+            if (liveMode) navigationRoute.attach(this, routeObserver);
+            else navigationRoute.detach(routeObserver);
             refreshPlan();
         });
 
-        LinearLayout briefing = panel();
-        add(content, briefing, 12);
-        add(briefing, heading("이번에 들을 소식", 20), 0);
+        LinearLayout briefing = newsPanel;
+        firstContext = label("", 18, MUTED, false);
+        add(briefing, heading("소식", 18), 0);
         nextItem = heading("", 28);
-        add(briefing, nextItem, 8);
+        nextItem.setSingleLine(false);
+        nextItem.setMaxLines(Integer.MAX_VALUE);
+        nextItem.setEllipsize(null);
+        add(briefing, nextItem, 4);
+        add(briefing, firstContext, 4);
         summary = label("", 14, MUTED, false);
         summary.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
-        add(briefing, summary, 4);
+
         listen = button("브리핑 듣기", true, this::togglePlayback);
+        listen.setSingleLine(false);
+        listen.setEllipsize(null);
         transcriptButton = button("대본 보기", false, () -> {
             if (!canInteract()) return;
             transcriptVisible = !transcriptVisible;
             renderTranscript();
         });
         add(briefing, listen, 16);
-        add(briefing, transcriptButton, 8);
+        reconnect = button(getString(R.string.route_reconnect), true, () -> {
+            if (canInteract() && liveMode) connectLive();
+        });
+        reconnect.setSingleLine(false);
+        reconnect.setEllipsize(null);
+
+        detailsToggle = button(getString(R.string.details_open), false, () -> {
+            if (!canInteract()) return;
+            detailsVisible = !detailsVisible;
+            renderDetails();
+        });
+        planBlocks = column();
+        add(content, planBlocks, 8);
+        planExplanation = label("", 18, MUTED, false);
+        planExplanation.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        add(content, planExplanation, 4);
+        add(content, detailsToggle, 8);
+        expandedDetails = column();
+        add(content, expandedDetails, 0);
+        LinearLayout details = panel();
+        add(expandedDetails, details, 12);
+        add(details, summary, 0);
+        add(details, transcriptButton, 8);
         speechStatus = label("", 14, ACCENT, false);
         speechStatus.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         add(briefing, speechStatus, 4);
         transcript = label("", 16, TEXT, false);
-        add(briefing, transcript, 6);
+        add(details, transcript, 6);
         briefingRows = column();
-        add(briefing, briefingRows, 4);
+        add(details, briefingRows, 4);
 
         LinearLayout settings = panel();
-        add(content, settings, 12);
+        add(expandedDetails, settings, 12);
         add(settings, heading("내 브리핑 설정", 21), 0);
         add(settings, buttonRow(etaLong, etaShort), 8);
         add(settings, routeMode, 8);
-        add(settings, button("실제 경로 다시 연결", false, () -> {
-            if (canInteract() && liveMode) connectLive();
-        }), 8);
-        add(settings, label(ContentCatalog.LOCAL_NOTICE, 13, MUTED, false), 8);
+        add(settings, reconnect, 8);
+        add(settings, label(uiNotice(ContentCatalog.LOCAL_NOTICE), 13, MUTED, false), 8);
         sourceRows = column();
         add(settings, sourceRows, 8);
         priorityButton = button("출처 추가", false, this::showAddSource);
         add(settings, priorityButton, 8);
 
         LinearLayout savedPanel = panel();
-        add(content, savedPanel, 12);
+        add(expandedDetails, savedPanel, 12);
         savedHeading = heading("", 21);
         add(savedPanel, savedHeading, 0);
         savedCapacity = label("", 14, MUTED, false);
         add(savedPanel, savedCapacity, 4);
-        savedCapacityNotice = label(ContentCatalog.SAVED_CAPACITY_NOTICE, 14, MUTED, false);
+        savedCapacityNotice = label(uiNotice(ContentCatalog.SAVED_CAPACITY_NOTICE), 14, MUTED, false);
         add(savedPanel, savedCapacityNotice, 4);
         savedCapacityConfirmed = button("", false, this::showCapacityConfirmed);
         savedCapacityConfirmed.setSingleLine(false);
@@ -330,10 +376,25 @@ public final class MainActivity extends Activity {
         add(savedPanel, savedUndo, 8);
         savedRows = column();
         add(savedPanel, savedRows, 4);
-        add(savedPanel, label(ContentCatalog.LOCAL_NOTICE, 13, MUTED, false), 8);
-        add(content, label("샘플과 가져온 공식 소식은 각 출처에서 구분해 표시해요.", 13, MUTED, false), 14);
+        add(savedPanel, label(uiNotice(ContentCatalog.LOCAL_NOTICE), 13, MUTED, false), 8);
+        renderDetails();
 
         setContentView(root);
+    }
+
+    // Width is the app's inset-safe viewport, never the physical display width.
+    private void arrangeOverview(int width) {
+        boolean wide = width >= dp((int) Math.ceil(760 * Math.max(1f, getResources().getConfiguration().fontScale)));
+        int orientation = wide ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL;
+        if (overview.getOrientation() == orientation
+                && routePanel.getLayoutParams() instanceof LinearLayout.LayoutParams
+                && ((LinearLayout.LayoutParams) routePanel.getLayoutParams()).weight == (wide ? 2f : 0f)) return;
+        overview.setOrientation(orientation);
+        routePanel.setLayoutParams(new LinearLayout.LayoutParams(wide ? 0 : -1, -2, wide ? 2f : 0f));
+        LinearLayout.LayoutParams news = new LinearLayout.LayoutParams(wide ? 0 : -1, -2, wide ? 3f : 0f);
+        news.leftMargin = wide ? dp(12) : 0;
+        news.topMargin = wide ? 0 : dp(8);
+        newsPanel.setLayoutParams(news);
     }
 
     @SuppressWarnings("deprecation")
@@ -350,19 +411,12 @@ public final class MainActivity extends Activity {
     }
 
     private void onNavigationChanged(RouteInput.Snapshot snapshot) {
-        if (!liveMode || speech == null) return;
-        ContentCatalog.Plan updated = catalog.plan(snapshot);
-        if (plan == null || updated.budgetSeconds != plan.budgetSeconds || !updated.selected.equals(plan.selected)) {
-            refreshPlan();
-        } else {
-            render();
-        }
+        if (!liveMode || plan == null) return;
+        render();
     }
 
     private void connectLive() {
-        if (liveConnection != null) liveConnection.close();
-        liveConnection = LiveConnectionFactory.create(this, navigationRoute);
-        liveConnection.start();
+        navigationRoute.reconnect(this);
     }
 
     private void showAddSource() {
@@ -386,7 +440,7 @@ public final class MainActivity extends Activity {
         });
         add(form, name, 0); add(form, provider, 8); add(form, url, 8);
         TextView error = label("", 14, ACCENT, false); add(form, error, 4);
-        add(form, label(ContentCatalog.LOCAL_NOTICE, 13, MUTED, false), 8);
+        add(form, label(uiNotice(ContentCatalog.LOCAL_NOTICE), 13, MUTED, false), 8);
         showDialog(new AlertDialog.Builder(this).setTitle("소식 출처 추가").setView(form)
                 .setPositiveButton("추가", null).setNegativeButton("닫기", null));
         AlertDialog dialog = activeDialog;
@@ -416,7 +470,7 @@ public final class MainActivity extends Activity {
                 catalog.persist(preferences); refreshPlan();
             });
             add(sourceRows, check, 8);
-            add(sourceRows, label(source.statusLabel(), 13, MUTED, false), 0);
+            add(sourceRows, label(uiNotice(source.statusLabel()), 13, MUTED, false), 0);
             if (source.registrationUrl != null) add(sourceRows, label(source.registrationUrl, 13, MUTED, false), 2);
             if (source.lastAttemptAt != null) add(sourceRows, label("가져오기 확인 " + source.lastAttemptAt, 13, MUTED, false), 2);
             if (source.lastSuccessAt != null) add(sourceRows, label("마지막 성공 " + source.lastSuccessAt, 13, MUTED, false), 2);
@@ -485,12 +539,17 @@ public final class MainActivity extends Activity {
 
     private void togglePlayback() {
         if (!canInteract() || plan.selected.isEmpty()) return;
-        if (speech.isPlaying()) speech.stop();
+        if (vehicleMedia) {
+            if (BriefingMediaService.isActive()) BriefingMediaService.stop();
+            else BriefingMediaService.play(this, plan, routeInput.snapshot());
+        } else if (speech.isPlaying()) speech.stop();
         else speech.play(plan.narration(), plan.budgetSeconds);
     }
 
     private void refreshPlan() {
-        speech.stop();
+        if (vehicleMedia) {
+            if (canInteract()) BriefingMediaService.stop();
+        } else speech.stop();
         transcriptVisible = false;
         render();
     }
@@ -499,17 +558,21 @@ public final class MainActivity extends Activity {
         RouteInput.Snapshot route = routeInput.snapshot();
         long seconds = route.remainingSeconds.orElse(-1);
         long minutes = seconds < 0 ? -1 : seconds / 60;
-        eta.setText(seconds >= 0 ? (seconds == 0 ? "도착" : seconds < 60 ? "1분 미만" : minutes + "분") : "도착 시간 미확인");
+        eta.setText(seconds >= 0 ? (seconds == 0 ? "도착" : seconds < 60 ? "1분 미만" : minutes + "분") : "ETA 미확인");
         routeMode.setText(liveMode ? "샘플 경로로 전환" : "실제 경로로 전환");
         etaLong.setVisibility(liveMode ? View.GONE : View.VISIBLE);
         etaShort.setVisibility(liveMode ? View.GONE : View.VISIBLE);
-        routeLabel.setText(route.observedAt.equals(Instant.EPOCH) ? route.sourceLabel
-                : getString(R.string.route_observation, route.sourceLabel, CLOCK.format(route.observedAt)));
+        routeLabel.setText(!liveMode ? "샘플 ETA" : seconds < 0 ? "기본 내비 연결 확인 필요"
+                : "기본 내비에서 받은 실제 ETA");
         setRouteButton(etaLong, minutes == 18);
         setRouteButton(etaShort, minutes == 4);
         plan = catalog.plan(route);
         renderSources();
         nextItem.setText(plan.selected.isEmpty() ? "브리핑을 기다리고 있어요" : plan.selected.get(0).title);
+        nextItem.setContentDescription("첫 소식\n" + nextItem.getText());
+        firstContext.setText(plan.selected.isEmpty() ? getString(R.string.first_empty)
+                : itemContext(plan.selected.get(0)));
+        renderPlan(route);
         if (catalog.sources.stream().noneMatch(source -> source.enabled)) {
             summary.setText("브리핑에 넣을 소식 출처를 선택해 주세요.");
         } else if (minutes < 0) {
@@ -519,27 +582,109 @@ public final class MainActivity extends Activity {
         } else {
             summary.setText(getString(R.string.budget_selected, plan.budgetSeconds, plan.selected.size(), plan.selectedSeconds));
         }
+        boolean missingLiveEta = liveMode && seconds < 0;
+        if (missingLiveEta) summary.setText(R.string.route_reconnect_hint);
+        listen.setVisibility(missingLiveEta ? View.GONE : View.VISIBLE);
+        LinearLayout reconnectParent = missingLiveEta ? newsPanel : (LinearLayout) routeMode.getParent();
+        if (reconnect.getParent() != reconnectParent) {
+            ((LinearLayout) reconnect.getParent()).removeView(reconnect);
+            add(reconnectParent, reconnect, 8);
+        }
+        reconnect.setVisibility(liveMode ? View.VISIBLE : View.GONE);
+        reconnect.setTextColor(missingLiveEta ? ON_ACCENT : TEXT);
+        reconnect.setBackground(buttonBackground(missingLiveEta));
         renderRows(route);
         renderSaved();
         renderSpeechStatus("");
         renderTranscript();
     }
 
+    // Identity and provenance come from the registered catalog, never inferred from a title.
+    private String itemContext(Item item) {
+        Source source = catalog.source(item.sourceId);
+        String kind = source == null ? "소식" : "game".equals(source.kind) ? "게임"
+                : "schedule".equals(source.kind) ? "일정" : "channel".equals(source.kind) ? "채널" : "커뮤니티";
+        String provenance = "demo_sample".equals(item.provenance) ? "예시"
+                : "official_snapshot".equals(item.provenance) ? "공식 스냅샷"
+                : "official_runtime".equals(item.provenance) ? "공식 갱신 자료" : "자료 구분 미확인";
+        Provider provider = source == null ? null : catalog.provider(source.provider);
+        String identity = savedSourceName(item);
+        if (provider != null && !"sample".equals(provider.id)) {
+            if (provider.label.contains(identity)) identity = provider.label;
+            else if (!identity.contains(provider.label)) identity = provider.label + " / " + identity;
+        }
+        return kind + " / " + identity + " / " + provenance;
+    }
+
+    private void renderPlan(RouteInput.Snapshot route) {
+        planBlocks.removeAllViews();
+        addPlanBlocks(plan.selected, true);
+        addPlanBlocks(plan.deferred, false);
+        String explanation;
+        if (route.remainingSeconds.isEmpty()) {
+            explanation = getString(R.string.plan_unknown);
+        } else if (plan.selected.isEmpty() && plan.deferred.isEmpty()) {
+            explanation = getString(R.string.plan_no_news);
+        } else {
+            explanation = getString(R.string.plan_result, plan.selected.size(), plan.deferred.size(),
+                    plan.selectedSeconds, plan.budgetSeconds);
+        }
+        planExplanation.setText(explanation);
+        planExplanation.setContentDescription(explanation);
+    }
+
+    private void addPlanBlocks(List<Item> items, boolean selected) {
+        if (items.isEmpty()) return;
+        StringBuilder text = new StringBuilder(selected ? "듣기  " : "나중에  ");
+        StringBuilder description = new StringBuilder(selected ? "듣기 순서" : "나중에 듣기 목록");
+        for (int i = 0; i < items.size(); i++) {
+            if (i > 0) text.append(" → ");
+            text.append(i + 1);
+            description.append("\n").append(i + 1).append(". ").append(itemContext(items.get(i)))
+                    .append(" / ").append(items.get(i).title);
+        }
+        TextView block = label(text.toString(), 18, selected ? ON_ACCENT : TEXT, false);
+        block.setPadding(dp(10), dp(6), dp(10), dp(6));
+        block.setBackground(shape(selected ? ACCENT : SURFACE, BORDER, 6));
+        block.setContentDescription(description.toString());
+        add(planBlocks, block, 4);
+    }
+
+    private void renderDetails() {
+        expandedDetails.setVisibility(detailsVisible ? View.VISIBLE : View.GONE);
+        expandedDetails.setImportantForAccessibility(detailsVisible
+                ? View.IMPORTANT_FOR_ACCESSIBILITY_AUTO
+                : View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        expandedDetails.setDescendantFocusability(detailsVisible
+                ? ViewGroup.FOCUS_BEFORE_DESCENDANTS : ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+        if (!detailsVisible) expandedDetails.clearFocus();
+        detailsToggle.setText(detailsVisible ? R.string.details_close : R.string.details_open);
+        enableButton(detailsToggle, canInteract());
+    }
+
     private void renderAccess() {
         boolean allowed = canUse();
-        accessLabel.setText(allowed ? "주차 시 사용 가능 · 차량 UX 제한 해제" : "차량 상태 미확인");
+        PleosSpeechWarmup.eligible(this, this, ComparisonFactory.productionBackend()
+                && vehicleMedia && canInteract() && !ComparisonFixture.enabled(this));
+        accessLabel.setText(allowed ? "도착까지" : "차량 상태 미확인");
         content.setVisibility(allowed ? View.VISIBLE : View.GONE);
         restrictionNotice.setVisibility(allowed ? View.GONE : View.VISIBLE);
-        if (!canInteract()) { clearConfirmationUndo(); clearDeletionUndo(); }
+        if (!canInteract()) {
+            clearConfirmationUndo(); clearDeletionUndo();
+            detailsVisible = false;
+        }
+        renderDetails();
         if (!allowed) {
             lifecycleGeneration++;
             dismissDialog();
             transcriptVisible = false;
             renderTranscript();
-            speech.stop();
+            if (speech != null) speech.stop();
             restrictionNotice.setText(restrictionState == State.RESTRICTED
-                    ? "주행 제한 · 화면과 음성을 중지했어요.\n정차 후 브리핑을 열어 주세요."
-                    : "차량 상태 미확인 · 화면과 음성을 중지했어요.\n차량의 사용 가능 상태를 확인하면 브리핑을 열 수 있어요.");
+                    ? vehicleMedia
+                        ? "주행 중에는 차량 미디어에서 브리핑을 제어해 주세요."
+                        : "주행 제한\n화면과 음성을 중지했어요.\n정차 후 브리핑을 열어 주세요."
+                    : "차량 상태 미확인\n화면과 음성을 중지했어요.\n차량의 사용 가능 상태를 확인하면 브리핑을 열 수 있어요.");
         }
         renderSpeechStatus("");
     }
@@ -554,30 +699,36 @@ public final class MainActivity extends Activity {
 
     private void renderRows(RouteInput.Snapshot route) {
         briefingRows.removeAllViews();
+        if (!plan.selected.isEmpty()) {
+            add(briefingRows, heading("재생 순서\n" + plan.selected.size() + "개 주제", 16), 8);
+        }
         for (Item item : plan.selected) {
             String detail = item.summary;
-            if (item.urgent(route.observedAt)) detail += " · 마감 임박으로 먼저 듣기";
+            if (item.urgent(route.observedAt)) detail += "\n마감 임박으로 먼저 듣기";
             add(briefingRows, itemRow(item, detail), 8);
         }
         List<Item> deferred = plan.deferred;
         if (!deferred.isEmpty()) {
-            add(briefingRows, heading("나중에 듣기 · " + deferred.size() + "건", 16), 12);
+            add(briefingRows, heading("나중에 듣기\n" + deferred.size() + "건", 16), 12);
             for (Item item : deferred) add(briefingRows, itemRow(item, item.summary), 8);
         }
     }
 
     private View itemRow(Item item, String detail) {
         LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.VERTICAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(0, dp(6), 0, dp(6));
         LinearLayout text = column();
-        row.addView(text, new LinearLayout.LayoutParams(0, -2, 1));
+        row.addView(text, new LinearLayout.LayoutParams(-1, -2));
         Source source = catalog.source(item.sourceId);
-        add(text, label((source == null ? item.sourceId : source.name) + " · 약 " + item.estimatedSeconds + "초", 13, ACCENT, true), 0);
-        add(text, label(item.title, 16, TEXT, true), 2);
-        add(text, label(source != null && "steam".equals(source.provider) ? "원문 발췌 · " + detail : detail, 13, MUTED, false), 2);
+        int selectedIndex = plan.selected.indexOf(item);
+        int position = selectedIndex >= 0 ? selectedIndex + 1 : plan.deferred.indexOf(item) + 1;
+        add(text, label(position + ". " + item.title, 18, TEXT, true), 0);
+        add(text, label(itemContext(item) + "\n약 " + item.estimatedSeconds + "초", 13, ACCENT, false), 2);
+        add(text, label(source != null && "steam".equals(source.provider) ? "원문 발췌\n" + detail : detail, 13, MUTED, false), 2);
         add(text, label("게시 " + (item.publishedAt == null ? "시각 미제공" : item.publishedAt.toString()), 13, MUTED, false), 2);
-        add(text, label(source == null ? "출처 확인 필요" : source.statusLabel(), 13, MUTED, false), 2);
+        add(text, label(source == null ? "출처 확인 필요" : uiNotice(source.statusLabel()), 13, MUTED, false), 2);
         if (item.fetchedAt != null) add(text, label("가져온 시각 " + item.fetchedAt, 13, MUTED, false), 2);
         if (item.originalUrl != null) {
             add(text, label(item.originalUrl, 13, MUTED, false), 2);
@@ -597,15 +748,15 @@ public final class MainActivity extends Activity {
         if (catalog.isSaved(item)) {
             ContentCatalog.DeletedItem deleted = catalog.deleteSaved(item, preferences);
             if (deleted == null) {
-                android.widget.Toast.makeText(this, "저장 실패 · 저장 취소 다시 시도", android.widget.Toast.LENGTH_SHORT).show();
+                android.widget.Toast.makeText(this, "저장 실패\n저장 취소 다시 시도", android.widget.Toast.LENGTH_SHORT).show();
                 return;
             }
             undoDeleted = deleted;
             if (undoConfirmed != null && undoConfirmed.key().equals(item.key())) clearConfirmationUndo();
         } else {
             if (!catalog.save(item, preferences)) {
-                android.widget.Toast.makeText(this, catalog.savedAtCapacity() ? ContentCatalog.SAVED_CAPACITY_NOTICE
-                        : "저장 실패 · 다시 시도", android.widget.Toast.LENGTH_SHORT).show();
+                android.widget.Toast.makeText(this, catalog.savedAtCapacity() ? uiNotice(ContentCatalog.SAVED_CAPACITY_NOTICE)
+                        : "저장 실패\n다시 시도", android.widget.Toast.LENGTH_SHORT).show();
                 return;
             }
             if (undoDeleted != null && undoDeleted.item.key().equals(item.key())) clearDeletionUndo();
@@ -760,7 +911,7 @@ public final class MainActivity extends Activity {
             if (!canInteract() || token != undoToken || !catalog.isSaved(item)
                     || !catalog.isConfirmed(item)) return;
             if (!catalog.setConfirmed(item, false, preferences)) {
-                undo.setText("저장 실패 · 확인 실행 취소 다시 시도");
+                undo.setText("저장 실패\n확인 실행 취소 다시 시도");
                 return;
             }
             clearConfirmationUndo();
@@ -783,8 +934,8 @@ public final class MainActivity extends Activity {
         undo.setOnClickListener(view -> {
             if (!canInteract() || undoDeleted != deleted) return;
             if (!catalog.restoreDeleted(deleted, preferences)) {
-                undo.setText(catalog.savedAtCapacity() ? ContentCatalog.SAVED_CAPACITY_NOTICE
-                        : "저장 실패 · 삭제 실행 취소 다시 시도");
+                undo.setText(catalog.savedAtCapacity() ? uiNotice(ContentCatalog.SAVED_CAPACITY_NOTICE)
+                        : "저장 실패\n삭제 실행 취소 다시 시도");
                 return;
             }
             undoDeleted = null;
@@ -826,7 +977,7 @@ public final class MainActivity extends Activity {
         updateSavedFilter(savedAll, R.string.saved_filter_all, scopedCount);
         updateSavedFilter(savedUnread, R.string.saved_filter_unread, scopedUnread);
         updateSavedFilter(savedConfirmed, R.string.saved_filter_confirmed, scopedCount - scopedUnread);
-        savedHeading.setText(getString(R.string.saved_heading, savedCount) + " · 미확인 " + unreadCount);
+        savedHeading.setText(getString(R.string.saved_heading, savedCount) + "\n미확인 " + unreadCount);
         savedCapacity.setText(getString(R.string.saved_capacity, savedCount, ContentCatalog.SAVED_ITEM_LIMIT,
                 Math.max(0, ContentCatalog.SAVED_ITEM_LIMIT - savedCount)));
         savedCapacityNotice.setVisibility(catalog.savedAtCapacity() ? View.VISIBLE : View.GONE);
@@ -935,7 +1086,7 @@ public final class MainActivity extends Activity {
         metadata.setClickable(false);
         add(actions, metadata, 4);
         TextView progress = label("전체 저장 " + catalog.savedItems.size() + "건 중 "
-                + (savedIndex + 1) + "번째 · 미확인 " + catalog.unreadCount() + "건", 14, MUTED, false);
+                + (savedIndex + 1) + "번째\n미확인 " + catalog.unreadCount() + "건", 14, MUTED, false);
         progress.setTag("saved-detail-position");
         add(actions, progress, 4);
         Button confirm = button(target ? "확인 완료" : "미확인으로 되돌리기", false, () -> {});
@@ -949,7 +1100,7 @@ public final class MainActivity extends Activity {
         Button next = button("다음 미확인", false, () -> {});
         next.setTag("next-unread");
         add(actions, next, 8);
-        TextView preview = label(previewTarget == null ? "" : "다음 미확인 · " + previewTarget.title, 14, MUTED, false);
+        TextView preview = label(previewTarget == null ? "" : "다음 미확인\n" + previewTarget.title, 14, MUTED, false);
         preview.setTag("next-unread-preview");
         preview.setSingleLine(false);
         preview.setVisibility(previewTarget == null ? View.GONE : View.VISIBLE);
@@ -962,7 +1113,7 @@ public final class MainActivity extends Activity {
         AlertDialog.Builder detail = new AlertDialog.Builder(this)
             .setTitle(item.title)
             .setView(actions)
-            .setMessage(item.summary + "\n\n" + (item.originalUrl == null ? "예시 콘텐츠" : item.originalUrl) + "\n\n" + ContentCatalog.LOCAL_NOTICE)
+            .setMessage(item.summary + "\n\n" + (item.originalUrl == null ? "예시 콘텐츠" : item.originalUrl) + "\n\n" + uiNotice(ContentCatalog.LOCAL_NOTICE))
             .setNegativeButton("닫기", null)
             .setNeutralButton("저장 취소", (dialog, which) -> {
                 if (!canInteract() || generation != lifecycleGeneration || activeDialog != dialog
@@ -982,7 +1133,7 @@ public final class MainActivity extends Activity {
                     || shown == null || !shown.isShowing() || !catalog.isSaved(item)
                     || catalog.isConfirmed(item)) return;
             if (!catalog.setConfirmed(item, true, preferences)) {
-                confirmNext.setText("저장 실패 · 다시 시도");
+                confirmNext.setText("저장 실패\n다시 시도");
                 return;
             }
             rememberConfirmation(item);
@@ -1009,7 +1160,7 @@ public final class MainActivity extends Activity {
                     || shown == null || !shown.isShowing() || !catalog.isSaved(item)) return;
             boolean wasConfirmed = catalog.isConfirmed(item);
             if (!catalog.setConfirmed(item, target, preferences)) {
-                confirm.setText("저장 실패 · 다시 시도");
+                confirm.setText("저장 실패\n다시 시도");
                 return;
             }
             if (target && !wasConfirmed) rememberConfirmation(item);
@@ -1027,17 +1178,22 @@ public final class MainActivity extends Activity {
     }
 
     private void renderSpeechStatus(String message) {
-        boolean playing = speech.isPlaying();
-        listen.setText(playing ? "듣기 중지" : "브리핑 듣기");
+        boolean playing = vehicleMedia ? BriefingMediaService.isPlaying() : speech.isPlaying();
+        boolean active = vehicleMedia ? BriefingMediaService.isActive() : playing;
+        PleosVerificationTrace.record(this, "access=" + restrictionState + " resumed=" + resumed
+                + " interactive=" + canInteract() + " playing=" + playing);
+        listen.setText(active ? "듣기 중지" : "브리핑 듣기");
         enableButton(listen, canInteract() && !plan.selected.isEmpty());
+        enableButton(reconnect, canInteract() && liveMode);
         speechStatus.setText(message);
         speechStatus.setVisibility(message.isEmpty() ? View.GONE : View.VISIBLE);
     }
 
     private void renderTranscript() {
+        transcriptButton.setVisibility(plan.selected.isEmpty() ? View.GONE : View.VISIBLE);
         enableButton(transcriptButton, !plan.selected.isEmpty());
         transcriptButton.setText(transcriptVisible ? "대본 접기" : "대본 보기");
-        transcript.setText(plan.narration());
+        transcript.setText(ComparisonFixture.enabled(this) ? ComparisonFixture.transcript() : plan.narration());
         transcript.setVisibility(transcriptVisible && !plan.selected.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
@@ -1123,6 +1279,11 @@ public final class MainActivity extends Activity {
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
         params.topMargin = dp(top);
         parent.addView(view, params);
+    }
+
+    // Only app-authored model notices; external titles, summaries and names stay verbatim.
+    private String uiNotice(String text) {
+        return text.replace(" \u00b7 ", "\n").replace('\u00b7', '\n');
     }
 
     private void configurePalette() {

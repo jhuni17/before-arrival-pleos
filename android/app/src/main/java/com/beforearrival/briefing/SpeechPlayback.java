@@ -44,16 +44,7 @@ final class SpeechPlayback {
 
     private void initialize(int status) {
         if (closed) return;
-        Set<Voice> voices = status == TextToSpeech.SUCCESS ? engine.getVoices() : null;
-        Voice korean = voices == null ? null : voices.stream()
-                .filter(voice -> Locale.KOREAN.getLanguage().equals(voice.getLocale().getLanguage()))
-                .filter(voice -> !voice.isNetworkConnectionRequired())
-                .filter(voice -> !voice.getFeatures().contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED))
-                .min(Comparator.comparing((Voice voice) -> !Locale.KOREA.equals(voice.getLocale()))
-                        .thenComparing(Comparator.comparingInt(Voice::getQuality).reversed())
-                        .thenComparing(Voice::getName))
-                .orElse(null);
-        if (korean == null || engine.setVoice(korean) != TextToSpeech.SUCCESS) {
+        if (status != TextToSpeech.SUCCESS || !selectOfflineKoreanVoice(engine)) {
             unavailableMessage = "설치된 한국어 음성을 찾지 못했어요. 대본을 읽을 수 있어요.";
             return;
         }
@@ -71,6 +62,19 @@ final class SpeechPlayback {
         ready = engine.setAudioAttributes(attributes) == TextToSpeech.SUCCESS
                 && engine.setOnUtteranceProgressListener(progress) == TextToSpeech.SUCCESS;
         unavailableMessage = "한국어 음성을 준비하지 못했어요. 대본을 읽을 수 있어요.";
+    }
+
+    static boolean selectOfflineKoreanVoice(TextToSpeech engine) {
+        Set<Voice> voices = engine.getVoices();
+        Voice korean = voices == null ? null : voices.stream()
+                .filter(voice -> Locale.KOREAN.getLanguage().equals(voice.getLocale().getLanguage()))
+                .filter(voice -> !voice.isNetworkConnectionRequired())
+                .filter(voice -> !voice.getFeatures().contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED))
+                .min(Comparator.comparing((Voice voice) -> !Locale.KOREA.equals(voice.getLocale()))
+                        .thenComparing(Comparator.comparingInt(Voice::getQuality).reversed())
+                        .thenComparing(Voice::getName))
+                .orElse(null);
+        return korean != null && engine.setVoice(korean) == TextToSpeech.SUCCESS;
     }
 
     boolean isPlaying() {

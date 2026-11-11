@@ -13,7 +13,10 @@ dependencyResolutionManagement {
         mavenCentral()
         exclusiveContent {
             forRepository { maven { url 'https://nexus-playground.pleos.ai/repository/maven-releases/' } }
-            filter { includeGroup 'ai.pleos.playground' }
+            filter {
+                includeGroup 'ai.pleos.playground'
+                includeModule 'ai.pleos.playground.security', 'universal-access'
+            }
         }
     }
 }

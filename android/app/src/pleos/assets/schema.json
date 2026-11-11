@@ -1,0 +1,35 @@
+{
+  "packageName": "com.beforearrival.briefing",
+  "appDescription": "Play a personalized commute briefing with a queue of short spoken topics.",
+  "invokeWord": "도착 전에",
+  "version": "0.1",
+  "actionCalls": [
+    {
+      "type": "function",
+      "function": {
+        "name": "NEXT_BRIEFING_TOPIC",
+        "description": "Skip the current commute briefing topic and move to the next topic in the active queue.",
+        "parameters": {"type": "object", "properties": {}, "required": []},
+        "component": "service"
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "PAUSE_COMMUTE_BRIEFING",
+        "description": "Pause the current commute briefing and remember the playback position.",
+        "parameters": {"type": "object", "properties": {}, "required": []},
+        "component": "service"
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "RESUME_COMMUTE_BRIEFING",
+        "description": "Resume the active commute briefing from its paused position.",
+        "parameters": {"type": "object", "properties": {}, "required": []},
+        "component": "service"
+      }
+    }
+  ]
+}

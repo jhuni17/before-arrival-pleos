@@ -27,7 +27,7 @@ final class NavigationRouteInput implements RouteInput {
         return accepting && token == generation;
     }
 
-    // Only normalized, documented durations belong here; never raw SDK numbers.
+    // Accept normalized durations only, after validating the SDK values at the connection boundary.
     void destination(long token, Duration remaining, Instant observedAt) {
         if (!isCurrent(token)) return;
         if (remaining == null || remaining.isNegative()) {

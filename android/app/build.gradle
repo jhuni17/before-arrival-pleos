@@ -21,6 +21,16 @@ android {
         pleos { dimension 'route' }
     }
 
+    buildFeatures { buildConfig true }
+    buildTypes {
+        debug {
+            def comparison = providers.gradleProperty('ttsComparison').getOrElse('off')
+            if (!(comparison in ['off', 'baseline', 'candidate'])) throw new GradleException('ttsComparison must be off, baseline or candidate')
+            buildConfigField 'String', 'TTS_COMPARISON', '"' + comparison + '"'
+        }
+        release { buildConfigField 'String', 'TTS_COMPARISON', '"off"' }
+    }
+
     testOptions { unitTests.includeAndroidResources = true }
     sourceSets { main.assets.srcDirs += ['../../shared'] }
 
@@ -38,6 +48,7 @@ dependencies {
     testImplementation "junit:junit:4.13.2"
     testImplementation "org.robolectric:robolectric:4.16.1"
     pleosImplementation "ai.pleos.playground:NaviHelper:3.0.5"
+    pleosImplementation "ai.pleos.playground:TextToSpeech:3.3.1"
 }
 
 // Use the same session proxy/trust configuration for the Robolectric test JVM.

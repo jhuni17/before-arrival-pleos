@@ -1,0 +1,85 @@
+name: Pleos candidate build
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pleos-emulator-validation-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  pleos-build:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'codex/pleos-emulator-verification'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build Pleos APKs and run submission regressions
+        shell: bash
+        working-directory: android
+        run: |
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -r "$ANDROID_HOME/platforms/android-35/android.jar"
+          mkdir -p ../pleos-build-evidence
+          printf '%s\n' "$CANDIDATE_SHA" > ../pleos-build-evidence/source-sha.txt
+          (cd .. && git ls-files -z -- android shared | xargs -0 sha256sum) > ../pleos-build-evidence/input-sha256.txt
+          cat > "$RUNNER_TEMP/unsigned-pleos.gradle" <<'GRADLE'
+          gradle.beforeProject { project ->
+              project.pluginManager.withPlugin('com.android.application') {
+                  project.extensions.getByName('androidComponents').finalizeDsl { android ->
+                      android.buildTypes.getByName('debug').signingConfig = null
+                  }
+              }
+          }
+          GRADLE
+          bash ./gradlew --no-daemon -Pandroid.builder.sdkDownload=false \
+            --init-script "$RUNNER_TEMP/unsigned-pleos.gradle" \
+            :app:assemblePleosDebug :app:assemblePleosRelease :app:testSampleDebugUnitTest \
+            --tests 'com.beforearrival.briefing.NaviTimeContractTest' \
+            --tests 'com.beforearrival.briefing.CatalogTest' 2>&1 | tee ../pleos-build-evidence/gradle.log
+          apk=app/build/outputs/apk/pleos/debug/app-pleos-debug-unsigned.apk
+          test -s "$apk"
+          cp "$apk" ../pleos-build-evidence/
+          (cd ../pleos-build-evidence && sha256sum app-pleos-debug-unsigned.apk > apk-sha256.txt)
+          release=app/build/outputs/apk/pleos/release/app-pleos-release-unsigned.apk
+          test -s "$release"
+          sha256sum "$release" > ../pleos-build-evidence/unsigned-release-sha256.txt
+          cp -r app/build/test-results/testSampleDebugUnitTest ../pleos-build-evidence/
+      - name: Verify checked-in signed release
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd apk && sha256sum --strict --check SHA256SUMS)
+          apk='apk/최재훈_도착전에_release.apk'
+          tools="$ANDROID_HOME/build-tools/35.0.0"
+          "$tools/apksigner" verify --verbose --print-certs "$apk" | tee pleos-build-evidence/release-signature.txt
+          grep -Fx 'Verified using v3 scheme (APK Signature Scheme v3): true' pleos-build-evidence/release-signature.txt
+          "$tools/aapt" dump badging "$apk" > pleos-build-evidence/release-badging.txt
+          grep -q "^package: name='com.beforearrival.briefing'" pleos-build-evidence/release-badging.txt
+          if grep -q '^application-debuggable' pleos-build-evidence/release-badging.txt; then exit 1; fi
+          release=android/app/build/outputs/apk/pleos/release/app-pleos-release-unsigned.apk
+          unzip -p "$apk" assets/release-sources.json > "$RUNNER_TEMP/submitted-sources.json"
+          unzip -p "$release" assets/release-sources.json > "$RUNNER_TEMP/rebuilt-sources.json"
+          cmp "$RUNNER_TEMP/submitted-sources.json" "$RUNNER_TEMP/rebuilt-sources.json"
+      - name: Upload Pleos build evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: pleos-build-${{ github.event.pull_request.head.sha }}
+          path: pleos-build-evidence/
+          retention-days: 7
+          if-no-files-found: error

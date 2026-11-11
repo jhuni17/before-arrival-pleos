@@ -21,9 +21,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.Shadows;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
+import org.robolectric.annotation.GraphicsMode;
 import org.robolectric.util.ReflectionHelpers;
 
 /** Injects UX state in JVM only; does not impersonate a real CarUxRestrictions callback. */
@@ -38,6 +40,44 @@ public class MainActivityTest {
         activity = controller.get();
     }
     @After public void tearDown() { controller.pause().stop().destroy(); }
+
+    @Test public void newsTitlePrecedesCompactMetadataAtNarrowAndExpandedWidths() {
+        setAccessOnly(AccessPolicy.State.PARKED_USE_ALLOWED);
+        LinearLayout panel = field("newsPanel");
+        TextView title = field("nextItem"), metadata = field("firstContext");
+        assertEquals("소식", ((TextView) panel.getChildAt(0)).getText().toString());
+        assertTrue(panel.indexOfChild(title) < panel.indexOfChild(metadata));
+        for (int width : new int[] {320, 390, 960}) {
+            View content = field("content");
+            content.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+            content.layout(0, 0, width, content.getMeasuredHeight());
+            assertTrue(title.getMeasuredWidth() > 0);
+            assertNull(title.getEllipsize());
+            assertFalse(metadata.getText().toString().contains("https://"));
+            ((Button) field("detailsToggle")).performClick();
+            assertEquals(View.VISIBLE, ((View) field("expandedDetails")).getVisibility());
+            ((Button) field("detailsToggle")).performClick();
+        }
+    }
+
+    @Test public void ordinaryButtonSubmitsSelectedPlanToMediaWithoutFixture() {
+        org.junit.Assume.assumeTrue(ComparisonFactory.productionBackend());
+        org.junit.Assume.assumeTrue("off".equals(BuildConfig.TTS_COMPARISON));
+        setAccessOnly(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ReflectionHelpers.setField(activity, "liveMode", false);
+        ReflectionHelpers.setField(activity, "routeInput", new SampleRouteInput());
+        ReflectionHelpers.callInstanceMethod(activity, "render");
+        assertTrue((Boolean) field("vehicleMedia"));
+        assertNull(field("speech"));
+        ContentCatalog.Plan plan = field("plan");
+        ((Button) field("listen")).performClick();
+        Object pending = ReflectionHelpers.getStaticField(BriefingMediaService.class, "pending");
+        assertNotNull(pending);
+        assertSame(plan, ReflectionHelpers.getField(pending, "plan"));
+        assertFalse(ComparisonFixture.enabled(activity));
+        BriefingMediaService.stop();
+    }
 
     @Test public void unknownAndRestrictedHideControlsAndCloseDialog() {
         LinearLayout content = field("content");
@@ -63,11 +103,11 @@ public class MainActivityTest {
         setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
         TextView summary = field("summary");
         TextView next = field("nextItem");
-        assertEquals("듣기 예산 45초 · 3건 약 32초", summary.getText().toString());
+        assertEquals("듣기 예산 45초\n3건 약 32초", summary.getText().toString());
         assertEquals("이번 주말, 협동 모드가 열려요", next.getText().toString());
         Button shortTrip = field("etaShort");
         shortTrip.performClick();
-        assertEquals("듣기 예산 12초 · 1건 약 8초", summary.getText().toString());
+        assertEquals("듣기 예산 12초\n1건 약 8초", summary.getText().toString());
         assertEquals("9시 팀 회의가 3층으로 바뀌었어요", next.getText().toString());
         ContentCatalog catalog = field("catalog");
         catalog.move("sample-community", -1); catalog.move("sample-community", -1);
@@ -87,12 +127,328 @@ public class MainActivityTest {
         Button routeMode = field("routeMode");
         routeMode.performClick();
         TextView eta = field("eta");
-        assertEquals("도착 시간 미확인", eta.getText().toString());
+        assertEquals("ETA 미확인", eta.getText().toString());
         Button listen = field("listen");
         assertFalse(listen.isEnabled());
         RouteInput input = field("routeInput");
         assertEquals(RouteInput.Source.NAVI_HELPER, input.snapshot().source);
         assertTrue(input.snapshot().remainingSeconds.isEmpty());
+    }
+
+    @Test public void firstGroupSharesEtaTitleAndPlaybackForSampleAndLiveReady() {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        TextView eta = field("eta"), next = field("nextItem");
+        Button listen = field("listen"), reconnect = field("reconnect");
+        assertSame(((View) eta.getParent()).getParent(), ((View) next.getParent()).getParent());
+        assertSame(next.getParent(), listen.getParent());
+        assertTrue(((TextView) field("routeLabel")).getText().toString().contains("샘플"));
+        assertEquals(View.VISIBLE, listen.getVisibility());
+        assertEquals(View.GONE, reconnect.getVisibility());
+        assertTrue(listen.isEnabled());
+        RouteInput.Snapshot ready = new RouteInput.Snapshot(java.util.OptionalLong.of(1080),
+                java.time.Instant.parse("2026-11-05T00:00:00Z"),
+                RouteInput.Source.NAVI_HELPER, "실제 경로 · 테스트 입력");
+        ReflectionHelpers.setField(activity, "liveMode", true);
+        ReflectionHelpers.setField(activity, "routeInput", (RouteInput) () -> ready);
+        ReflectionHelpers.callInstanceMethod(activity, "render");
+        assertEquals("18분", eta.getText().toString());
+        assertEquals(View.VISIBLE, listen.getVisibility());
+        assertTrue(listen.isEnabled());
+        assertTrue(((TextView) field("routeLabel")).getText().toString().contains("실제 ETA"));
+        assertNotSame(next.getParent(), ((Button) field("transcriptButton")).getParent());
+        next.setText("매우 긴 한국어 소식 제목을 확대된 글자로도 여러 줄에 걸쳐 확인할 수 있어야 해요");
+        assertEquals(Integer.MAX_VALUE, next.getMaxLines());
+        assertNull(next.getEllipsize());
+        assertEquals(ViewGroup.LayoutParams.WRAP_CONTENT, next.getLayoutParams().height);
+    }
+
+    @Test public void overviewKeepsOnlyEssentialCopyAndNames() {
+        setAccessOnly(AccessPolicy.State.PARKED_USE_ALLOWED);
+        LinearLayout overview = field("overview");
+        for (TextView text : descendants((View) field("content"), TextView.class)) {
+            assertFalse("app-authored sample UI has no middle-dot separators: " + text.getText(),
+                    text.getText().toString().contains("\u00b7"));
+        }
+        assertEquals("도착까지", ((TextView) field("accessLabel")).getText().toString());
+        TextView title = field("nextItem");
+        assertEquals("첫 소식\n" + title.getText(), title.getContentDescription().toString());
+        assertEquals(3, ((ViewGroup) field("routePanel")).getChildCount());
+        assertEquals(5, ((ViewGroup) field("newsPanel")).getChildCount());
+        assertFalse(descendants(overview, TextView.class).stream().anyMatch(view ->
+                view.getText().toString().equals("첫 소식")));
+        Button listen = field("listen");
+        assertEquals("브리핑 듣기", listen.getText().toString());
+        assertTrue(listen.isImportantForAccessibility());
+        assertTrue(listen.isEnabled());
+    }
+
+    @Test public void overviewShowsPurposeAndCatalogIdentityWithoutInventingGame() throws Exception {
+        setAccessOnly(AccessPolicy.State.PARKED_USE_ALLOWED);
+        assertTrue(descendants((View) field("content"), TextView.class).stream()
+                .anyMatch(view -> view.getText().toString().equals("맞춤 출근 브리핑")));
+        TextView context = field("firstContext");
+        assertEquals("게임 / 게임 패치 예시 / 예시", context.getText().toString());
+        ContentCatalog catalog = field("catalog");
+        for (ContentCatalog.Source source : catalog.sources) source.enabled = false;
+        ContentCatalog.Source official = catalog.add("리그 오브 레전드", "lol",
+                "https://www.leagueoflegends.com/ko-kr/news/game-updates/");
+        ReflectionHelpers.callInstanceMethod(activity, "render");
+        assertEquals("게임 / 리그 오브 레전드 패치 / 공식 스냅샷", context.getText().toString());
+        ContentCatalog.Plan plan = field("plan");
+        assertEquals(official.items.get(0).title, ((TextView) field("nextItem")).getText().toString());
+        assertFalse(context.getText().toString().contains("최신"));
+        assertEquals(official.items.get(0).originalUrl, plan.selected.get(0).originalUrl);
+    }
+
+    @Test public void officialSnapshotsShrinkFromThreeToTwoWithoutChangingSources() throws Exception {
+        setAccessOnly(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ContentCatalog catalog = field("catalog");
+        for (ContentCatalog.Source source : catalog.sources) source.enabled = false;
+        catalog.add("리그 오브 레전드 패치", "lol", "https://www.leagueoflegends.com/ko-kr/news/game-updates/");
+        catalog.add("발로란트 패치", "valorant", "https://playvalorant.com/ko-kr/news/game-updates/");
+        catalog.add("메이플스토리 업데이트", "maple", "https://maplestory.nexon.com/news/update");
+        for (int minutes : new int[] {32, 5}) {
+            RouteInput.Snapshot route = new RouteInput.Snapshot(java.util.OptionalLong.of(minutes * 60),
+                    java.time.Instant.parse("2026-11-05T00:00:00Z"), RouteInput.Source.NAVI_HELPER, "JVM fixture");
+            ReflectionHelpers.setField(activity, "routeInput", (RouteInput) () -> route);
+            ReflectionHelpers.callInstanceMethod(activity, "render");
+            ContentCatalog.Plan plan = field("plan");
+            assertEquals(minutes == 32 ? 3 : 2, plan.selected.size());
+            assertEquals(minutes == 32 ? 0 : 1, plan.deferred.size());
+            assertTrue(((TextView) field("planExplanation")).getText().toString()
+                    .contains("약 " + plan.selectedSeconds + "초"));
+        }
+    }
+
+    @Test public void visualizationTracksActualPlanForEtaUnknownEmptyAndSelection() {
+        setAccessOnly(AccessPolicy.State.PARKED_USE_ALLOWED);
+        for (int seconds : new int[] {1920, 240, 0, -1}) {
+            RouteInput.Snapshot route = new RouteInput.Snapshot(seconds < 0 ? java.util.OptionalLong.empty()
+                    : java.util.OptionalLong.of(seconds), java.time.Instant.parse("2026-11-05T00:00:00Z"),
+                    RouteInput.Source.NAVI_HELPER, "JVM fixture");
+            ReflectionHelpers.setField(activity, "routeInput", (RouteInput) () -> route);
+            ReflectionHelpers.callInstanceMethod(activity, "render");
+            ContentCatalog.Plan plan = field("plan");
+            LinearLayout blocks = field("planBlocks");
+            assertEquals((plan.selected.isEmpty() ? 0 : 1) + (plan.deferred.isEmpty() ? 0 : 1), blocks.getChildCount());
+            int index = 0;
+            for (List<ContentCatalog.Item> items : java.util.Arrays.asList(plan.selected, plan.deferred)) {
+                if (items.isEmpty()) continue;
+                String description = blocks.getChildAt(index++).getContentDescription().toString();
+                int previous = -1;
+                for (ContentCatalog.Item item : items) {
+                    int position = description.indexOf(item.title);
+                    assertTrue(position > previous);
+                    previous = position;
+                }
+            }
+            String explanation = ((TextView) field("planExplanation")).getText().toString();
+            if (seconds < 0) assertTrue(explanation.contains("ETA 미확인"));
+            else assertTrue(explanation.contains("약 " + plan.selectedSeconds + "초"));
+        }
+        ContentCatalog catalog = field("catalog");
+        for (ContentCatalog.Source source : catalog.sources) source.enabled = false;
+        ReflectionHelpers.setField(activity, "routeInput", new SampleRouteInput());
+        ReflectionHelpers.callInstanceMethod(activity, "render");
+        assertEquals(0, ((LinearLayout) field("planBlocks")).getChildCount());
+        assertTrue(((TextView) field("planExplanation")).getText().toString().contains("편성할 소식이 없어요"));
+    }
+
+    @Test public void parkedDetailsStartClosedAndHideAccessibilityAndFocus() {
+        setAccessOnly(AccessPolicy.State.PARKED_USE_ALLOWED);
+        LinearLayout details = field("expandedDetails");
+        Button toggle = field("detailsToggle");
+        for (int width : new int[] {480, 1280}) {
+            ReflectionHelpers.callInstanceMethod(activity, "arrangeOverview",
+                    ReflectionHelpers.ClassParameter.from(int.class, width));
+            assertEquals(View.GONE, details.getVisibility());
+            assertEquals(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS,
+                    details.getImportantForAccessibility());
+            assertEquals(ViewGroup.FOCUS_BLOCK_DESCENDANTS, details.getDescendantFocusability());
+            ArrayList<View> focusable = new ArrayList<>();
+            details.addFocusables(focusable, View.FOCUS_FORWARD);
+            assertTrue(focusable.isEmpty());
+            for (String name : new String[] {"summary", "briefingRows", "sourceRows", "savedRows"}) {
+                View child = field(name);
+                assertFalse(child.isShown());
+                assertTrue(descendants(details, View.class).contains(child));
+            }
+            assertEquals("상세 보기", toggle.getText().toString());
+            assertTrue(((View) field("eta")).isShown());
+            assertTrue(((View) field("nextItem")).isShown());
+            assertTrue(((View) field("listen")).isShown());
+            toggle.performClick();
+            assertEquals(View.VISIBLE, details.getVisibility());
+            assertEquals(View.IMPORTANT_FOR_ACCESSIBILITY_AUTO, details.getImportantForAccessibility());
+            assertEquals(ViewGroup.FOCUS_BEFORE_DESCENDANTS, details.getDescendantFocusability());
+            ((Button) field("etaShort")).performClick();
+            assertEquals("4분", ((TextView) field("eta")).getText().toString());
+            assertTrue(((View) field("sourceRows")).isShown());
+            assertTrue(((View) field("savedRows")).isShown());
+            toggle.performClick();
+            assertEquals(View.GONE, details.getVisibility());
+        }
+    }
+
+    @Test public void restrictionsCloseDetailsAndRejectRetainedToggle() {
+        for (AccessPolicy.State blocked : new AccessPolicy.State[] {
+                AccessPolicy.State.RESTRICTED, AccessPolicy.State.UNKNOWN}) {
+            setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+            assertEquals(View.VISIBLE, ((View) field("expandedDetails")).getVisibility());
+            setAccessOnly(blocked);
+            Button toggle = field("detailsToggle");
+            toggle.performClick();
+            assertFalse(toggle.isEnabled());
+            assertEquals(View.GONE, ((View) field("content")).getVisibility());
+            assertEquals(View.GONE, ((View) field("expandedDetails")).getVisibility());
+            assertFalse(((TextView) field("restrictionNotice")).getText().toString().contains("\u00b7"));
+            setAccessOnly(AccessPolicy.State.PARKED_USE_ALLOWED);
+            assertEquals(View.GONE, ((View) field("expandedDetails")).getVisibility());
+        }
+    }
+
+    @Test public void externalMiddleDotsSurviveSavedRowsAndDetail() throws Exception {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        ContentCatalog catalog = field("catalog");
+        ContentCatalog.Item item = new ContentCatalog.Item(new org.json.JSONObject()
+                .put("id", "external-dot").put("sourceId", catalog.sources.get(0).id)
+                .put("title", "외부 제목 · 원문").put("summary", "외부 요약 · 원문")
+                .put("provenance", "official_snapshot"));
+        catalog.toggleSaved(item);
+        ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
+        assertTrue(descendants((View) field("savedRows"), Button.class).stream()
+                .anyMatch(view -> view.getText().toString().startsWith(item.title + "\n")));
+        showDetail(item);
+        AlertDialog dialog = field("activeDialog");
+        assertTrue(descendants(dialog.getWindow().getDecorView(), TextView.class).stream()
+                .anyMatch(view -> view.getText().toString().equals(item.title)));
+        assertTrue(descendants(dialog.getWindow().getDecorView(), TextView.class).stream()
+                .anyMatch(view -> view.getText().toString().startsWith(item.summary + "\n\n")));
+    }
+
+    @Test public void movedReconnectIsUniqueAndRetainsLiveAndInteractionGuards() {
+        setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
+        Button reconnect = field("reconnect");
+        LiveRouteSession session = field("navigationRoute");
+        RouteInput.Snapshot before = session.snapshot();
+        reconnect.performClick(); // Retained hidden control must still reject sample mode.
+        assertSame(before, session.snapshot());
+        ((Button) field("routeMode")).performClick();
+        assertEquals(View.VISIBLE, reconnect.getVisibility());
+        assertTrue(reconnect.isEnabled());
+        assertSame(((TextView) field("nextItem")).getParent(), reconnect.getParent());
+        assertEquals(View.GONE, ((Button) field("listen")).getVisibility());
+        assertEquals(View.GONE, ((Button) field("transcriptButton")).getVisibility());
+        assertEquals(activity.getString(R.string.route_reconnect_hint),
+                ((TextView) field("summary")).getText().toString());
+        long count = descendants((View) field("content"), Button.class).stream()
+                .filter(button -> button.getText().toString().equals(activity.getString(R.string.route_reconnect))).count();
+        assertEquals(1, count);
+        before = session.snapshot();
+        reconnect.performClick();
+        assertNotSame(before, session.snapshot());
+        for (AccessPolicy.State state : new AccessPolicy.State[] {
+                AccessPolicy.State.RESTRICTED, AccessPolicy.State.UNKNOWN}) {
+            setAccess(state);
+            before = session.snapshot();
+            reconnect.performClick();
+            assertSame(before, session.snapshot());
+            assertEquals(View.GONE, ((View) field("content")).getVisibility());
+        }
+        assertTrue((Boolean) field("liveMode"));
+        assertEquals(RouteInput.Source.NAVI_HELPER, session.snapshot().source);
+    }
+
+    /** Synthetic app-window layout only; not a Pleos emulator or SDK callback. */
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Test public void overviewReflowsWithinInsetSafeWindowWithLargeKoreanText() {
+        float originalFontScale = RuntimeEnvironment.getApplication()
+                .getResources().getConfiguration().fontScale;
+        try {
+            String[] primaryNames = {"eta", "nextItem", "listen", "detailsToggle"};
+            float[] normalSizes = new float[primaryNames.length];
+            float[] sizesSp = {40, 28, 20, 20};
+            for (int i = 0; i < primaryNames.length; i++) {
+                normalSizes[i] = ((TextView) field(primaryNames[i])).getTextSize();
+            }
+            MainActivity original = activity;
+            float normalScaledDensity = activity.getResources().getDisplayMetrics().scaledDensity;
+            RuntimeEnvironment.setFontScale(1.3f);
+            android.util.DisplayMetrics metrics = RuntimeEnvironment.getApplication()
+                    .getResources().getDisplayMetrics();
+            assertEquals(1.3f, RuntimeEnvironment.getApplication()
+                    .getResources().getConfiguration().fontScale, 0.001f);
+            assertTrue("effective display metrics enlarge SP", metrics.scaledDensity > normalScaledDensity);
+            // Recreate after updating Robolectric's environment so new views consume scaled metrics.
+            controller.recreate();
+            activity = controller.get();
+            assertNotSame("font scale change recreates the screen", original, activity);
+            assertEquals(1.3f, activity.getResources().getConfiguration().fontScale, 0.001f);
+            for (int i = 0; i < primaryNames.length; i++) {
+                TextView view = field(primaryNames[i]);
+                assertEquals(primaryNames[i] + " uses configuration font scale",
+                        android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP,
+                                sizesSp[i], activity.getResources().getDisplayMetrics()),
+                        view.getTextSize(), 0.5f);
+            }
+            // Android 35 scales SP nonlinearly: 40sp ETA may stay unchanged at 1.3x.
+            assertTrue("listen is enlarged", ((TextView) field("listen")).getTextSize() > normalSizes[2]);
+            setAccessOnly(AccessPolicy.State.PARKED_USE_ALLOWED);
+            assertEquals(View.GONE, ((View) field("expandedDetails")).getVisibility());
+            View root = ((ViewGroup) activity.findViewById(android.R.id.content)).getChildAt(0);
+            float density = activity.getResources().getDisplayMetrics().density;
+            TextView title = field("nextItem");
+            title.setText("긴 한국어 제목 · 오늘 아침 도착 전에 확인할 지역 소식과 회의 장소 변경 안내");
+            root.dispatchApplyWindowInsets(new android.view.WindowInsets.Builder()
+                    .setInsets(android.view.WindowInsets.Type.systemBars(), android.graphics.Insets.of(
+                            (int) (32 * density), (int) (24 * density), (int) (48 * density), (int) (24 * density)))
+                    .build());
+            for (int width : new int[]{1400, 420, 1200, 420}) {
+                for (int pass = 0; pass < 4; pass++) {
+                    root.measure(View.MeasureSpec.makeMeasureSpec((int) (width * density), View.MeasureSpec.EXACTLY),
+                            View.MeasureSpec.makeMeasureSpec((int) (900 * density), View.MeasureSpec.EXACTLY));
+                    root.layout(0, 0, root.getMeasuredWidth(), root.getMeasuredHeight());
+                }
+                LinearLayout overview = field("overview");
+                assertEquals(width >= 1200 ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL, overview.getOrientation());
+                assertEquals(root.getWidth() - root.getPaddingLeft() - root.getPaddingRight(),
+                        ((View) field("content")).getWidth());
+                assertEquals((int) (32 * density), root.getPaddingLeft());
+                assertEquals((int) (48 * density), root.getPaddingRight());
+                assertNull(title.getEllipsize());
+                if (width == 420) assertTrue(title.getLayout().getLineCount() > 1);
+                assertEquals(0, title.getLayout().getEllipsisCount(title.getLineCount() - 1));
+                assertTrue(title.getHeight() >= title.getLayout().getHeight());
+                for (String name : primaryNames) {
+                    TextView view = field(name);
+                    assertTrue(name, view.getWidth() > 0);
+                    android.text.Layout text = view.getLayout();
+                    assertNotNull(name + " text layout", text);
+                    assertEquals(name + " contains all characters", view.getText().length(),
+                            text.getLineEnd(text.getLineCount() - 1));
+                    assertTrue(name + " text fits height", text.getHeight() <= view.getHeight()
+                            - view.getCompoundPaddingTop() - view.getCompoundPaddingBottom());
+                    for (int line = 0; line < text.getLineCount(); line++) {
+                        assertEquals(name + " has no ellipsis", 0, text.getEllipsisCount(line));
+                        assertTrue(name + " line fits width", text.getLineWidth(line) <= text.getWidth() + 1);
+                    }
+                    android.graphics.Rect bounds = new android.graphics.Rect();
+                    view.getDrawingRect(bounds);
+                    ((ViewGroup) root).offsetDescendantRectToMyCoords(view, bounds);
+                    assertTrue(name + " clears left inset", bounds.left >= root.getPaddingLeft());
+                    assertTrue(name + " clears right inset", bounds.right <= root.getWidth() - root.getPaddingRight());
+                    assertTrue(name + " clears top inset", bounds.top >= root.getPaddingTop());
+                    assertTrue(name + " fits first viewport", bounds.bottom <= root.getHeight() - root.getPaddingBottom());
+                }
+                Button listen = field("listen");
+                assertSame(((View) field("nextItem")).getParent(), listen.getParent());
+                assertNotSame(listen.getParent(), ((View) field("summary")).getParent());
+                assertTrue(title.isAccessibilityHeading());
+                assertEquals(View.GONE, ((View) field("reconnect")).getVisibility());
+            }
+        } finally {
+            RuntimeEnvironment.setFontScale(originalFontScale);
+        }
     }
 
     @Test public void savedItemSurvivesActivityRecreation() {
@@ -107,7 +463,7 @@ public class MainActivityTest {
         activity = controller.get();
         setAccess(AccessPolicy.State.PARKED_USE_ALLOWED);
         TextView heading = field("savedHeading");
-        assertEquals("도착해서 보기 · 1 · 미확인 1", heading.getText().toString());
+        assertEquals("도착해서 보기\n1\n미확인 1", heading.getText().toString());
         LinearLayout savedRows = field("savedRows");
         ((Button) savedRows.getChildAt(0)).performClick();
         AlertDialog dialog = field("activeDialog");
@@ -336,7 +692,7 @@ public class MainActivityTest {
         Button confirm = openConfirmation();
         assertFalse(catalog.isConfirmed(item)); // Opening details does not confirm.
         confirm.performClick();
-        assertEquals("저장 실패 · 다시 시도", confirm.getText().toString());
+        assertEquals("저장 실패\n다시 시도", confirm.getText().toString());
         assertEquals(1, catalog.unreadCount());
         ReflectionHelpers.setField(activity, "preferences", preferences);
         confirm.performClick();
@@ -386,12 +742,12 @@ public class MainActivityTest {
         int row = 0;
         for (ContentCatalog.Item item : items) if (!catalog.isConfirmed(item))
             assertEquals(savedRowText(item), ((Button) rows.getChildAt(row++)).getText().toString());
-        assertEquals("도착해서 보기 · " + items.size() + " · 미확인 " + (items.size() - 1),
+        assertEquals("도착해서 보기\n" + items.size() + "\n미확인 " + (items.size() - 1),
                 ((TextView) field("savedHeading")).getText().toString());
         openConfirmation();
         AlertDialog detail = field("activeDialog");
         assertTrue(descendants(detail.getWindow().getDecorView(), TextView.class).stream()
-                .anyMatch(view -> view.getText().toString().contains(ContentCatalog.LOCAL_NOTICE)));
+                .anyMatch(view -> view.getText().toString().contains(ContentCatalog.LOCAL_NOTICE.replace(" \u00b7 ", "\n"))));
         detail.dismiss();
         assertEquals(items.size() - 1, catalog.unreadCount());
         ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
@@ -423,7 +779,7 @@ public class MainActivityTest {
         assertEquals(2, rows.getChildCount());
         for (int i = 0; i < 2; i++)
             assertEquals(savedRowText(items.get(i + 1)), ((Button) rows.getChildAt(i)).getText().toString());
-        assertEquals("도착해서 보기 · " + items.size() + " · 미확인 " + (items.size() - 2),
+        assertEquals("도착해서 보기\n" + items.size() + "\n미확인 " + (items.size() - 2),
                 ((TextView) field("savedHeading")).getText().toString());
         ((Button) rows.getChildAt(0)).performClick();
         assertDetail(items.get(1));
@@ -466,7 +822,7 @@ public class MainActivityTest {
         AlertDialog detail = field("activeDialog");
         ReflectionHelpers.setField(activity, "preferences", CatalogTest.failingCommits(preferences));
         revert.performClick();
-        assertEquals("저장 실패 · 다시 시도", revert.getText().toString());
+        assertEquals("저장 실패\n다시 시도", revert.getText().toString());
         assertSame(detail, field("activeDialog")); assertTrue(detail.isShowing());
         assertDetail(item);
         assertTrue(catalog.isConfirmed(item)); assertEquals(1, rows.getChildCount());
@@ -519,14 +875,14 @@ public class MainActivityTest {
         ReflectionHelpers.setField(activity, "preferences", CatalogTest.failingCommits(preferences));
         Button confirm = openConfirmation();
         confirm.performClick();
-        assertEquals("저장 실패 · 다시 시도", confirm.getText().toString());
+        assertEquals("저장 실패\n다시 시도", confirm.getText().toString());
         assertEquals(1, rows.getChildCount()); assertFalse(catalog.isConfirmed(item));
-        assertEquals("도착해서 보기 · 1 · 미확인 1", ((TextView) field("savedHeading")).getText().toString());
+        assertEquals("도착해서 보기\n1\n미확인 1", ((TextView) field("savedHeading")).getText().toString());
         ReflectionHelpers.setField(activity, "preferences", preferences);
         confirm.performClick();
         assertTrue(catalog.isConfirmed(item)); assertEquals(0, catalog.unreadCount());
         assertEquals("미확인 소식이 없어요.", ((TextView) rows.getChildAt(0)).getText().toString());
-        assertEquals("도착해서 보기 · 1 · 미확인 0", ((TextView) field("savedHeading")).getText().toString());
+        assertEquals("도착해서 보기\n1\n미확인 0", ((TextView) field("savedHeading")).getText().toString());
         ((Button) rows.getChildAt(1)).performClick();
         assertTrue(((Button) field("savedAll")).isSelected());
         openConfirmation().performClick();
@@ -730,7 +1086,7 @@ public class MainActivityTest {
     private void assertFirstUnreadPreview(ContentCatalog.Item expected) {
         assertSavedFilterCounts();
         TextView preview = field("savedFirstUnreadPreview");
-        assertEquals(expected == null ? "" : "첫 미확인 · " + expected.title,
+        assertEquals(expected == null ? "" : "첫 미확인\n" + expected.title,
                 preview.getText().toString());
         assertEquals(expected == null ? View.GONE : View.VISIBLE, preview.getVisibility());
         assertFalse(preview.isClickable());
@@ -993,8 +1349,8 @@ public class MainActivityTest {
                     CatalogTest.failingCommits(preferences, throwsAfterWrite));
             retry.performClick();
             assertSavedFilterCounts(items.size(), items.size());
-            assertEquals("저장 실패 · 다시 시도", retry.getText().toString());
-            assertEquals("도착해서 보기 · " + items.size() + " · 미확인 " + items.size(),
+            assertEquals("저장 실패\n다시 시도", retry.getText().toString());
+            assertEquals("도착해서 보기\n" + items.size() + "\n미확인 " + items.size(),
                     ((TextView) field("savedHeading")).getText().toString());
             assertSame(before, field("activeDialog"));
             assertDetail(items.get(0));
@@ -1262,10 +1618,10 @@ public class MainActivityTest {
     private void assertSavedCapacity(int count) {
         assertSavedFilterCounts();
         assertEquals("전체 저장 " + count + "/" + ContentCatalog.SAVED_ITEM_LIMIT
-                + "건 · 추가 저장 가능 " + Math.max(0, ContentCatalog.SAVED_ITEM_LIMIT - count) + "건",
+                + "건\n추가 저장 가능 " + Math.max(0, ContentCatalog.SAVED_ITEM_LIMIT - count) + "건",
                 ((TextView) field("savedCapacity")).getText().toString());
         TextView notice = field("savedCapacityNotice");
-        assertEquals(ContentCatalog.SAVED_CAPACITY_NOTICE, notice.getText().toString());
+        assertEquals(ContentCatalog.SAVED_CAPACITY_NOTICE.replace(" \u00b7 ", "\n"), notice.getText().toString());
         assertEquals(count >= ContentCatalog.SAVED_ITEM_LIMIT ? View.VISIBLE : View.GONE, notice.getVisibility());
         assertTrue(notice.getMaxLines() > 1);
     }
@@ -1294,7 +1650,7 @@ public class MainActivityTest {
         assertTrue(catalog.setConfirmed(last, true, preferences));
         ReflectionHelpers.callInstanceMethod(activity, "renderSaved");
         assertEquals(View.VISIBLE, shortcut.getVisibility());
-        assertEquals("확인 완료 항목 보기 · 전체 2건", shortcut.getText().toString());
+        assertEquals("확인 완료 항목 보기\n전체 2건", shortcut.getText().toString());
         assertEquals(shortcut.getText().toString(), shortcut.getContentDescription().toString());
         assertNull(shortcut.getEllipsize());
         assertEquals(Integer.MAX_VALUE, shortcut.getMaxLines());
@@ -1426,7 +1782,7 @@ public class MainActivityTest {
             for (int i = 0; i < rows.getChildCount(); i++) views.add(rows.getChildAt(i));
             save.performClick();
             assertSavedCapacity(catalog.savedItems.size());
-            assertEquals(ContentCatalog.SAVED_CAPACITY_NOTICE, org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
+            assertEquals(ContentCatalog.SAVED_CAPACITY_NOTICE.replace(" \u00b7 ", "\n"), org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
             assertEquals("저장", save.getText().toString());
             assertEquals(target.title + " 저장", save.getContentDescription().toString());
             assertEquals(before, catalog.savedItems);
@@ -1441,7 +1797,7 @@ public class MainActivityTest {
             for (int i = 0; i < views.size(); i++) assertSame(views.get(i), rows.getChildAt(i));
             assertSame(undo, undoDeletion()); assertSame(confirmation, undoConfirmation());
             undo.performClick();
-            assertEquals(ContentCatalog.SAVED_CAPACITY_NOTICE, undo.getText().toString());
+            assertEquals(ContentCatalog.SAVED_CAPACITY_NOTICE.replace(" \u00b7 ", "\n"), undo.getText().toString());
             assertSame(undo, undoDeletion()); assertEquals(before, catalog.savedItems);
             assertEquals(stored, preferences.getString(ContentCatalog.STORAGE_KEY, null));
             ContentCatalog.Item removed = catalog.savedItems.get(catalog.savedItems.size() - 1);
@@ -1469,7 +1825,7 @@ public class MainActivityTest {
             List<ContentCatalog.Item> afterRetry = new ArrayList<>(catalog.savedItems);
             String storedAfterRetry = preferences.getString(ContentCatalog.STORAGE_KEY, null);
             currentUndo.performClick();
-            assertEquals(ContentCatalog.SAVED_CAPACITY_NOTICE, currentUndo.getText().toString());
+            assertEquals(ContentCatalog.SAVED_CAPACITY_NOTICE.replace(" \u00b7 ", "\n"), currentUndo.getText().toString());
             undo.performClick(); // The previous deletion's callback has expired.
             assertFalse(catalog.isSaved(removed));
             assertTrue(catalog.isSaved(target));
@@ -1524,7 +1880,7 @@ public class MainActivityTest {
             for (boolean throwsAfterWrite : new boolean[]{false, true}) {
                 ReflectionHelpers.setField(activity, "preferences", CatalogTest.failingCommits(preferences, throwsAfterWrite));
                 save.performClick();
-                assertEquals("저장 실패 · 다시 시도", org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
+                assertEquals("저장 실패\n다시 시도", org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
                 assertEquals("저장", save.getText().toString());
                 assertEquals(target.title + " 저장", save.getContentDescription().toString());
                 assertEquals(before, catalog.savedItems); assertFalse(catalog.isSaved(target));
@@ -1548,7 +1904,7 @@ public class MainActivityTest {
             assertSame(target, catalog.savedItems.get(items.size() - 1));
             assertEquals("저장됨", save.getText().toString());
             assertEquals(target.title + " 저장 취소", save.getContentDescription().toString());
-            assertEquals("도착해서 보기 · " + items.size() + " · 미확인 " + (items.size() - 1),
+            assertEquals("도착해서 보기\n" + items.size() + "\n미확인 " + (items.size() - 1),
                     ((TextView) field("savedHeading")).getText().toString());
             assertTrue(((Button) field(filter)).isSelected());
             assertFalse(catalog.isConfirmed(target));
@@ -1666,7 +2022,7 @@ public class MainActivityTest {
             boolean restored) {
         assertTrue(((Button) field(filter)).isSelected());
         int total = restored ? items.size() : items.size() - 1;
-        assertEquals("도착해서 보기 · " + total + " · 미확인 " + (items.size() - 1),
+        assertEquals("도착해서 보기\n" + total + "\n미확인 " + (items.size() - 1),
                 ((TextView) field("savedHeading")).getText().toString());
         assertTrue(((Button) field("savedFirstUnread")).isEnabled());
         assertEquals(View.GONE, ((TextView) field("savedUnreadEmpty")).getVisibility());
@@ -1706,7 +2062,7 @@ public class MainActivityTest {
             assertFalse(((Button) field("savedFirstUnread")).isEnabled());
             assertNull(ReflectionHelpers.callInstanceMethod(activity, "firstUnread"));
             assertFirstUnreadPreview(null);
-            assertEquals("도착해서 보기 · " + (items.size() - 1) + " · 미확인 0",
+            assertEquals("도착해서 보기\n" + (items.size() - 1) + "\n미확인 0",
                     ((TextView) field("savedHeading")).getText().toString());
             undoDeletion().performClick();
             assertEquals(1, catalog.unreadCount());
@@ -1815,7 +2171,7 @@ public class MainActivityTest {
         assertEquals(before, preferences.getAll());
         assertEquals(items, catalog.savedItems);
         assertSame(plan, field("plan"));
-        assertEquals("도착해서 보기 · 3 · 미확인 2",
+        assertEquals("도착해서 보기\n3\n미확인 2",
                 ((TextView) field("savedHeading")).getText().toString());
     }
 
@@ -1982,7 +2338,7 @@ public class MainActivityTest {
             assertEquals("검색 결과가 없어요", ((TextView) rows.getChildAt(0)).getText().toString());
         assertTrue(((TextView) field("savedSearchStatus")).getText().toString()
                 .contains("표시 " + expected.size() + "건"));
-        assertEquals("도착해서 보기 · " + catalog.savedItems.size() + " · 미확인 " + catalog.unreadCount(),
+        assertEquals("도착해서 보기\n" + catalog.savedItems.size() + "\n미확인 " + catalog.unreadCount(),
                 ((TextView) field("savedHeading")).getText().toString());
         assertSavedCapacity(catalog.savedItems.size());
     }
@@ -2105,7 +2461,7 @@ public class MainActivityTest {
         assertSavedFilterCounts();
         AlertDialog dialog = sourceChoices();
         android.widget.ListAdapter adapter = dialog.getListView().getAdapter();
-        assertEquals("전체 출처 · 저장 " + saved + "건 · 미확인 " + unread + "건", adapter.getItem(0).toString());
+        assertEquals("전체 출처\n저장 " + saved + "건\n미확인 " + unread + "건", adapter.getItem(0).toString());
         for (int i = 0; i < catalog.sources.size(); i++) {
             ContentCatalog.Source source = catalog.sources.get(i);
             int sourceSaved = 0, sourceUnread = 0;
@@ -2115,8 +2471,8 @@ public class MainActivityTest {
             }
             String name = source.name;
             if (catalog.sources.stream().filter(other -> other.name.equals(source.name)).count() > 1)
-                name += " · " + source.id;
-            assertEquals(name + " · 저장 " + sourceSaved + "건 · 미확인 " + sourceUnread + "건",
+                name += "\n" + source.id;
+            assertEquals(name + "\n저장 " + sourceSaved + "건\n미확인 " + sourceUnread + "건",
                     adapter.getItem(i + 1).toString());
         }
         dialog.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
@@ -2251,7 +2607,7 @@ public class MainActivityTest {
         boolean playing = ((SpeechPlayback) field("speech")).isPlaying();
         AlertDialog choices = sourceChoices();
         assertEquals(catalog.sources.size() + 1, choices.getListView().getAdapter().getCount());
-        assertEquals("동명 출처 · source-fixture-0 · 저장 2건 · 미확인 1건", choices.getListView().getAdapter()
+        assertEquals("동명 출처\nsource-fixture-0\n저장 2건\n미확인 1건", choices.getListView().getAdapter()
                 .getItem(catalog.sources.size() - 2).toString());
         ReflectionHelpers.callInstanceMethod(activity, "dismissDialog");
         for (int source = -1; source < 3; source++) {
@@ -2373,7 +2729,7 @@ public class MainActivityTest {
         assertNull(field("savedSourceId"));
         assertNull(field("activeDialog"));
         assertEquals(View.GONE, clear.getVisibility());
-        assertEquals("출처 · 전체 출처", ((Button) field("savedSource")).getText().toString());
+        assertEquals("출처\n전체 출처", ((Button) field("savedSource")).getText().toString());
         assertEquals(query, (String) field("savedQuery"));
         assertSame(filter, field("savedFilter"));
         assertSame(plan, field("plan"));
@@ -2628,7 +2984,7 @@ public class MainActivityTest {
             ReflectionHelpers.setField(activity, "preferences",
                     CatalogTest.failingCommits(preferences, throwsAfterWrite));
             action.performClick();
-            assertEquals("저장 실패 · 다시 시도", action.getText().toString());
+            assertEquals("저장 실패\n다시 시도", action.getText().toString());
             assertNull(action.getContentDescription());
             assertSame(dialog, field("activeDialog"));
             assertFalse(catalog.isConfirmed(item));
@@ -2744,7 +3100,7 @@ public class MainActivityTest {
                 .put("id", "blank-fixture").put("name", " "));
         catalog.sources.add(blank);
         String[] kinds = {"demo_sample", "official_snapshot", "official_runtime", "unknown"};
-        String[] labels = {"예시 콘텐츠", "공식 소식 · 스냅샷 자료", "공식 소식 · 직접 갱신 자료", "자료 구분 확인 필요"};
+        String[] labels = {"예시 콘텐츠", "공식 소식\n스냅샷 자료", "공식 소식\n직접 갱신 자료", "자료 구분 확인 필요"};
         for (int i = 0; i < kinds.length; i++) for (boolean timed : new boolean[]{false, true}) {
             String sourceId = i == 0 ? named.id : i == 1 ? blank.id : "missing-fixture";
             ContentCatalog.Item item = new ContentCatalog.Item(new org.json.JSONObject()
@@ -2760,8 +3116,8 @@ public class MainActivityTest {
             for (String filter : new String[]{"savedAll", "savedUnread", "savedConfirmed"}) {
                 ((Button) field(filter)).performClick();
                 showDetail(item);
-                assertMetadata(item, "출처 · " + (i == 0 ? named.name : "출처 확인 필요") + "\n" + labels[i]
-                        + (i == 1 || i == 2 ? "\n가져온 시각(UTC) · "
+                assertMetadata(item, "출처\n" + (i == 0 ? named.name : "출처 확인 필요") + "\n" + labels[i]
+                        + (i == 1 || i == 2 ? "\n가져온 시각(UTC)\n"
                         + (timed ? "2026-01-02T03:04:05Z" : "가져온 시각 미제공") : ""));
                 assertEquals(before, preferences.getAll());
                 assertEquals(order, catalog.savedItems);
@@ -2786,7 +3142,7 @@ public class MainActivityTest {
                 .put("title", saved.title));
         catalog.toggleSaved(sameTitle);
         String expected = saved.json().toString();
-        String metadata = "출처 · " + source.name + "\n공식 소식 · 스냅샷 자료\n가져온 시각(UTC) · 2026-01-02T03:04:05Z";
+        String metadata = "출처\n" + source.name + "\n공식 소식\n스냅샷 자료\n가져온 시각(UTC)\n2026-01-02T03:04:05Z";
         for (boolean failure : new boolean[]{false, true}) {
             assertTrue(catalog.importSnapshot(source.id, new org.json.JSONObject().put("items",
                     new org.json.JSONArray().put(saved.json().put("summary", "갱신 fixture 요약"))).toString(),
@@ -2816,7 +3172,7 @@ public class MainActivityTest {
                 second.performClick();
                 assertDetail(catalog.savedItems.get(1));
                 assertEquals(stored, ((android.content.SharedPreferences) field("preferences")).getAll());
-                assertMetadata(catalog.savedItems.get(1), "출처 · "
+                assertMetadata(catalog.savedItems.get(1), "출처\n"
                         + catalog.source(sameTitle.sourceId).name + "\n예시 콘텐츠");
             }
         }
@@ -2895,7 +3251,7 @@ public class MainActivityTest {
         ContentCatalog catalog = field("catalog");
         ContentCatalog.Source source = catalog.source(item.sourceId);
         String name = source == null || source.name.trim().isEmpty() ? "출처 확인 필요" : source.name;
-        return item.title + (catalog.isConfirmed(item) ? " · 확인 완료" : " · 미확인") + "\n출처 · " + name;
+        return item.title + (catalog.isConfirmed(item) ? "\n확인 완료" : "\n미확인") + "\n출처\n" + name;
     }
 
     private void assertMetadata(ContentCatalog.Item item, String expected) {
@@ -2922,7 +3278,7 @@ public class MainActivityTest {
         AlertDialog dialog = field("activeDialog");
         TextView preview = dialog.findViewById(android.R.id.custom).findViewWithTag("next-unread-preview");
         assertEquals(expected == null ? View.GONE : View.VISIBLE, preview.getVisibility());
-        assertEquals(expected == null ? "" : "다음 미확인 · " + expected.title, preview.getText().toString());
+        assertEquals(expected == null ? "" : "다음 미확인\n" + expected.title, preview.getText().toString());
         assertNull(preview.getEllipsize());
         assertEquals(Integer.MAX_VALUE, preview.getMaxLines());
         assertFalse(preview.isClickable());
@@ -2934,7 +3290,7 @@ public class MainActivityTest {
         List<TextView> texts = descendants(dialog.getWindow().getDecorView(), TextView.class);
         assertTrue(texts.stream().anyMatch(view -> view.getText().toString().equals(item.title)));
         assertTrue(texts.stream().anyMatch(view -> view.getText().toString().equals(item.summary + "\n\n"
-                + (item.originalUrl == null ? "예시 콘텐츠" : item.originalUrl) + "\n\n" + ContentCatalog.LOCAL_NOTICE)));
+                + (item.originalUrl == null ? "예시 콘텐츠" : item.originalUrl) + "\n\n" + ContentCatalog.LOCAL_NOTICE.replace(" \u00b7 ", "\n"))));
         ContentCatalog catalog = field("catalog");
         int index = -1;
         for (int i = 0; i < catalog.savedItems.size(); i++) {
@@ -2943,14 +3299,14 @@ public class MainActivityTest {
         ContentCatalog.Source source = catalog.source(item.sourceId);
         String name = source == null || source.name.trim().isEmpty() ? "출처 확인 필요" : source.name;
         String kind = "demo_sample".equals(item.provenance) ? "예시 콘텐츠"
-                : "official_snapshot".equals(item.provenance) ? "공식 소식 · 스냅샷 자료"
-                : "official_runtime".equals(item.provenance) ? "공식 소식 · 직접 갱신 자료" : "자료 구분 확인 필요";
+                : "official_snapshot".equals(item.provenance) ? "공식 소식\n스냅샷 자료"
+                : "official_runtime".equals(item.provenance) ? "공식 소식\n직접 갱신 자료" : "자료 구분 확인 필요";
         boolean official = "official_snapshot".equals(item.provenance) || "official_runtime".equals(item.provenance);
-        assertMetadata(item, "출처 · " + name + "\n" + kind + (official ? "\n가져온 시각(UTC) · "
+        assertMetadata(item, "출처\n" + name + "\n" + kind + (official ? "\n가져온 시각(UTC)\n"
                 + (item.fetchedAt == null ? "가져온 시각 미제공" : item.fetchedAt.toString()) : ""));
         TextView position = dialog.findViewById(android.R.id.custom).findViewWithTag("saved-detail-position");
         assertEquals("전체 저장 " + catalog.savedItems.size() + "건 중 " + (index + 1)
-                + "번째 · 미확인 " + catalog.unreadCount() + "건", position.getText().toString());
+                + "번째\n미확인 " + catalog.unreadCount() + "건", position.getText().toString());
         assertEquals(catalog.canOpen(item), dialog.getButton(AlertDialog.BUTTON_POSITIVE) != null
                 && dialog.getButton(AlertDialog.BUTTON_POSITIVE).getVisibility() == View.VISIBLE);
     }
@@ -2970,7 +3326,16 @@ public class MainActivityTest {
         return result;
     }
 
+    // Functional tests enter the existing controls through the parked disclosure button.
     private void setAccess(AccessPolicy.State state) {
+        setAccessOnly(state);
+        if (state == AccessPolicy.State.PARKED_USE_ALLOWED
+                && ((View) field("expandedDetails")).getVisibility() == View.GONE) {
+            ((Button) field("detailsToggle")).performClick();
+        }
+    }
+
+    private void setAccessOnly(AccessPolicy.State state) {
         ReflectionHelpers.setField(activity, "restrictionState", state);
         ReflectionHelpers.callInstanceMethod(activity, "renderAccess");
         Shadows.shadowOf(Looper.getMainLooper()).idle();

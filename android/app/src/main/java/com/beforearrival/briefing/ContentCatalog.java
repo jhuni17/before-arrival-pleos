@@ -301,9 +301,12 @@ final class ContentCatalog {
         } catch (RuntimeException failure) { /* The operation remains unsuccessful. */ }
         return false;
     }
+    static int listeningBudget(RouteInput.Snapshot route) {
+        return (int) Math.min(45, Math.max(0, route.remainingSeconds.orElse(0) - 180) / 5);
+    }
+
     Plan plan(RouteInput.Snapshot route) {
-        long seconds = route.remainingSeconds.orElse(0);
-        int budget = (int) Math.min(45, Math.max(0, seconds - 180) / 5);
+        int budget = listeningBudget(route);
         List<Item> candidates = new ArrayList<>(); Set<String> seen = new HashSet<>();
         for (Source source : sources) if (source.enabled) for (Item item : source.items) if (seen.add(item.key())) candidates.add(item);
         candidates.sort((left, right) -> Boolean.compare(right.urgent(route.observedAt), left.urgent(route.observedAt)));
