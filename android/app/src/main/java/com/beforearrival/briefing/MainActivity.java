@@ -133,11 +133,14 @@ public final class MainActivity extends Activity {
         routeInput = liveMode ? navigationRoute : sampleRoute;
         if (state != null) sampleRoute.select(state.getInt("sample_eta", 18));
         preferences = getSharedPreferences("briefing", MODE_PRIVATE);
-        try (InputStream input = getAssets().open("catalog.json")) {
-            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            byte[] chunk = new byte[4096]; int count;
-            while ((count = input.read(chunk)) != -1) bytes.write(chunk, 0, count);
-            catalog = new ContentCatalog(new String(bytes.toByteArray(), StandardCharsets.UTF_8), preferences);
+        try {
+            String defaults = readAsset("catalog.json");
+            if ("pleos".equals(BuildConfig.FLAVOR) && "release".equals(BuildConfig.BUILD_TYPE)) {
+                org.json.JSONObject vehicleCatalog = new org.json.JSONObject(defaults);
+                vehicleCatalog.put("sources", new org.json.JSONArray(readAsset("release-sources.json")));
+                defaults = vehicleCatalog.toString();
+            }
+            catalog = new ContentCatalog(defaults, preferences);
         } catch (Exception error) {
             throw new IllegalStateException("공유 소식 목록을 읽지 못했어요", error);
         }
@@ -145,6 +148,15 @@ public final class MainActivity extends Activity {
         if (!vehicleMedia) speech = new SpeechPlayback(this, this::canInteract, this::renderSpeechStatus);
         render();
         renderAccess();
+    }
+
+    private String readAsset(String name) throws java.io.IOException {
+        try (InputStream input = getAssets().open(name)) {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            byte[] chunk = new byte[4096]; int count;
+            while ((count = input.read(chunk)) != -1) bytes.write(chunk, 0, count);
+            return new String(bytes.toByteArray(), StandardCharsets.UTF_8);
+        }
     }
 
     @Override

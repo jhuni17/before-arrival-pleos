@@ -2,7 +2,6 @@ package com.beforearrival.briefing;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.content.pm.ApplicationInfo;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -103,8 +102,7 @@ final class PleosRouteConnection implements RouteConnection {
             Integer raw = info == null ? null : info.getRemainTime();
             PleosVerificationTrace.record(context,
                     "destination token=" + token + " receivedAt=" + receivedAt + " rawRemainTime=" + raw);
-            boolean debug = (context.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
-            route.destination(token, NaviTimeContract.decode(raw, Build.FINGERPRINT, debug), receivedAt);
+            route.destination(token, NaviTimeContract.decode(raw, Build.FINGERPRINT), receivedAt);
             if (current()) main.postDelayed(poll, 5_000);
         } catch (RuntimeException error) {
             invalidate("유효한 도착 시간 없음");

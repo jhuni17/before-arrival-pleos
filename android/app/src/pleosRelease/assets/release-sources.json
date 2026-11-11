@@ -1,0 +1,98 @@
+[
+  {
+    "id": "sample-schedule",
+    "name": "업무 일정 예시",
+    "provider": "sample",
+    "kind": "schedule",
+    "registrationUrl": null,
+    "status": "demo_sample",
+    "enabled": true,
+    "items": [
+      {
+        "id": "sample-schedule-item",
+        "sourceId": "sample-schedule",
+        "title": "오전 9시 팀 회의 장소가 바뀌었어요",
+        "publishedAt": null,
+        "publishedPrecision": "unknown",
+        "originalUrl": null,
+        "summary": "오전 아홉 시 팀 회의 장소가 삼층 라운지로 바뀌었어요. 회의 자료는 팀 채널에 올려뒀어요. 도착하면 변경된 장소를 확인해 주세요.",
+        "estimatedSeconds": 16,
+        "deadlineAt": null,
+        "provenance": "demo_sample",
+        "fetchedAt": null
+      }
+    ]
+  },
+  {
+    "id": "sample-community",
+    "name": "커뮤니티 예시",
+    "provider": "sample",
+    "kind": "community",
+    "registrationUrl": null,
+    "status": "demo_sample",
+    "enabled": true,
+    "items": [
+      {
+        "id": "sample-community-item",
+        "sourceId": "sample-community",
+        "title": "출근길에 듣기 좋은 10분짜리 팟캐스트",
+        "publishedAt": null,
+        "publishedPrecision": "unknown",
+        "originalUrl": null,
+        "summary": "오늘의 인기글은 출근길에 듣기 좋은 십 분짜리 팟캐스트 추천이에요. 짧은 에피소드 세 편을 소개하는 글이에요.",
+        "estimatedSeconds": 13,
+        "deadlineAt": null,
+        "provenance": "demo_sample",
+        "fetchedAt": null
+      }
+    ]
+  },
+  {
+    "id": "url:https://www.leagueoflegends.com/ko-kr/news/game-updates/",
+    "name": "리그 오브 레전드",
+    "provider": "lol",
+    "kind": "game",
+    "registrationUrl": "https://www.leagueoflegends.com/ko-kr/news/game-updates/",
+    "enabled": true,
+    "status": "connected_snapshot",
+    "items": [
+      {
+        "id": "official-lol-2026-11-03",
+        "sourceId": "url:https://www.leagueoflegends.com/ko-kr/news/game-updates/",
+        "title": "리그 오브 레전드 26.22 패치 노트",
+        "publishedAt": "2026-11-03T19:00:00Z",
+        "publishedPrecision": "instant",
+        "originalUrl": "https://www.leagueoflegends.com/ko-kr/news/game-updates/league-of-legends-patch-26-22-notes/",
+        "summary": "멜의 능력과 여러 챔피언의 밸런스가 조정됐어요. 자세한 변경은 공식 패치 노트에서 확인하세요.",
+        "estimatedSeconds": 9,
+        "deadlineAt": null,
+        "provenance": "official_snapshot",
+        "fetchedAt": "2026-11-05T12:12:22Z"
+      }
+    ]
+  },
+  {
+    "id": "sample-game",
+    "name": "게임 패치 예시",
+    "provider": "sample",
+    "kind": "game",
+    "registrationUrl": null,
+    "status": "demo_sample",
+    "enabled": false,
+    "items": [
+      {
+        "id": "sample-game-item",
+        "sourceId": "sample-game",
+        "title": "이번 주말, 협동 모드가 열려요",
+        "publishedAt": null,
+        "publishedPrecision": "unknown",
+        "originalUrl": null,
+        "summary": "즐겨 하는 게임의 새 협동 모드가 이번 주말 열려요. 업데이트 소식은 저장해 두고 도착 후 확인할 수 있어요.",
+        "estimatedSeconds": 11,
+        "deadlineAt": null,
+        "provenance": "demo_sample",
+        "fetchedAt": null
+      }
+    ]
+  }
+]
